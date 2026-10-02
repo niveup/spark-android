@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.spark.app.feed.DoneScreen
-import com.spark.app.feed.FeedScreen
+import com.spark.app.home.AppNav
 import com.spark.app.ui.theme.SparkTheme
 
 class MainActivity : ComponentActivity() {
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    FeedScreen(onCloseApp = { finish() })
+                    AppNav(onCloseApp = { finish() })
                 }
             }
         }

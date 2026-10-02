@@ -7,23 +7,18 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import com.spark.app.audio.TtsHelper
-import com.spark.app.data.sampleCards
+import com.spark.app.data.Card
 
 @Composable
-fun FeedScreen(onCloseApp: () -> Unit) {
-    val cards = remember { sampleCards }
-    val state = remember { FeedState() }
-    val context = LocalContext.current
-    val tts = remember { TtsHelper(context.applicationContext) }
-    DisposableEffect(Unit) {
-        onDispose { tts.shutdown() }
-    }
+fun FeedScreen(
+    state: FeedState,
+    cards: List<Card>,
+    tts: TtsHelper,
+    onCloseApp: () -> Unit
+) {
     if (state.done) {
         Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             DoneScreen(

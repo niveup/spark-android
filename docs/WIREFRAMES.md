@@ -5,11 +5,34 @@ Legend: each screen is one full phone screen. Dark theme.
 ## 0. Nav map
 
 ```
-Login (gate) → Feed (home) ⇄ Saved ⇄ Stats ⇄ Settings
-Feed audio card → Player (overlay) → back to Feed
+Login (gate) → Home (landing) ⇄ Reels ⇄ Saved ⇄ Stats ⇄ Settings
+Reels audio card → Player (overlay) → back to Reels
 ```
 
-Bottom or top tab row on Feed/Saved/Stats/Settings: `[Feed] [Saved] [Stats] [Settings]`
+Bottom tab row on Home/Reels/Saved/Stats/Settings: `[Home] [Reels] [Saved] [Me]`.
+The feed is the Reels tab, never the whole app.
+
+## 0b. Home dashboard (landing screen)
+
+```
+┌──────────────────────────┐
+│ Evening.                 │  greeting, no guilt copy
+│ Pick up where you left.  │
+│                          │
+│ TODAY                    │
+│ ● Thermo — 5 due         │  weak topics first
+│ ● SOM — 3 due            │
+│                          │
+│ ┌──────────────────────┐ │
+│ │  Open Reels          │ │  explicit choice to scroll
+│ └──────────────────────┘ │
+│ ┌──────────────────────┐ │
+│ │  Review saved (4)    │ │
+│ └──────────────────────┘ │
+│ ──────────────────────── │
+│ Seen 12 · Saved 4        │  stats glance, no streaks
+└──────────────────────────┘
+```
 
 ## 1. Feed card — book_idea / summary (default)
 
@@ -166,7 +189,7 @@ Swipe up = next card. No swipe-down-back beyond 1 (keep simple).
 
 ```
 ┌──────────────────────────┐
-│ Saved        [Feed tabs] │
+│ Saved        [Home tabs] │
 │ ┌──────────────────────┐ │
 │ │ Search saved…        │ │
 │ └──────────────────────┘ │
@@ -181,7 +204,7 @@ Swipe up = next card. No swipe-down-back beyond 1 (keep simple).
 
 ```
 ┌──────────────────────────┐
-│ Stats        [Feed tabs] │
+│ Stats        [Home tabs] │
 │ Today: 20 cards · 12 min │
 │ Saved ever: 34           │
 │ Reviews due: 5           │
@@ -195,7 +218,7 @@ Swipe up = next card. No swipe-down-back beyond 1 (keep simple).
 
 ```
 ┌──────────────────────────┐
-│ Settings     [Feed tabs] │
+│ Settings     [Home tabs] │
 │ Cards per session  [20]  │
 │ Minutes per session[15]  │
 │ TTS speed        [1.0×]  │
