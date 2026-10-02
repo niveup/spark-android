@@ -1,7 +1,7 @@
 [versions]
 # Sources: AGP 9.4 release notes (developer.android.com/build/releases/gradle-plugin),
 # Compose setup page (BOM 2026.08.00). Kotlin pairs with Compose compiler plugin.
-agp = "9.4.0"
+agp = "9.3.0"
 kotlin = "2.2.0"
 composeBom = "2026.08.00"
 coreKtx = "1.16.0"
