@@ -1,0 +1,21 @@
+# Android / Kotlin
+.gradle/
+build/
+app/build/
+local.properties
+*.iml
+.idea/
+*.ap_
+*.aab
+*.apk
+!gradle-wrapper.jar
+
+# Secrets - never commit
+.env*
+*.jks
+*.keystore
+keystore.properties
+
+# OS
+.DS_Store
+Thumbs.db
