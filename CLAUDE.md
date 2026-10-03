@@ -104,7 +104,8 @@ Free, legal sources (verify each license/terms when implementing; store `license
 - Vertical **snap-paging** cards via `VerticalPager` (one card = one screen), each readable in ~30–60 seconds. Max body ~600 characters. Every card has one `action_line` ("Try this today: …") when sensible.
 - Actions per card: Save, Like/Dislike (feeds ranking), "Listen" (TTS), "Why am I seeing this?" (shows source + AI/grounded label).
 - **Ranking v1 (simple, no ML):** (1) spaced-repetition cards that are due, (2) unseen items from topics with more saves/likes, (3) ~20% exploration from other topics, (4) never repeat seen items within 30 days unless saved.
-- **Quick-open:** Android app shortcut (long-press icon → "I'm bored"); home-screen widget (Glance) + Quick Settings tile (TileService) — native, not backlog.
+- **Quick-open:** Android app shortcut (long-press icon → "I'm bored") opens straight into the Reels tab; home-screen widget (Glance) + Quick Settings tile (TileService) — native, not backlog.
+- The feed is the **Reels tab, not the whole app**. Landing screen is the **Home dashboard** (greeting, today focus, stats glance, entry points). Productive framing first, scroller second.
 - Dark theme default. Large readable type. Smooth 60fps scrolling.
 - We do **NOT** build an Instagram/YouTube blocker (needs accessibility-service permissions, fragile and risky). Recommend Android's built-in Digital Wellbeing app timers instead.
 

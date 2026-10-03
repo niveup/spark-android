@@ -10,8 +10,10 @@ Hello SPARK screen (dark Material3) + 1 unit test + CI.
 Do NOT: any feature beyond Hello.
 Verify: app opens on phone showing Hello SPARK; `./gradlew lint test` or Studio Sync+Run passes; CI green; tool versions listed.
 
-## PHASE 0b — Quick-win hardcoded feed (no backend)
-VerticalPager 20 hardcoded cards + TTS + You're-done screen. Proves 60fps early.
+## PHASE 0b — Quick-win: Home dashboard + Reels tab (no backend)
+Home landing (greeting, today focus, entry points, stats glance) + bottom tabs
+[Home|Reels|Saved|Me]. Reels = VerticalPager 20 hardcoded cards + TTS + You're-done
+screen. Saved lists saved titles; Me shows about + session stats. Proves structure early.
 
 ## PHASE 1 — Audit web app, design mobile API contract
 Work in web app repo. Write docs/API_CONTRACT.md (/api/mobile/v1/: auth/login, logout, feed cursor, items/:id/state, items/saved, sessions, sessions/:id, health) + docs/ARCHITECTURE.md (token auth hashed, coexists with cookie auth). No code/DB changes. User approves contract.

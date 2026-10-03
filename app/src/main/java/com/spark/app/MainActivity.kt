@@ -4,15 +4,14 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.spark.app.feed.DoneScreen
+import com.spark.app.home.AppNav
 import com.spark.app.ui.theme.SparkTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,27 +24,17 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    HelloSpark()
+                    AppNav(onCloseApp = { finish() })
                 }
             }
         }
     }
 }
 
-@Composable
-fun HelloSpark() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "Hello SPARK")
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
-fun HelloSparkPreview() {
+fun DoneScreenPreview() {
     SparkTheme {
-        HelloSpark()
+        DoneScreen(seenCount = 20, savedCards = emptyList(), onCloseApp = {})
     }
 }
