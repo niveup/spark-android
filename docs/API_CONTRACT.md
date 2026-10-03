@@ -28,6 +28,7 @@ FeedItem = {
   actionLine: string,                                  // may be ""
   topicTags: string[], language: string,               // e.g. "en"
   estSeconds: number,                                   // 30–60 typical
+  progressMs: number | null,                            // audiobook resume, Phase 6+
   book: null | { id: string, title: string, author: string, coverUrl: string | null },
   sourceType: string, sourceRef: string, license: string,
   isAiGenerated: boolean, isGrounded: boolean,         // false,false never occurs
@@ -52,7 +53,17 @@ Note: passcode lives in server env only. Token is random 256-bit, hex/base64url.
 
 ### POST /auth/logout — revoke current token
 Auth required. Response `200`: `{ "data": { "revoked": true } }`.
-Also revokes on: user rotates passcode (all tokens), explicit revoke (Phase 9 runbook).
+Also revokes on: user rotates passcode (all tokens), explicit revoke (see below).
+
+### GET /auth/tokens — list devices (lost-phone case)
+Auth required. Response `200`:
+`{ "data": [{ "id": string, "deviceLabel": string, "createdAt": string, "lastUsedAt": string | null }] }`.
+Raw tokens never listed. Used by Settings to show "logged-in devices".
+
+### DELETE /auth/tokens/:id — revoke one device
+Auth required. Response `200`: `{ "data": { "revoked": true } }`.
+Unknown/foreign id → `NOT_FOUND`. Revoking the current token logs the app out
+(app treats `UNAUTHORIZED` mid-session as "logged out elsewhere" → Login screen).
 
 ### GET /feed — ranked session feed, cursor pages
 Auth required. Query: `limit`, `cursor`, `excludeSeen=true` (default; `false` refills
@@ -81,6 +92,15 @@ server keys on `(token, itemId, clientBatchId)`; each update carries
 Auth required. Query: `limit`, `cursor`, `q=` (substring search over title/body).
 Response `200`: `{ "data": FeedItem[], "nextCursor": string | null }`,
 most-recently-saved first.
+
+### PUT /items/:id/progress — audiobook resume position (Phase 6)
+Auth required. Request: `{ "positionMs": number, "durationMs": number }`
+(`positionMs <= durationMs`, both ≥ 0).
+Response `200`: `{ "data": { "itemId": string, "positionMs": number, "updatedAt": string } }`.
+Unknown item id → `NOT_FOUND`. Last-write-wins; the app sends it at most every
+10 seconds and always on pause/kill, so conflicts are rare and harmless.
+GET side: progress rides inside `GET /feed` / `GET /items/saved` items as
+`progressMs: number | null` (added to `FeedItem`, optional, default null).
 
 ### POST /sessions — open a feed session
 Auth required. Request: `{ "deviceId": "string", "cardLimit": number, "minuteLimit": number }`.

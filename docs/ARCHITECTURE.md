@@ -48,6 +48,8 @@ anything saved on one appears on the other. No cookie auth to coexist with.
 - Phase 7: Room cache of 50 items + event queue; replay is idempotent by design.
 - Ranking v1 lives server-side (contract §GET /feed); app orders quiz/SRS only
   from `srsDueAt` read-only fields.
+- Lost-phone revoke = `DELETE /auth/tokens/:id` (contract); no separate tool needed.
+- Audiobook resume = `PUT /items/:id/progress` + `progressMs` on items (contract).
 
 ## Assumptions confirmed / proven wrong
 
