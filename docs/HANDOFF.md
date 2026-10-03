@@ -15,11 +15,16 @@ Home landing (greeting, today focus, entry points, stats glance) + bottom tabs
 [Home|Reels|Saved|Me]. Reels = VerticalPager 20 hardcoded cards + TTS + You're-done
 screen. Saved lists saved titles; Me shows about + session stats. Proves structure early.
 
-## PHASE 1 — Audit web app, design mobile API contract
-Work in web app repo. Write docs/API_CONTRACT.md (/api/mobile/v1/: auth/login, logout, feed cursor, items/:id/state, items/saved, sessions, sessions/:id, health) + docs/ARCHITECTURE.md (token auth hashed, coexists with cookie auth). No code/DB changes. User approves contract.
+## PHASE 1 — Mobile API contract (no backend exists yet) [CURRENT]
+Write docs/API_CONTRACT.md (/api/mobile/v1/: auth/login, logout, feed cursor, items/:id/state,
+items/state batch, items/saved, sessions, sessions/:id, health) + docs/ARCHITECTURE.md (token auth
+hashed, single-user passcode, DEV/PROD Supabase plan for Phase 2). No code/DB changes.
+User approves contract before Phase 2.
 
-## PHASE 2 — Database + API backend
-DEV Supabase project, additive Prisma migration (books, feed_items, item_state, feed_sessions, device_tokens, ingest_jobs), prod backup before prod migration, implement /api/mobile/v1 with zod+rate limit, seed 30 items DEV only, tests auth/pagination/state. Web login still works.
+## PHASE 2 — Database + API backend (built new)
+New DEV Supabase project + minimal Next.js API host, additive Prisma migration (books, feed_items,
+item_state, feed_sessions, device_tokens, ingest_jobs), prod backup before any prod migration,
+implement /api/mobile/v1 with zod + rate limit, seed 30 items DEV only, tests auth/pagination/state.
 
 ## PHASE 3 — Content pipeline (worker)
 Adapters Gutendex/OpenLibrary/LibriVox/Wiki/manual, zod card schema (title<=80, body<=600), injection guards, grounded flags, dedupe content_hash, daily AI cap, ingest_jobs log, draft preview/publish page. Seed 5 books x10 cards + 20 GATE cards. No copyrighted scraping.
