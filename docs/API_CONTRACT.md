@@ -29,6 +29,11 @@ FeedItem = {
   topicTags: string[], language: string,               // e.g. "en"
   estSeconds: number,                                   // 30–60 typical
   progressMs: number | null,                            // audiobook resume, Phase 6+
+  quiz: null | { options: string[],                     // quiz cards only (type=quiz),
+                 correctIndex: number,                  // else null; options 2–4,
+                 explanation: string },                 // correctIndex is 0-based
+  audioUrl: string | null,                              // audio cards only (type=audio),
+  durationMs: number | null,                            // else null; stream, never re-host
   book: null | { id: string, title: string, author: string, coverUrl: string | null },
   sourceType: string, sourceRef: string, license: string,
   isAiGenerated: boolean, isGrounded: boolean,         // false,false never occurs
@@ -48,6 +53,7 @@ ItemState = {
 ### POST /auth/login — exchange passcode for token
 Request: `{ "passcode": "string, 1..128 chars", "deviceLabel": "string, 1..64 chars" }`
 Response `200`: `{ "data": { "token": "<raw, shown once>", "expiresAt": "string" } }`
+(expires 90 days after login; matches ARCHITECTURE.md token section).
 Errors: `UNAUTHORIZED` (wrong passcode — same message every time), `RATE_LIMITED`.
 Note: passcode lives in server env only. Token is random 256-bit, hex/base64url.
 
@@ -66,27 +72,33 @@ Unknown/foreign id → `NOT_FOUND`. Revoking the current token logs the app out
 (app treats `UNAUTHORIZED` mid-session as "logged out elsewhere" → Login screen).
 
 ### GET /feed — ranked session feed, cursor pages
-Auth required. Query: `limit`, `cursor`, `excludeSeen=true` (default; `false` refills
+Auth required. Query: `limit`, `cursor`, `sessionId=` (from `POST /sessions`,
+optional but recommended), `excludeSeen=true` (default; `false` refills
 from saved/older), `topics=` (comma list, optional boost filter).
 Response `200`: `{ "data": FeedItem[], "nextCursor": string | null }`.
 Ranking (server, v1, no ML): SRS-due first → unseen from liked/saved topics →
 ~20% exploration → never seen-within-30d unless saved. Deterministic per token
-within a session (seeded by session id) so pages don't reshuffle mid-scroll.
+within a session (seeded by `sessionId` when given, otherwise by token) so pages
+don't reshuffle mid-scroll.
 
 ### POST /items/:id/state — upsert interaction state (single)
 Auth required. Request (all fields optional except at least one):
 `{ "seen": boolean, "saved": boolean, "liked": boolean | null,
-   "dismissed": boolean, "dwellMs": number, "quizCorrect": boolean | null }`
+   "dismissed": boolean, "dwellMs": number, "quizCorrect": boolean | null,
+   "clientEventId": string }` (opaque, app-generated UUID per tap/swipe;
+optional but recommended — replays with the same id are ignored so `dwellMs`
+never double-counts).
 Response `200`: `{ "data": ItemState }`. Unknown item id → `NOT_FOUND`.
 `quizCorrect` feeds the SRS scheduler; app never sends SRS dates.
 
 ### POST /items/state — batch upsert (offline sync + swipe batching)
-Auth required. Request: `{ "updates": [{ "itemId": string, ...same fields... }] }`
-(max 100). Response `200`: `{ "data": { "states": ItemState[], "rejected": string[] } }`.
+Auth required. Request: `{ "updates": [{ "itemId": string, "clientEventId": string,
+...same fields... }] }` (max 100, `clientEventId` required per update).
+Response `200`: `{ "data": { "states": ItemState[], "rejected": string[] } }`.
 Idempotent: replaying the same batch changes nothing the second time.
 Last-write-wins per field; `dwellMs` sums (never double-counts on replay —
-server keys on `(token, itemId, clientBatchId)`; each update carries
-`clientEventId`, replays with the same id are ignored).
+server keys on `(token, itemId, clientEventId)`; replays with the same
+`clientEventId` are ignored).
 
 ### GET /items/saved — saved list for Saved tab
 Auth required. Query: `limit`, `cursor`, `q=` (substring search over title/body).

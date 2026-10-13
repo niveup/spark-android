@@ -7,7 +7,7 @@
    |  HTTPS, Bearer token, /api/mobile/v1/*
    v
 [API host, Phase 2: Next.js + Prisma] ---> [Supabase Postgres]
-   ^  zod validation, Addison-only migrations      ^
+   ^  zod validation, additive-only migrations      ^
    |  passcode in server env only                  |
 [Worker / cron: content pipeline] -----------------+  (ingest → AI cards → DB)
 ```
