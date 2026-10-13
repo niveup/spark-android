@@ -19,3 +19,6 @@ keystore.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Kotlin IDE sessions
+.kotlin/
