@@ -106,6 +106,12 @@ fun CardView(
                     Text("ⓘ Why this?")
                 }
             }
+            if (!tts.isReady) {
+                Text(
+                    text = "Voice loading… try Listen again in a second.",
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
     if (showWhy) {
@@ -171,7 +177,7 @@ private fun QuizBody(card: Card) {
     quiz.options.forEachIndexed { index, option ->
         val label = ('A' + index).toString()
         OutlinedButton(
-            onClick = { selected = index },
+            onClick = { if (selected == null) selected = index },
             modifier = Modifier.fillMaxWidth()
         ) {
             val mark = when {

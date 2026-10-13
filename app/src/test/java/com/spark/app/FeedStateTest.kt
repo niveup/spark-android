@@ -9,9 +9,9 @@ import org.junit.Test
 
 class FeedStateTest {
     @Test
-    fun `starts at card 1 of 20, not done`() {
+    fun `starts at 0 seen, not done`() {
         val state = FeedState()
-        assertEquals(1, state.seenCount)
+        assertEquals(0, state.seenCount)
         assertFalse(state.done)
         assertEquals(SESSION_CARD_LIMIT, FeedState.limit())
     }

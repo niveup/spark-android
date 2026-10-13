@@ -40,7 +40,7 @@ fun FeedScreen(
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 CardView(
                     card = card,
-                    counter = "${state.seenCount}/${cards.size}",
+                    counter = "${page + 1}/${cards.size}",
                     tts = tts,
                     state = state,
                     showFinish = page == cards.lastIndex
