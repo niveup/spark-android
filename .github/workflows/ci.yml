@@ -25,6 +25,8 @@ jobs:
 
       - name: Install Gradle 9.6.0
         run: |
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
+          yes | sdkmanager ...
           curl -L https://services.gradle.org/distributions/gradle-9.6.0-bin.zip -o /tmp/gradle.zip
           unzip -q /tmp/gradle.zip -d /tmp
           echo "/tmp/gradle-9.6.0/bin" >> "$GITHUB_PATH"
