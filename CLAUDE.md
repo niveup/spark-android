@@ -43,7 +43,7 @@ The app shares **one database and one backend** with an existing web app. It is 
 | Secure token storage | EncryptedSharedPreferences with Keystore (androidx.security) | Encrypted on device |
 | Audio playback | **Media3 + MediaSessionService — background playback + lock-screen controls required** | Most reliable for screen-off, calls, headphone unplug |
 | Text-to-speech | Android TextToSpeech (system TTS, free, offline) | Turns any card into audio at zero cost |
-| Backend | **Existing web app's API** (assumed: Next.js on Vercel + Prisma + Supabase Postgres, Node/Express cron worker on Render). **Verify in Phase 1** | One database, one source of truth |
+| Backend | **API to be built in Phase 2** (Next.js + Prisma + Supabase Postgres, cron worker for pipeline). App is API-first so a future web app shares the same DB | One database, one source of truth |
 | Validation | zod on server; kotlinx.serialization + manual checks on app | Never trust data crossing a boundary |
 | Tests | JUnit + Compose UI Test | Standard |
 | Lint | Android Lint + ktlint | |

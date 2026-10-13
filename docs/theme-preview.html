@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SPARK theme preview</title>
+<style>
+  :root{
+    --amber:#FFB454; --on-amber:#3A2100; --amber-ct:#5A3200; --on-amber-ct:#FFDDB8;
+    --sand:#DCC7AE; --on-sand:#3A2E22; --sand-ct:#524437; --on-sand-ct:#FFDDBF;
+    --teal:#A6D8C4; --on-teal:#00382C; --teal-ct:#1E4F42; --on-teal-ct:#C6F3DF;
+    --ink:#0E0D0C; --page:#121110; --r1:#1A1817; --r2:#1E1C1B; --r3:#242220; --r4:#2F2C2A;
+    --text:#ECE6E0; --text-dim:#CFC7BE; --outline:#998F86; --outline-faint:#49433D;
+    --err:#FFB4AB;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--text);
+       font-family:"Segoe UI",system-ui,sans-serif;padding:32px}
+  h1{font-size:22px;margin:0 0 4px}
+  p.sub{color:var(--text-dim);margin:0 0 28px;font-size:14px}
+  h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+     color:var(--amber);margin:32px 0 12px;font-weight:600}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .sw{width:104px}
+  .chip{height:64px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+  .sw code{display:block;font-size:10.5px;color:var(--text-dim);margin-top:6px}
+  .sw span{font-size:11.5px;color:var(--text)}
+
+  .demo{max-width:420px;background:var(--page);border-radius:20px;
+        border:1px solid var(--outline-faint);overflow:hidden}
+  .demo .top{padding:20px 20px 0}
+  .eyebrow{font-size:11px;color:var(--amber);letter-spacing:.08em;text-transform:uppercase}
+  .demo h3{font-size:24px;margin:14px 0 10px;line-height:1.25}
+  .demo p{font-size:16px;line-height:1.55;color:var(--text);margin:0 0 14px}
+  .action{font-size:15px;font-weight:600;border-left:3px solid var(--amber);padding-left:10px}
+  .btns{display:flex;gap:8px;padding:18px 20px;background:var(--r1)}
+  .btn{flex:1;text-align:center;padding:11px 0;border-radius:100px;font-size:14px;font-weight:600}
+  .btn.solid{background:var(--amber);color:var(--on-amber)}
+  .btn.ghost{border:1px solid var(--outline);color:var(--text)}
+  .btn:disabled{background:var(--r3);color:var(--text-dim)}
+
+  .quiz{margin-top:14px;background:var(--r2);border-radius:16px;padding:16px}
+  .opt{border:1px solid var(--outline);border-radius:100px;padding:9px 14px;
+       margin-bottom:8px;font-size:14px}
+  .opt.ok{border-color:var(--teal);color:var(--teal);background:var(--teal-ct)}
+  .opt.bad{border-color:var(--err);color:var(--err)}
+
+  .nav{display:flex;background:var(--r2);border-top:1px solid var(--outline-faint);margin-top:18px}
+  .nav div{flex:1;text-align:center;padding:12px 0 14px;font-size:12px;color:var(--text-dim)}
+  .nav div.on{color:var(--text)}
+  .nav .pill{width:44px;height:28px;border-radius:100px;background:var(--sand-ct);
+             margin:0 auto 4px;line-height:28px;color:var(--on-sand-ct);font-size:14px}
+  .nav .off{width:44px;height:28px;margin:0 auto 4px;line-height:28px;font-size:14px}
+
+  .cards{display:flex;flex-direction:column;gap:10px}
+  .card{background:var(--r2);border:1px solid var(--outline-faint);
+        border-radius:14px;padding:14px 16px}
+  .card .lbl{font-size:11px;color:var(--text-dim);letter-spacing:.06em}
+  .card .ttl{font-size:15px;font-weight:600;margin-top:4px}
+  .tag{display:inline-block;font-size:11px;padding:3px 9px;border-radius:100px;
+       background:var(--amber-ct);color:var(--on-amber-ct);margin-right:6px}
+  .tag.s{background:var(--sand-ct);color:var(--on-sand-ct)}
+  .tag.t{background:var(--teal-ct);color:var(--on-teal-ct)}
+</style>
+</head>
+<body>
+  <h1>SPARK — new theme</h1>
+  <p class="sub">Warm near-black · single amber accent · sand + teal support tones</p>
+
+  <h2>Accent ramp</h2>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--amber)"></div><span>primary</span><code>#FFB454</code></div>
+    <div class="sw"><div class="chip" style="background:var(--amber-ct)"></div><span>container</span><code>#5A3200</code></div>
+    <div class="sw"><div class="chip" style="background:var(--on-amber-ct)"></div><span>on-container</span><code>#FFDDB8</code></div>
+    <div class="sw"><div class="chip" style="background:var(--sand)"></div><span>secondary</span><code>#DCC7AE</code></div>
+    <div class="sw"><div class="chip" style="background:var(--sand-ct);"></div><span>sec. container</span><code>#524437</code></div>
+    <div class="sw"><div class="chip" style="background:var(--teal)"></div><span>tertiary</span><code>#A6D8C4</code></div>
+    <div class="sw"><div class="chip" style="background:var(--teal-ct)"></div><span>ter. container</span><code>#1E4F42</code></div>
+  </div>
+
+  <h2>Surfaces (elevation, not shadows)</h2>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--ink)"></div><span>lowest</span><code>#0E0D0C</code></div>
+    <div class="sw"><div class="chip" style="background:var(--page)"></div><span>background</span><code>#121110</code></div>
+    <div class="sw"><div class="chip" style="background:var(--r1)"></div><span>low</span><code>#1A1817</code></div>
+    <div class="sw"><div class="chip" style="background:var(--r2)"></div><span>container</span><code>#1E1C1B</code></div>
+    <div class="sw"><div class="chip" style="background:var(--r3)"></div><span>high</span><code>#242220</code></div>
+    <div class="sw"><div class="chip" style="background:var(--r4)"></div><span>highest</span><code>#2F2C2A</code></div>
+  </div>
+
+  <h2>Text &amp; lines</h2>
+  <div class="row">
+    <div class="sw"><div class="chip" style="background:var(--text)"></div><span>on-surface</span><code>#ECE6E0</code></div>
+    <div class="sw"><div class="chip" style="background:var(--text-dim)"></div><span>on-var.</span><code>#CFC7BE</code></div>
+    <div class="sw"><div class="chip" style="background:var(--outline)"></div><span>outline</span><code>#998F86</code></div>
+    <div class="sw"><div class="chip" style="background:var(--outline-faint)"></div><span>dividers</span><code>#49433D</code></div>
+    <div class="sw"><div class="chip" style="background:var(--err)"></div><span>error</span><code>#FFB4AB</code></div>
+  </div>
+
+  <h2>Live mock — Reels card</h2>
+  <div class="demo">
+    <div class="top">
+      <div class="eyebrow">[concept · thermo] &nbsp;&nbsp; 4 / 20</div>
+      <h3>Carnot efficiency</h3>
+      <p>No heat engine beats 1 − Tc/Th. It depends only on the two reservoir
+         temperatures, never on the working fluid inside the engine.</p>
+      <div class="action">Compute efficiency for Th = 600 K, Tc = 300 K.</div>
+      <div class="quiz">
+        <div class="opt ok">A) 50% &nbsp;✓ correct</div>
+        <div class="opt bad">B) 75% &nbsp;✗</div>
+        <div class="opt">C) 25%</div>
+      </div>
+    </div>
+    <div class="btns">
+      <div class="btn ghost">♡ Save</div>
+      <div class="btn solid">🔊 Listen</div>
+      <div class="btn ghost">ⓘ Why</div>
+    </div>
+    <div class="nav">
+      <div><div class="off">⌂</div>Home</div>
+      <div class="on"><div class="pill">▤</div>Reels</div>
+      <div><div class="off">♡</div>Saved</div>
+      <div><div class="off">☺</div>Me</div>
+    </div>
+  </div>
+
+  <h2>Card list / tags</h2>
+  <div class="cards" style="max-width:420px">
+    <div class="card">
+      <div class="lbl">BOOK IDEA · 45s</div>
+      <div class="ttl">Atomic Habits: 5 core ideas</div>
+      <div style="margin-top:9px"><span class="tag">habits</span><span class="tag s">focus</span></div>
+    </div>
+    <div class="card">
+      <div class="lbl">QUIZ · SOM</div>
+      <div class="ttl">Where is bending stress zero?</div>
+      <div style="margin-top:9px"><span class="tag t">answered</span><span class="tag s">som</span></div>
+    </div>
+  </div>
+</body>
+</html>
