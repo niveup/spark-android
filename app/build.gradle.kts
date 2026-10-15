@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -16,11 +17,14 @@ android {
     }
 
     buildTypes {
-        release {
-            isMinifyEnabled = false
-        }
         debug {
             applicationIdSuffix = ".debug"
+            // Phone-only testing: replace with your PC's LAN IP (ipconfig -> IPv4).
+            buildConfigField("String", "API_BASE_URL", "\"http://YOUR_PC_LAN_IP:3000\"")
+        }
+        release {
+            isMinifyEnabled = false
+            buildConfigField("String", "API_BASE_URL", "\"https://example.com\"")
         }
     }
     compileOptions {
@@ -29,6 +33,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -39,11 +44,19 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.lifecycle.runtime.ktx)
+    implementation(libs.lifecycle.viewmodel.compose)
+    implementation(libs.lifecycle.runtime.compose)
     implementation(libs.activity.compose)
+    implementation(libs.navigation.compose)
+    implementation(libs.security.crypto)
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)
 }
