@@ -12,6 +12,7 @@ local.properties
 
 # Secrets - never commit
 .env*
+!.env.example
 *.jks
 *.keystore
 keystore.properties
