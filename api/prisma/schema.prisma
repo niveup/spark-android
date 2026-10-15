@@ -1,0 +1,118 @@
+// SPARK Phase 2 schema. Additive migrations only (see AGENTS.md rule 8).
+// Mirrors docs/API_CONTRACT.md types + AGENTS.md 1.6 draft model.
+// Single user: item_state is keyed by (tokenHash, itemId), no user table.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // URL lives in prisma.config.ts (Prisma 7). See api/prisma.config.ts.
+}
+
+model Book {
+  id             String   @id @default(cuid())
+  source         String // gutenberg|openlibrary|librivox|manual
+  sourceId       String?
+  title          String
+  author         String?
+  language       String   @default("en")
+  coverUrl       String?
+  isPublicDomain Boolean  @default(true)
+  textUrl        String?
+  audioUrl       String?
+  license        String
+  createdAt      DateTime @default(now())
+  items          FeedItem[]
+
+  @@map("books")
+}
+
+model FeedItem {
+  id            String    @id @default(cuid())
+  type          String // book_idea|summary|quote|concept|quiz|audio|challenge
+  title         String // <= 80 chars (enforced by worker zod schema, Phase 3)
+  bodyMd        String // <= 600 chars
+  actionLine    String    @default("")
+  topicTags     String[] // Postgres array
+  language      String    @default("en")
+  estSeconds    Int       @default(45)
+  bookId        String?
+  book          Book?     @relation(fields: [bookId], references: [id])
+  sourceType    String
+  sourceRef     String
+  license       String
+  isAiGenerated Boolean
+  isGrounded    Boolean
+  modelUsed     String?
+  contentHash   String    @unique // dedupe key (Phase 3 worker)
+  quizJson      Json? // quiz cards: { options, correctIndex, explanation }
+  audioUrl      String? // audio cards: stream URL (never re-host)
+  durationMs    Int? // audio cards: length in ms
+  status        String    @default("draft") // draft|published|archived
+  publishedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  states        ItemState[]
+
+  @@map("feed_items")
+}
+
+model ItemState {
+  id             String    @id @default(cuid())
+  itemId         String
+  item           FeedItem  @relation(fields: [itemId], references: [id])
+  tokenHash      String // SHA-256 of device token: whose state this is
+  seenAt         DateTime?
+  saved          Boolean   @default(false)
+  liked          Boolean? // null = no rating
+  dismissed      Boolean   @default(false)
+  dwellMs        Int       @default(0)
+  quizCorrect    Boolean?
+  clientEventIds String[]  @default([]) // idempotency keys (contract clientEventId)
+  srsDueAt       DateTime?
+  srsIntervalDays Int?
+  srsEase        Float?
+  updatedAt      DateTime  @updatedAt
+
+  @@unique([tokenHash, itemId])
+  @@map("item_state")
+}
+
+model FeedSession {
+  id           String    @id @default(cuid())
+  deviceId     String
+  cardLimit    Int
+  minuteLimit  Int
+  startedAt    DateTime  @default(now())
+  endedAt      DateTime?
+  itemsSeen    Int       @default(0)
+  limitReached Boolean   @default(false)
+
+  @@map("feed_sessions")
+}
+
+model DeviceToken {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique // SHA-256; raw token never stored
+  deviceLabel String
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  expiresAt   DateTime // +90 days (contract)
+  revokedAt   DateTime?
+
+  @@map("device_tokens")
+}
+
+model IngestJob {
+  id           String    @id @default(cuid())
+  source       String
+  status       String    @default("running")
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  itemsCreated Int       @default(0)
+  error        String?
+
+  @@map("ingest_jobs")
+}
