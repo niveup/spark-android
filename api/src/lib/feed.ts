@@ -1,0 +1,176 @@
+import type { Book, FeedItem as DbItem, ItemState as DbState } from "../../generated/prisma/client";
+
+// Contract FeedItem serializer (DB row -> API shape).
+export type ApiFeedItem = {
+  id: string;
+  type: string;
+  title: string;
+  bodyMd: string;
+  actionLine: string;
+  topicTags: string[];
+  language: string;
+  estSeconds: number;
+  progressMs: number | null; // Phase 6 audiobook resume; null until then
+  quiz: { options: string[]; correctIndex: number; explanation: string } | null;
+  audioUrl: string | null;
+  durationMs: number | null;
+  book: { id: string; title: string; author: string; coverUrl: string | null } | null;
+  sourceType: string;
+  sourceRef: string;
+  license: string;
+  isAiGenerated: boolean;
+  isGrounded: boolean;
+  publishedAt: string;
+};
+
+export type ItemWithBook = DbItem & { book: Book | null };
+
+export function toFeedItem(item: ItemWithBook): ApiFeedItem {
+  const quizRaw = item.quizJson as {
+    options?: string[];
+    correctIndex?: number;
+    explanation?: string;
+  } | null;
+  return {
+    id: item.id,
+    type: item.type,
+    title: item.title,
+    bodyMd: item.bodyMd,
+    actionLine: item.actionLine,
+    topicTags: item.topicTags,
+    language: item.language,
+    estSeconds: item.estSeconds,
+    progressMs: null,
+    quiz:
+      item.type === "quiz" && quizRaw
+        ? {
+            options: quizRaw.options ?? [],
+            correctIndex: quizRaw.correctIndex ?? 0,
+            explanation: quizRaw.explanation ?? "",
+          }
+        : null,
+    audioUrl: item.audioUrl,
+    durationMs: item.durationMs,
+    book: item.book
+      ? { id: item.book.id, title: item.book.title, author: item.book.author ?? "", coverUrl: item.book.coverUrl }
+      : null,
+    sourceType: item.sourceType,
+    sourceRef: item.sourceRef,
+    license: item.license,
+    isAiGenerated: item.isAiGenerated,
+    isGrounded: item.isGrounded,
+    publishedAt: (item.publishedAt ?? item.createdAt).toISOString(),
+  };
+}
+
+export type ApiItemState = {
+  itemId: string;
+  seenAt: string | null;
+  saved: boolean;
+  liked: boolean | null;
+  dismissed: boolean;
+  dwellMs: number;
+  srsDueAt: string | null;
+};
+
+export function toItemState(itemId: string, s: DbState): ApiItemState {
+  return {
+    itemId,
+    seenAt: s.seenAt?.toISOString() ?? null,
+    saved: s.saved,
+    liked: s.liked,
+    dismissed: s.dismissed,
+    dwellMs: s.dwellMs,
+    srsDueAt: s.srsDueAt?.toISOString() ?? null,
+  };
+}
+
+// --- Ranking v1 (contract §GET /feed, no ML) ---
+// 1. SRS-due first · 2. unseen from liked/saved topics · 3. ~20% exploration
+// 4. never seen-within-30d unless saved. Deterministic per seed (sessionId).
+
+export function hashSeed(seed: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+export function mulberry32(seed: number): () => number {
+  let a = seed;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function rankFeed(
+  items: ItemWithBook[],
+  statesById: Map<string, DbState>,
+  seed: string,
+): ItemWithBook[] {
+  const now = Date.now();
+  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+  const likedTopics = new Set<string>();
+  for (const s of statesById.values()) {
+    if (s.saved || s.liked === true) {
+      const item = items.find((i) => i.id === s.itemId);
+      item?.topicTags.forEach((t) => likedTopics.add(t));
+    }
+  }
+  const due: ItemWithBook[] = [];
+  const preferred: ItemWithBook[] = [];
+  const explore: ItemWithBook[] = [];
+  for (const item of items) {
+    const st = statesById.get(item.id);
+    const seenRecently = !!st?.seenAt && st.seenAt.getTime() > thirtyDaysAgo;
+    if (seenRecently && !st?.saved) continue; // rule 4
+    if (st?.srsDueAt && st.srsDueAt.getTime() <= now) {
+      due.push(item); // rule 1
+      continue;
+    }
+    if (st?.seenAt) {
+      explore.push(item); // seen long ago / saved refill
+      continue;
+    }
+    if (item.topicTags.some((t) => likedTopics.has(t))) preferred.push(item);
+    else explore.push(item);
+  }
+  // ~20% exploration interleaved deterministically (rule 3).
+  const rand = mulberry32(hashSeed(seed));
+  const ordered = [...due];
+  const exp: ItemWithBook[] = [];
+  const rest: ItemWithBook[] = [];
+  for (const item of explore) {
+    (rand() < 0.2 ? exp : rest).push(item);
+  }
+  const main = [...preferred, ...rest];
+  let ei = 0;
+  for (let i = 0; i < main.length; i++) {
+    ordered.push(main[i]!);
+    if (ei < exp.length && i % 4 === 3) ordered.push(exp[ei++]!);
+  }
+  while (ei < exp.length) ordered.push(exp[ei++]!);
+  return ordered;
+}
+
+export function encodeCursor(offset: number): string {
+  return Buffer.from(JSON.stringify({ o: offset })).toString("base64url");
+}
+
+export function decodeCursor(cursor: string | null): number {
+  if (!cursor) return 0;
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as {
+      o?: number;
+    };
+    return Number.isInteger(parsed.o) && (parsed.o ?? 0) >= 0 ? (parsed.o as number) : 0;
+  } catch {
+    return 0; // unknown cursor -> first page (app treats cursors as opaque)
+  }
+}

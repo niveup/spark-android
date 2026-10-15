@@ -74,6 +74,8 @@ model ItemState {
   srsDueAt       DateTime?
   srsIntervalDays Int?
   srsEase        Float?
+  progressMs     Int? // Phase 6 audiobook resume position
+  progressDurationMs Int? // Phase 6 audiobook total duration
   updatedAt      DateTime  @updatedAt
 
   @@unique([tokenHash, itemId])
