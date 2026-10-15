@@ -1,5 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../../generated/prisma/client.ts";
+import { PrismaClient } from "../../generated/prisma/client";
 
 // Next.js dev hot-reload safe singleton.
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };

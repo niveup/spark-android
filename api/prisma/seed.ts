@@ -2,7 +2,7 @@
 // Usage: npm run db:seed  (needs DATABASE_URL in api/.env)
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../generated/prisma/client.ts";
+import { PrismaClient } from "../generated/prisma/client";
 
 if (process.env.NODE_ENV === "production") {
   throw new Error("Seed refuses to run in production.");

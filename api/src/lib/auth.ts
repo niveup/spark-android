@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { db } from "./db.js";
+import { db } from "./db";
 
 // Token auth (contract + ARCHITECTURE.md): passcode -> random 256-bit token,
 // server stores only SHA-256 hash. Timing-safe passcode compare.
