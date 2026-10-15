@@ -8,7 +8,7 @@ import com.spark.app.data.SESSION_CARD_LIMIT
 
 /** In-memory session state. Persistence arrives with Room in Phase 7. */
 class FeedState {
-    var maxReached: Int by mutableStateOf(0)
+    var maxReached: Int by mutableStateOf(-1)
         private set
     var done: Boolean by mutableStateOf(false)
         private set
