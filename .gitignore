@@ -2,6 +2,9 @@
 .gradle/
 build/
 app/build/
+node_modules/
+api/.next/
+api/next-env.d.ts
 local.properties
 *.iml
 .idea/
@@ -13,6 +16,7 @@ local.properties
 # Secrets - never commit
 .env*
 !.env.example
+api/generated/
 *.jks
 *.keystore
 keystore.properties
