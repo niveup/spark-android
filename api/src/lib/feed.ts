@@ -161,8 +161,17 @@ export function rankFeed<T extends RankableItem>(
     if (item.topicTags.some((t) => likedTopics.has(t))) preferred.push(item);
     else explore.push(item);
   }
-  // ~20% exploration interleaved deterministically (rule 3).
+  // ~20% exploration interleaved deterministically (rule 3). Explore items
+  // are shuffled first: the DB returns publish order (oldest first), and
+  // without a shuffle the same oldest items would hold the top slots forever
+  // while freshly published items stay unreachable at the tail.
   const rand = mulberry32(hashSeed(seed));
+  for (let i = explore.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const t = explore[i];
+    explore[i] = explore[j];
+    explore[j] = t;
+  }
   const ordered = [...due];
   const exp: T[] = [];
   const rest: T[] = [];

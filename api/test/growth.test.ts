@@ -134,6 +134,10 @@ describe("growth builders", () => {
     );
     assert.equal(cards.length, 2);
     assert.ok(CardSchema.safeParse(cards[0]?.card).success);
+    const body = (cards[0]?.card as { bodyMd: string }).bodyMd;
+    assert.ok(body.startsWith('"'));
+    assert.ok(!body.startsWith('""')); // never double-wrapped
+    assert.ok(!body.endsWith('""'));
     const ref = (cards[0]?.card as { sourceRef: string }).sourceRef;
     assert.ok(ref.includes("PG #27889"));
     assert.ok(ref.includes("Meditations. iv."));
@@ -191,9 +195,32 @@ describe("openingExcerpt", () => {
       "AUTOBIOGRAPHY OF SOMEBODY WITH ILLUSTRATIONS AND A VERY LONG TITLE THAT PASSES EIGHTY CHARS FOR SURE\n\n" +
       "Real opening paragraph about life and thought which is long enough to be kept in the final excerpt because the hard engineering here demands real prose of this size.\n\n" +
       "Second paragraph also explains the book in plain English and carries enough plain words to be kept inside the opening-lines card excerpt in our library too.\n\n";
-    const excerpt = openingExcerpt(raw, 300);
-    assert.ok(excerpt?.startsWith("Real opening paragraph"));
-    assert.ok(excerpt?.includes("Second paragraph"));
-    assert.ok((excerpt?.length ?? 0) <= 300);
+    // Small cap: the boundary must be a completed sentence, not a fragment.
+    const tight = openingExcerpt(raw, 300);
+    assert.ok(tight?.endsWith("real prose of this size."));
+    // Larger cap: both paragraphs fit whole.
+    const roomy = openingExcerpt(raw, 430);
+    assert.ok(roomy?.startsWith("Real opening paragraph"));
+    assert.ok(roomy?.includes("Second paragraph also explains the book"));
+    assert.ok((roomy?.length ?? 0) <= 430);
+  });
+
+  it("strips `_` emphasis markers from Gutenberg text", () => {
+    const raw =
+      "Foreword poem line in italics _Mind is the Master power that moulds and makes, and Man is Mind, and evermore he takes the tool of thought_, then plain words follow to keep the block long enough for the excerpt rules in the pipeline to accept it as real prose content here.\n\n";
+    const excerpt = openingExcerpt(raw, 430);
+    assert.ok(!excerpt?.includes("_"));
+    assert.ok(excerpt?.includes("Mind is the Master power"));
+  });
+
+  it("ends at a sentence boundary when the cap truncates", () => {
+    let sentence = "";
+    for (let i = 0; i < 12; i++) {
+      sentence +=
+        "A complete sentence telling the story of this paragraph follows one inside another, sir. ";
+    }
+    const excerpt = openingExcerpt(`${sentence}\n\n`, 200);
+    assert.ok((excerpt?.length ?? 0) <= 200);
+    assert.ok(excerpt?.endsWith("sir.")); // not "...another, s"
   });
 });

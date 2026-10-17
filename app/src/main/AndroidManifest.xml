@@ -3,6 +3,12 @@
 
     <!-- Phase 4: API client needs network. No other permissions. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Phase 6: audiobook stream playback keeps running with the screen off.
+         The app streams by URL — nothing audio-shaped is stored on the device. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".SparkApp"
@@ -31,6 +37,17 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+        <!-- Phase 6: audiobook playback service. Not exported; Media3 connects
+             through a locally-created SessionToken. Lock-screen media controls
+             and the notification come from Media3's MediaSession defaults. -->
+        <service
+            android:name=".audio.AudioBookService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

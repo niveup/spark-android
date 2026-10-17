@@ -107,15 +107,20 @@ Swipe up = next card. No swipe-down-back beyond 1 (keep simple).
 
 ## 5. Feed card — audio
 
+Implemented in Phase 6 (inline mini player, Media3 service in background).
+
 ```
 ┌──────────────────────────┐
-│ [AUDIO]             7/20 │
+│ [AUDIO·Mindset]     7/20 │
 │ Chapter title            │
-│ LibriVox · 12:04         │  source + duration
+│ From: Book — Author      │  book link when the card has one
+│ Section 2 of the public- │  body from the pipeline
+│ domain LibriVox reading… │
 │ ┌──────────────────────┐ │
-│ │ ▶  ━━━━━●━━━  12:04  │ │  mini player → opens Player
+│ │ ▶ ━━━━━●━━━ 0:41 8:31│ │  inline stream player (play/pause+seek)
 │ └──────────────────────┘ │
-│ ──────────────────────── │
+│ Streams online — nothing │  caption; playing → "keeps running with the
+│ downloads to your phone  │  screen off, controls on the lock screen"
 │ ♡ Save  👍 👎  ⓘ         │
 └──────────────────────────┘
 ```
@@ -229,7 +234,11 @@ Swipe up = next card. No swipe-down-back beyond 1 (keep simple).
 └──────────────────────────┘
 ```
 
-## 13. Audiobook player (overlay from audio card)
+## 13. Audiobook player — full-screen overlay (future polish)
+
+Phase 6 implemented the essentials: inline mini player on the card +
+background playback with lock-screen/notification controls via the Media3
+`AudioBookService`. This richer in-app overlay remains as future polish.
 
 ```
 ┌──────────────────────────┐

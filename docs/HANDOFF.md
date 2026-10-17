@@ -44,8 +44,11 @@ VerticalPager snap cards per type, Save/Like/Listen/Why-this, 60fps on phone, sh
 ## PHASE 5b — Interactions + ranking + SRS + Saved/Stats
 Batched state sync with retry, session limit + You're-done + settings, server ranking v1 unit-tested, quiz SRS, Saved search, Stats.
 
-## PHASE 6 — Audio
-Media3 background + lock controls + resume + speed + sleep timer, TTS card queue to session limit, call/unplug handling, network-loss handling.
+## PHASE 3b — Real growth-content library loads [DONE Oct 2026]
+Pinned Gutenberg/LibriVox pairs in `api/prisma/data/growth-books.json` (cross-verified via LibriVox `url_text_source`). `ingest-growth.ts` loads Book rows + data-driven cards: LibriVox chapter audio (stream URLs only), Bartlett's 1905 quotes (PG #27889 parser), Wikipedia concept summaries (CC BY-SA), Gutenberg book-open "Why read" cards. 71 published items live on the dev DB. Owner review gated by `ingest:review` → `ingest:publish`.
+
+## PHASE 6 — Audio [DONE — verified on phone Oct 2026]
+Media3 1.11.1 background + lock controls implemented: `AudioBookService` (MediaSessionService), inline audiobook card player (play/pause/seek/progress), TTS hidden on real-audio cards. Phone-verified: stream plays, position ticks, media session PLAYING with buffer while app backgrounded 30s+, playback survives screen off, ColorOS shade + lock screen show SPARK media card with full controls. Feed exploration is shuffled (fresh items surface; verified audio card lands top-of-deck). Resume + speed + sleep timer remain (future polish, wireframes §13).
 
 ## PHASE 7 — Offline Room + sync
 Cache 50 items + saved, offline queue, idempotent sync, clear-cache, server-wins content / last-write-wins state.

@@ -70,6 +70,9 @@ export function openingExcerpt(bodyStart: string, maxChars = 430): string | null
   const blocks = bodyStart
     .split(/\n\s*\n/)
     .map((b) => b.replace(/\s*\n\s*/g, " ").trim())
+    // Gutenberg emphasis markers (e.g. `_Mind is the Master power..._`) are
+    // markup, not content — plain text must not show literal underscores.
+    .map((b) => b.replace(/_/g, ""))
     .map(stripMergedCaption)
     .filter((b) => {
       if (b.length < 140) return false;
@@ -102,7 +105,13 @@ export function openingExcerpt(bodyStart: string, maxChars = 430): string | null
   if (blocks.length === 0) return null;
   const text = `${blocks[0] ?? ""} ${blocks[1] ?? ""}`.trim();
   if (text.length < 100) return null;
-  return text.slice(0, maxChars);
+  const cut = text.slice(0, maxChars);
+  if (cut.length >= text.length) return cut;
+  // Cap fell mid-sentence: end at the last completed sentence instead of a
+  // truncated fragment like "... power of thought. I".
+  const end = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+  if (end > 100) return cut.slice(0, end + 1);
+  return cut;
 }
 
 export function bookIdeaCandidates(
@@ -143,6 +152,15 @@ export function quoteCandidates(
 ): GrowthCandidate[] {
   const out: GrowthCandidate[] = [];
   const perAuthor = new Map<string, number>();
+  // Bartlett's source lines already carry their own quotation marks in some
+  // editions; strip any edge quotes here so the card body wraps exactly once.
+  const cleanQuote = (raw: string) =>
+    raw
+      .trim()
+      .replace(/^["\u201c\u201d]+/, "")
+      .trim()
+      .replace(/["\u201c\u201d]+$/, "")
+      .trim();
   for (const q of quotes) {
     const target = targets.find((t) => q.header.toUpperCase().includes(t.match.toUpperCase()));
     if (target === undefined) continue;
@@ -154,7 +172,7 @@ export function quoteCandidates(
       card: {
         type: "quote",
         title: target.authorName.slice(0, 80),
-        bodyMd: `"${q.quote}"`.slice(0, 600),
+        bodyMd: `"${cleanQuote(q.quote)}"`.slice(0, 600),
         actionLine: target.actionLine,
         topicTags: target.topicTags.slice(0, 5),
         language: "en",

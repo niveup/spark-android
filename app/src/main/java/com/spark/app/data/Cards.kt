@@ -37,6 +37,8 @@ data class Card(
     val bookLine: String? = null,
     val quiz: QuizData? = null,
     val durationLabel: String? = null,
+    /** Stream URL for audiobook chapters (Phase 6) — plays via Media3. */
+    val audioUrl: String? = null,
     /** Server-side interaction state at load time (Phase 5b). */
     val saved: Boolean = false,
     val liked: Boolean? = null

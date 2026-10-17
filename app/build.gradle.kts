@@ -115,6 +115,10 @@ dependencies {
     implementation(libs.retrofit.serialization)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
+    // Phase 6 audiobook playback: background + lock-screen controls via a
+    // MediaSessionService. Streams only — no audio files are downloaded.
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
 
     testImplementation(libs.junit)
 }
