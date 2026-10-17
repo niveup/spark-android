@@ -14,11 +14,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.LocalTime
 
 @Composable
 fun HomeScreen(
@@ -35,7 +37,15 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Evening.", fontSize = 30.sp, fontWeight = FontWeight.Bold)
+        val greeting = remember {
+            when (LocalTime.now().hour) {
+                in 5..11 -> "Morning."
+                in 12..16 -> "Afternoon."
+                in 17..21 -> "Evening."
+                else -> "Late night."
+            }
+        }
+        Text(text = greeting, fontSize = 30.sp, fontWeight = FontWeight.Bold)
         Text(text = "Pick up where you left.", style = MaterialTheme.typography.bodyLarge)
         Spacer(modifier = Modifier.height(24.dp))
         Text(
