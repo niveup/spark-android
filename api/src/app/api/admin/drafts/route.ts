@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   const page = drafts.slice(offset, offset + limit);
   const nextOffset = offset + page.length;
   return NextResponse.json({
-    data: page.map(toFeedItem),
+    data: page.map((it) => toFeedItem(it)),
     nextCursor: nextOffset >= drafts.length ? null : encodeCursor(nextOffset),
   });
 }

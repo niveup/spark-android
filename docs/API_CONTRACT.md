@@ -37,6 +37,9 @@ FeedItem = {
   book: null | { id: string, title: string, author: string, coverUrl: string | null },
   sourceType: string, sourceRef: string, license: string,
   isAiGenerated: boolean, isGrounded: boolean,         // false,false never occurs
+  // per-device interaction state (additive v1.1, present on /feed and /items/saved):
+  saved: boolean, liked: boolean | null,               // null = no rating
+  dismissed: boolean,
   publishedAt: string
 }
 ItemState = {

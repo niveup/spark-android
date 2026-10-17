@@ -132,8 +132,16 @@ describe("item state", () => {
     assert.equal(s2.dwellMs, 5000); // not doubled
 
     const saved = await api("/items/saved?q=&limit=50", { headers: authHeaders() });
-    const ids = ((saved.json as { data: { id: string }[] }).data).map((i) => i.id);
-    assert.ok(ids.includes(itemId));
+    const savedItems = (saved.json as { data: { id: string; saved: boolean }[] }).data;
+    assert.ok(savedItems.some((i) => i.id === itemId));
+    assert.equal(savedItems.find((i) => i.id === itemId)?.saved, true); // saved list carries state
+
+    // /feed carries per-device state too (5b): a saved item comes back marked.
+    const refeed = await api("/feed?limit=50&excludeSeen=false", { headers: authHeaders() });
+    const fedItem = (refeed.json as { data: { id: string; saved: boolean }[] }).data.find(
+      (i) => i.id === itemId,
+    );
+    assert.equal(fedItem?.saved, true);
 
     const u3 = await api(`/items/${itemId}/state`, {
       method: "POST",

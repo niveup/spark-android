@@ -20,12 +20,17 @@ export type ApiFeedItem = {
   license: string;
   isAiGenerated: boolean;
   isGrounded: boolean;
+  // Per-device interaction state (additive v1.1): the app renders ♥/👍 from the
+  // server on a fresh session instead of guessing.
+  saved: boolean;
+  liked: boolean | null; // null = no rating
+  dismissed: boolean;
   publishedAt: string;
 };
 
 export type ItemWithBook = DbItem & { book: Book | null };
 
-export function toFeedItem(item: ItemWithBook): ApiFeedItem {
+export function toFeedItem(item: ItemWithBook, state?: DbState | null): ApiFeedItem {
   const quizRaw = item.quizJson as {
     options?: string[];
     correctIndex?: number;
@@ -59,6 +64,9 @@ export function toFeedItem(item: ItemWithBook): ApiFeedItem {
     license: item.license,
     isAiGenerated: item.isAiGenerated,
     isGrounded: item.isGrounded,
+    saved: state?.saved ?? false,
+    liked: state?.liked ?? null,
+    dismissed: state?.dismissed ?? false,
     publishedAt: (item.publishedAt ?? item.createdAt).toISOString(),
   };
 }
