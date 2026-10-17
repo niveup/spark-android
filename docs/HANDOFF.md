@@ -27,7 +27,13 @@ item_state, feed_sessions, device_tokens, ingest_jobs), prod backup before any p
 implement /api/mobile/v1 with zod + rate limit, seed 30 items DEV only, tests auth/pagination/state.
 
 ## PHASE 3 — Content pipeline (worker)
-Adapters Gutendex/OpenLibrary/LibriVox/Wiki/manual, zod card schema (title<=80, body<=600), injection guards, grounded flags, dedupe content_hash, daily AI cap, ingest_jobs log, draft preview/publish page. Seed 5 books x10 cards + 20 GATE cards. No copyrighted scraping.
+Adapters Gutendex/OpenLibrary/LibriVox/Wiki/manual, zod card schema (title<=80, body<=600), injection guards, grounded flags, dedupe content_hash, daily AI cap, ingest_jobs log, draft preview/publish page. Growth bootstrap deck. No copyrighted scraping.
+
+## PHASE 3b — Real growth-content library loads [CURRENT]
+Pin verified Gutenberg/LibriVox IDs in api/prisma/data/growth-books.json; resolve script cross-checks LibriVox `url_text_source`.
+New adapters: LibriVox by title + `librivoxSections` (extended=1 MP3s+playtime), Bartlett's quote extraction (PG #27889), wikiSummary→concept cards.
+Ingest script creates Book rows + data-driven audio/quote/concept/book_idea cards (no hardcoded deck, no big file storage — text fetched transiently, audio streamed by URL). Publish after owner check.
+
 
 ## PHASE 4 — App skeleton: nav, auth, API client
 Navigation Compose, Retrofit+OkHttp client from contract, login passcode->EncryptedSharedPreferences/Keystore, auto-login/logout, BuildConfig dev/prod URLs, error boundary, offline banner, loading/empty states, tests.

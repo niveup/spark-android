@@ -20,8 +20,8 @@ The feed is the Reels tab, never the whole app.
 │ Pick up where you left.  │
 │                          │
 │ TODAY                    │
-│ ● Thermo — 5 due         │  weak topics first
-│ ● SOM — 3 due            │
+│ ● Habits — 5 due         │  weak topics first
+│ ● Money — 2 due          │
 │                          │
 │ ┌──────────────────────┐ │
 │ │  Open Reels          │ │  explicit choice to scroll
@@ -72,14 +72,14 @@ Swipe up = next card. No swipe-down-back beyond 1 (keep simple).
 └──────────────────────────┘
 ```
 
-## 3. Feed card — concept (GATE)
+## 3. Feed card — concept (growth)
 
 ```
 ┌──────────────────────────┐
-│ [CONCEPT·Thermo]    5/20 │  chip shows topic tag
-│ Term / Formula           │
+│ [CONCEPT·Focus]     5/20 │  chip shows topic tag
+│ Term / Idea              │
 │ ┌──────────────────────┐ │
-│ │ diagram / formula box│ │
+│ │  key lines / picture │ │
 │ └──────────────────────┘ │
 │ 3-4 line explanation     │
 │ ▸ Try this today: …      │
@@ -143,7 +143,7 @@ Swipe up = next card. No swipe-down-back beyond 1 (keep simple).
 │ Source: Gutenberg …      │  source_ref + license
 │ [Grounded ✓] /           │
 │ [AI-written, unverified] │  exactly one label
-│ Topic: Thermo (saved 5×) │  ranking reason, plain words
+│ Topic: Focus (saved 5×)  │  ranking reason, plain words
 │        [ Close ]         │
 └──────────────────────────┘
 ```
