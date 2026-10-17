@@ -27,7 +27,7 @@ FeedItem = {
   bodyMd: string,                                      // ≤ 600 chars, plain markdown subset
   actionLine: string,                                  // may be ""
   topicTags: string[], language: string,               // e.g. "en"
-  estSeconds: number,                                   // 30–60 typical
+  estSeconds: number,                                   // reading cards 10–600; audio cards up to 7200 (true listen length)
   progressMs: number | null,                            // audiobook resume, Phase 6+
   quiz: null | { options: string[],                     // quiz cards only (type=quiz),
                  correctIndex: number,                  // else null; options 2–4,

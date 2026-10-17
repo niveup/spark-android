@@ -1,0 +1,85 @@
+{
+  "comment": "Growth library starter set. Ids below were verified live (LibriVox url_text_source cross-link) during Phase 3b; null ids get resolved by prisma/resolve-books.ts before ingest. topicTags use the AGENTS.md 1.7 taxonomy.",
+  "entries": [
+    {
+      "slug": "as-a-man-thinketh",
+      "title": "As a Man Thinketh",
+      "author": "James Allen",
+      "year": 1903,
+      "topicTags": ["mindset", "habits"],
+      "actionIdea": "Try this today: pick the one thought you will refuse to repeat this week.",
+      "gutenbergId": 4507,
+      "librivoxId": "1968"
+    },
+    {
+      "slug": "how-to-live-on-24-hours",
+      "title": "How to Live on Twenty-Four Hours a Day",
+      "author": "Arnold Bennett",
+      "year": 1908,
+      "topicTags": ["time", "focus"],
+      "actionIdea": "Try this today: give your first free evening hour one real project.",
+      "gutenbergId": 2274,
+      "librivoxId": "1102"
+    },
+    {
+      "slug": "franklin-autobiography",
+      "title": "The Autobiography of Benjamin Franklin",
+      "author": "Benjamin Franklin",
+      "year": 1791,
+      "topicTags": ["habits", "communication"],
+      "actionIdea": "Try this today: track one virtue of yours on paper, Franklin style.",
+      "gutenbergId": 20203,
+      "librivoxId": "1143"
+    },
+    {
+      "slug": "meditations",
+      "title": "Meditations",
+      "author": "Marcus Aurelius",
+      "year": 180,
+      "topicTags": ["mindset", "focus"],
+      "actionIdea": "Try this today: name one outside event you will stop arguing with.",
+      "gutenbergId": 2680,
+      "librivoxId": "1095"
+    },
+    {
+      "slug": "self-help",
+      "title": "Self Help; with Illustrations of Conduct and Perseverance",
+      "author": "Samuel Smiles",
+      "year": 1859,
+      "topicTags": ["habits", "mindset"],
+      "actionIdea": "Try this today: list one obstacle you can solve with work, not luck.",
+      "gutenbergId": 935,
+      "librivoxId": "15468"
+    },
+    {
+      "slug": "acres-of-diamonds",
+      "title": "Acres of Diamonds",
+      "author": "Russell Conwell",
+      "year": 1915,
+      "topicTags": ["mindset", "money"],
+      "actionIdea": "Try this today: name one opportunity already in front of you.",
+      "gutenbergId": 34258,
+      "librivoxId": "3700"
+    },
+    {
+      "slug": "science-of-getting-rich",
+      "title": "Science of Getting Rich",
+      "author": "Wallace D. Wattles",
+      "year": 1910,
+      "topicTags": ["money", "mindset"],
+      "actionIdea": "Try this today: write where you want your earnings to go this month.",
+      "gutenbergId": 59844,
+      "librivoxId": "3582"
+    },
+    {
+      "slug": "enchiridion",
+      "title": "Enchiridion of Epictetus",
+      "author": "Epictetus",
+      "year": 135,
+      "topicTags": ["mindset", "focus"],
+      "actionIdea": "Try this today: sort one worry into 'mine to change' or 'not mine'.",
+      "gutenbergId": 45109,
+      "librivoxId": "518"
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "comment": "Growth-content config for ingest-growth.ts. Quote targets are Bartlett's (1905, PG #27889) author-header substrings; concept targets are Wikipedia REST summary pages. Tag taxonomy per AGENTS.md 1.7.",
+  "quotes": [
+    {
+      "match": "AURELIUS",
+      "authorName": "Marcus Aurelius",
+      "topicTags": ["mindset"],
+      "actionLine": "Try this today: name one outside event you will stop arguing with."
+    },
+    {
+      "match": "EPICTETUS",
+      "authorName": "Epictetus",
+      "topicTags": ["mindset"],
+      "actionLine": "Try this today: sort one worry into 'mine to change' or 'not mine'."
+    },
+    {
+      "match": "SENECA",
+      "authorName": "Seneca",
+      "topicTags": ["mindset"],
+      "actionLine": "Try this today: write the worst case down instead of rehearsing it."
+    },
+    {
+      "match": "FRANKLIN",
+      "authorName": "Benjamin Franklin",
+      "topicTags": ["habits"],
+      "actionLine": "Try this today: copy Franklin's one-virtue-a-week tracking page."
+    },
+    {
+      "match": "THOREAU",
+      "authorName": "Henry David Thoreau",
+      "topicTags": ["focus"],
+      "actionLine": "Try this today: spend one hour on one task with no screen nearby."
+    },
+    {
+      "match": "EMERSON",
+      "authorName": "Ralph Waldo Emerson",
+      "topicTags": ["mindset"],
+      "actionLine": "Try this today: trust one of your own ideas before asking for applause."
+    }
+  ],
+  "concepts": [
+    {
+      "wiki": "Habit",
+      "topicTags": ["habits"],
+      "actionLine": "Try this today: make one good habit 2 minutes easier to start."
+    },
+    {
+      "wiki": "Procrastination",
+      "topicTags": ["focus"],
+      "actionLine": "Try this today: start the task for 10 minutes, timer on."
+    },
+    {
+      "wiki": "Compound interest",
+      "topicTags": ["money"],
+      "actionLine": "Try this today: compute one year of growth on your savings at 8%."
+    },
+    {
+      "wiki": "Attention management",
+      "topicTags": ["focus"],
+      "actionLine": "Try this today: batch one 50-minute no-phone work block."
+    },
+    {
+      "wiki": "Deliberate practice",
+      "topicTags": ["learning"],
+      "actionLine": "Try this today: drill your weakest sub-skill with instant feedback."
+    },
+    {
+      "wiki": "Spaced repetition",
+      "topicTags": ["learning"],
+      "actionLine": "Try this today: re-read one saved card from three days ago."
+    },
+    {
+      "wiki": "Self-control",
+      "topicTags": ["habits"],
+      "actionLine": "Try this today: pre-decide one consistent response to a trigger."
+    },
+    {
+      "wiki": "Time management",
+      "topicTags": ["time"],
+      "actionLine": "Try this today: timebox tomorrow's hardest task for 25 minutes."
+    },
+    {
+      "wiki": "Active listening",
+      "topicTags": ["communication"],
+      "actionLine": "Try this today: repeat back one speaker's point before replying."
+    },
+    {
+      "wiki": "Sleep hygiene",
+      "topicTags": ["health"],
+      "actionLine": "Try this today: park your phone 30 minutes before bed."
+    },
+    {
+      "wiki": "Personal finance",
+      "topicTags": ["money"],
+      "actionLine": "Try this today: set up one small automatic savings transfer."
+    },
+    {
+      "wiki": "Delayed gratification",
+      "topicTags": ["habits"],
+      "actionLine": "Try this today: wait 10 minutes before one small impulse buy."
+    }
+  ]
+}

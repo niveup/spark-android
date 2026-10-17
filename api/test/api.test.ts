@@ -12,7 +12,15 @@ const PASSCODE = process.env.SPARK_PASSCODE ?? "dev-only-change-me";
 let token = "";
 
 async function api(path: string, init?: RequestInit) {
-  const res = await fetch(`${BASE}${path}`, init);
+  // Unique spoofed IP per test process so the dev server's in-memory rate
+  // limiter (5 logins/min per IP) never carries state across test runs.
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
+    headers: {
+      "x-forwarded-for": `test-run-${process.pid}`,
+      ...(init?.headers ?? {}),
+    },
+  });
   const json = (await res.json()) as Record<string, unknown>;
   return { status: res.status, json };
 }
