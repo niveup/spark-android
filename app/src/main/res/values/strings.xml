@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_bored_short">I\'m bored</string>
+    <string name="shortcut_bored_long">Open the SPARK feed — I\'m bored</string>
+</resources>

@@ -30,13 +30,15 @@ private object Routes {
     const val MAIN = "main"
 }
 
-// Phase 4 skeleton: login gate (Navigation Compose) -> tabbed main.
-// Feed still shows local cards; server data plugs in during Phase 5.
+// Login gate (Navigation Compose) -> tabbed main.
+// Feed is served by the API since Phase 5a (FeedViewModel in the Reels tab).
 @Composable
 fun AppRoot(
     api: SparkApi,
     tokens: TokenStore,
     onCloseApp: () -> Unit,
+    startOnReels: Boolean = false,
+    onStartOnReelsHandled: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val vm: AuthViewModel = viewModel(factory = object : ViewModelProvider.Factory {
@@ -77,7 +79,14 @@ fun AppRoot(
                 LoginScreen(state = auth, onLogin = vm::login)
             }
             composable(Routes.MAIN) {
-                AppNav(onCloseApp = onCloseApp, onLogout = { vm.logout() })
+                AppNav(
+                    api = api,
+                    tokens = tokens,
+                    startOnReels = startOnReels,
+                    onStartOnReelsHandled = onStartOnReelsHandled,
+                    onCloseApp = onCloseApp,
+                    onLogout = { vm.logout() }
+                )
             }
         }
     }

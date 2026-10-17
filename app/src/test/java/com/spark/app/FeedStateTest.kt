@@ -29,18 +29,18 @@ class FeedStateTest {
     @Test
     fun `save toggles on and off`() {
         val state = FeedState()
-        state.toggleSave(3)
-        assertTrue(state.saved.contains(3))
-        state.toggleSave(3)
-        assertFalse(state.saved.contains(3))
+        state.toggleSave("cuid_3")
+        assertTrue(state.saved.contains("cuid_3"))
+        state.toggleSave("cuid_3")
+        assertFalse(state.saved.contains("cuid_3"))
     }
 
     @Test
     fun `like and dislike are mutually exclusive`() {
         val state = FeedState()
-        state.toggleLike(5)
-        state.toggleDislike(5)
-        assertFalse(state.liked.contains(5))
-        assertTrue(state.disliked.contains(5))
+        state.toggleLike("cuid_5")
+        state.toggleDislike("cuid_5")
+        assertFalse(state.liked.contains("cuid_5"))
+        assertTrue(state.disliked.contains("cuid_5"))
     }
 }
