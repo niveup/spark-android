@@ -25,6 +25,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.spark.app.audio.AudioPlayerBox
 import com.spark.app.audio.TtsHelper
 import com.spark.app.data.SettingsStore
 import com.spark.app.data.TokenStore
@@ -99,6 +100,13 @@ fun AppNav(
     val tts = remember { TtsHelper(context.applicationContext) }
     DisposableEffect(Unit) {
         onDispose { tts.shutdown() }
+    }
+    // Phase 6: one audiobook player for the whole app — audio keeps playing
+    // when you leave the Reels tab or the app entirely (service + lock screen).
+    val player = remember { AudioPlayerBox(context.applicationContext) }
+    DisposableEffect(Unit) {
+        player.start()
+        onDispose { player.release() }
     }
     LaunchedEffect(tab) {
         if (tab != Tab.REELS) {
@@ -182,6 +190,7 @@ fun AppNav(
                         startedAtElapsedMs = f.startedAtElapsedMs,
                         tts = tts,
                         sync = sync,
+                        player = player,
                         onSessionFinished = { reason ->
                             feedVm.closeSession(reason, state.seenCount)
                             sync.flush()

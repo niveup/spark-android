@@ -15,6 +15,8 @@ okhttp = "4.12.0"
 serialization = "1.11.0"
 navigation = "2.10.2"
 securityCrypto = "1.1.0"
+# Media3 verified live against Google Maven (Oct 2026): 1.11.1 is the latest stable.
+media3 = "1.11.1"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -34,6 +36,8 @@ retrofit-serialization = { group = "com.squareup.retrofit2", name = "converter-k
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
+media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

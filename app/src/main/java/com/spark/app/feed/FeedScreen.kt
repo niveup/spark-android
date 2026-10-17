@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.spark.app.audio.AudioPlayerBox
 import com.spark.app.audio.TtsHelper
 import com.spark.app.data.Card
 import com.spark.app.sync.InteractionSync
@@ -35,6 +36,7 @@ fun FeedScreen(
     startedAtElapsedMs: Long,
     tts: TtsHelper,
     sync: InteractionSync,
+    player: AudioPlayerBox?,
     onSessionFinished: (FinishReason) -> Unit,
     onCloseApp: () -> Unit
 ) {
@@ -94,6 +96,7 @@ fun FeedScreen(
                     tts = tts,
                     state = state,
                     sync = sync,
+                    player = player,
                     showFinish = page == cards.lastIndex,
                     onFinish = {
                         recordCurrentDwell(lastShown, sync)

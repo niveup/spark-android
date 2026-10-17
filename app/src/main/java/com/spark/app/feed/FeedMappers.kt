@@ -50,6 +50,7 @@ fun feedItemToCard(item: FeedItemDto): Card? {
             QuizData(options = q.options, correctIndex = q.correctIndex, explanation = q.explanation)
         },
         durationLabel = durationLabelOf(item.durationMs),
+        audioUrl = item.audioUrl,
         saved = item.saved,
         liked = item.liked
     )

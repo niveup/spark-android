@@ -28,7 +28,8 @@ class FeedMappersTest {
         isGrounded: Boolean = false,
         quiz: QuizDto? = null,
         book: BookRef? = null,
-        durationMs: Long? = null
+        durationMs: Long? = null,
+        audioUrl: String? = null
     ) = FeedItemDto(
         id = id,
         type = type,
@@ -42,7 +43,8 @@ class FeedMappersTest {
         isGrounded = isGrounded,
         quiz = quiz,
         book = book,
-        durationMs = durationMs
+        durationMs = durationMs,
+        audioUrl = audioUrl
     )
 
     @Test
@@ -126,5 +128,20 @@ class FeedMappersTest {
         assertEquals(listOf("A", "B"), card?.quiz?.options)
         assertEquals(1, card?.quiz?.correctIndex)
         assertNull(feedItemToCard(item(type = "quote"))?.quiz)
+    }
+
+    @Test
+    fun `audio url and duration pass through for audiobook cards`() {
+        val card = feedItemToCard(
+            item(
+                type = "audio",
+                title = "As a Man Thinketh — Thought and Character",
+                durationMs = 311_000,
+                audioUrl = "https://archive.org/download/a.mp3"
+            )
+        )
+        assertEquals("5:11", card?.durationLabel)
+        assertEquals("https://archive.org/download/a.mp3", card?.audioUrl)
+        assertNull(feedItemToCard(item(type = "quote"))?.audioUrl)
     }
 }

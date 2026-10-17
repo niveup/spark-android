@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,7 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spark.app.audio.AudioPlayerBox
+import com.spark.app.audio.AudioUi
 import com.spark.app.audio.TtsHelper
+import com.spark.app.audio.formatMinSec
 import com.spark.app.data.Card
 import com.spark.app.data.CardType
 import com.spark.app.sync.InteractionSync
@@ -38,6 +45,7 @@ fun CardView(
     tts: TtsHelper,
     state: FeedState,
     sync: InteractionSync,
+    player: AudioPlayerBox?,
     showFinish: Boolean,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier
@@ -77,6 +85,7 @@ fun CardView(
                         card = card,
                         onAnswered = { correct -> sync.record(StateEvents.quiz(card.id, correct)) }
                     )
+                    CardType.AUDIO -> AudioBody(card, player)
                     else -> StandardBody(card)
                 }
             }
@@ -126,8 +135,10 @@ fun CardView(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TextButton(onClick = { tts.speak("${card.title}. ${card.body}") }) {
-                    Text("🔊 Listen")
+                if (card.audioUrl == null) {
+                    TextButton(onClick = { tts.speak("${card.title}. ${card.body}") }) {
+                        Text("🔊 Listen")
+                    }
                 }
                 TextButton(onClick = { showWhy = true }) {
                     Text("ⓘ Why this?")
@@ -180,6 +191,104 @@ private fun StandardBody(card: Card) {
             style = MaterialTheme.typography.bodyMedium
         )
     }
+}
+
+/** Audiobook chapter card body: stream player (Phase 6). */
+@Composable
+private fun AudioBody(card: Card, player: AudioPlayerBox?) {
+    Text(text = card.title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    if (card.bookLine != null) {
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "From: ${card.bookLine}",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+    Spacer(modifier = Modifier.height(12.dp))
+    Text(text = card.body, fontSize = 18.sp, lineHeight = 26.sp)
+    Spacer(modifier = Modifier.height(20.dp))
+    val url = card.audioUrl
+    if (url == null) {
+        Text("Audio link missing on this card.")
+        return
+    }
+    if (player == null) {
+        Text("Player not available right now.")
+        return
+    }
+    val ui by player.state.collectAsStateWithLifecycle()
+    val isThis = ui.url == url
+    val playing = isThis && ui.playing
+    val duration = if (isThis && ui.durationMs > 0) ui.durationMs
+        else (card.durationLabel?.let { parseMinSecPlusMs(it) } ?: 0L)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        FilledIconButton(
+            onClick = {
+                if (isThis) {
+                    player.toggle()
+                } else {
+                    player.playUrl(url, card.title)
+                }
+            }
+        ) {
+            Text(text = if (playing) "⏸" else "▶", fontSize = 20.sp)
+        }
+        if (duration > 0) {
+            Slider(
+                value = (ui.positionMs.takeIf { isThis } ?: 0).toFloat().coerceIn(0f, duration.toFloat()),
+                onValueChange = { player.seekTo(it.toLong()) },
+                valueRange = 0f..duration.toFloat(),
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            LinearProgressIndicator(
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+    Spacer(modifier = Modifier.height(4.dp))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = formatMinSec(ui.positionMs.takeIf { isThis } ?: 0),
+            style = MaterialTheme.typography.labelMedium
+        )
+        Text(
+            text = if (duration > 0) formatMinSec(duration) else ("length " + (card.durationLabel ?: "…")),
+            style = MaterialTheme.typography.labelMedium
+        )
+    }
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = if (playing) "Playing — keeps running with the screen off, controls on the lock screen."
+        else "Streams online — nothing downloads to your phone.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    if (isThis && ui.failed) {
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = "Couldn't start this chapter — check the USB tunnel / network, then tap again.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error
+        )
+    }
+}
+
+/** Fallback duration parse of the server's "m:ss" label (no regex needed). */
+private fun parseMinSecPlusMs(label: String): Long {
+    val parts = label.split(":")
+    val minutes = parts.getOrNull(parts.lastIndex - 1)?.toLongOrNull() ?: return 0
+    val seconds = parts.lastOrNull()?.toLongOrNull() ?: return 0
+    return (minutes * 60 + seconds) * 1000
 }
 
 @Composable
