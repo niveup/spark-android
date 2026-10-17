@@ -299,7 +299,9 @@ private fun QuoteBody(card: Card) {
     ) {
         Text(text = card.title, style = MaterialTheme.typography.labelLarge)
         Spacer(modifier = Modifier.height(24.dp))
-        Text(text = "\"${card.body}\"", fontSize = 26.sp, lineHeight = 34.sp)
+        // The server body usually carries its own quotation marks already —
+        // strip edge quotes before adding ours so the card never shows two.
+        Text(text = "\"${card.body.trim('"', '“', '”')}\"", fontSize = 26.sp, lineHeight = 34.sp)
     }
 }
 
