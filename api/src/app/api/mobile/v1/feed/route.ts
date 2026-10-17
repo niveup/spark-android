@@ -62,7 +62,7 @@ export async function GET(req: Request) {
   const nextOffset = offset + page.length;
   // Contract paged shape: { data, nextCursor } at top level (not nested).
   return NextResponse.json({
-    data: page.map(toFeedItem),
+    data: page.map((it) => toFeedItem(it, statesById.get(it.id))),
     nextCursor: nextOffset >= ranked.length ? null : encodeCursor(nextOffset),
   });
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.spark.app.data.TokenStore
 import com.spark.app.data.remote.buildSparkApi
 import com.spark.app.feed.DoneScreen
+import com.spark.app.feed.FinishReason
 import com.spark.app.home.AppRoot
 import com.spark.app.ui.theme.SparkTheme
 
@@ -64,6 +65,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DoneScreenPreview() {
     SparkTheme {
-        DoneScreen(seenCount = 20, savedCards = emptyList(), onCloseApp = {})
+        DoneScreen(
+            reason = FinishReason.CARD_LIMIT,
+            seenCount = 20,
+            savedCards = emptyList(),
+            onCloseApp = {}
+        )
     }
 }

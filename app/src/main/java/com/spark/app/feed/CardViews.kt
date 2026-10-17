@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.sp
 import com.spark.app.audio.TtsHelper
 import com.spark.app.data.Card
 import com.spark.app.data.CardType
+import com.spark.app.sync.InteractionSync
+import com.spark.app.sync.StateEvents
 
 @Composable
 fun CardView(
@@ -35,7 +37,9 @@ fun CardView(
     counter: String,
     tts: TtsHelper,
     state: FeedState,
+    sync: InteractionSync,
     showFinish: Boolean,
+    onFinish: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showWhy by remember { mutableStateOf(false) }
@@ -69,7 +73,10 @@ fun CardView(
             key(card.id) {
                 when (card.type) {
                     CardType.QUOTE -> QuoteBody(card)
-                    CardType.QUIZ -> QuizBody(card)
+                    CardType.QUIZ -> QuizBody(
+                        card = card,
+                        onAnswered = { correct -> sync.record(StateEvents.quiz(card.id, correct)) }
+                    )
                     else -> StandardBody(card)
                 }
             }
@@ -83,7 +90,7 @@ fun CardView(
             }
             if (showFinish) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Button(onClick = { state.finish() }, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = onFinish, modifier = Modifier.fillMaxWidth()) {
                     Text("Finish session")
                 }
             }
@@ -93,13 +100,25 @@ fun CardView(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TextButton(onClick = { state.toggleSave(card.id) }) {
+                TextButton(onClick = {
+                    val nowSaved = !state.saved.contains(card.id)
+                    state.toggleSave(card.id)
+                    sync.record(StateEvents.saved(card.id, nowSaved))
+                }) {
                     Text(if (state.saved.contains(card.id)) "♥ Saved" else "♡ Save")
                 }
-                TextButton(onClick = { state.toggleLike(card.id) }) {
+                TextButton(onClick = {
+                    val wasLiked = state.liked.contains(card.id)
+                    state.toggleLike(card.id)
+                    sync.record(StateEvents.rating(card.id, if (wasLiked) null else true))
+                }) {
                     Text(if (state.liked.contains(card.id)) "👍!" else "👍")
                 }
-                TextButton(onClick = { state.toggleDislike(card.id) }) {
+                TextButton(onClick = {
+                    val wasDisliked = state.disliked.contains(card.id)
+                    state.toggleDislike(card.id)
+                    sync.record(StateEvents.rating(card.id, if (wasDisliked) null else false))
+                }) {
                     Text(if (state.disliked.contains(card.id)) "👎!" else "👎")
                 }
             }
@@ -176,7 +195,7 @@ private fun QuoteBody(card: Card) {
 }
 
 @Composable
-private fun QuizBody(card: Card) {
+private fun QuizBody(card: Card, onAnswered: (Boolean) -> Unit) {
     val quiz = card.quiz
     Text(text = card.title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
     Spacer(modifier = Modifier.height(12.dp))
@@ -190,7 +209,12 @@ private fun QuizBody(card: Card) {
     quiz.options.forEachIndexed { index, option ->
         val label = ('A' + index).toString()
         OutlinedButton(
-            onClick = { if (selected == null) selected = index },
+            onClick = {
+                if (selected == null) {
+                    selected = index
+                    onAnswered(index == quiz.correctIndex) // feeds the SRS scheduler
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             val mark = when {

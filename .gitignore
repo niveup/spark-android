@@ -5,6 +5,7 @@ app/build/
 node_modules/
 api/.next/
 api/next-env.d.ts
+api/*.tsbuildinfo
 local.properties
 *.iml
 .idea/

@@ -26,6 +26,8 @@ import java.time.LocalTime
 fun HomeScreen(
     seenCount: Int,
     savedCount: Int,
+    cardLimit: Int,
+    minuteLimit: Int,
     onOpenReels: () -> Unit,
     onOpenSaved: () -> Unit,
     modifier: Modifier = Modifier
@@ -54,8 +56,8 @@ fun HomeScreen(
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(8.dp))
-        Text("● Thermo — 5 due")
-        Text("● SOM — 3 due")
+        Text("● $cardLimit cards per session")
+        Text("● $minuteLimit minutes per session")
         Spacer(modifier = Modifier.height(24.dp))
         Button(onClick = onOpenReels, modifier = Modifier.fillMaxWidth()) {
             Text("Open Reels")

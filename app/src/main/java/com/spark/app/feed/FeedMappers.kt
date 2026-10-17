@@ -49,7 +49,9 @@ fun feedItemToCard(item: FeedItemDto): Card? {
         quiz = item.quiz?.let { q ->
             QuizData(options = q.options, correctIndex = q.correctIndex, explanation = q.explanation)
         },
-        durationLabel = durationLabelOf(item.durationMs)
+        durationLabel = durationLabelOf(item.durationMs),
+        saved = item.saved,
+        liked = item.liked
     )
 }
 

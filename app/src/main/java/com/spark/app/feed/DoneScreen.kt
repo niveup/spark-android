@@ -27,6 +27,7 @@ import com.spark.app.data.Card
 
 @Composable
 fun DoneScreen(
+    reason: FinishReason?,
     seenCount: Int,
     savedCards: List<Card>,
     onCloseApp: () -> Unit,
@@ -43,6 +44,15 @@ fun DoneScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(text = "You're done.", fontSize = 30.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = when (reason) {
+                FinishReason.CARD_LIMIT -> "You hit your card limit for this session."
+                FinishReason.TIME_LIMIT -> "Time's up for this session."
+                else -> "You reached the end of the stack."
+            },
+            style = MaterialTheme.typography.bodyMedium
+        )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "$seenCount cards · ${savedCards.size} saved",

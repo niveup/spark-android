@@ -25,20 +25,22 @@ export async function GET(req: Request) {
     orderBy: { updatedAt: "desc" },
     include: { item: { include: { book: true } } },
   });
-  let items = states.map((s) => s.item).filter((i) => i.status === "published");
+  let rows = states
+    .filter((s) => s.item.status === "published")
+    .map((s) => ({ item: s.item, state: s }));
   if (q.q) {
     const needle = q.q.toLowerCase();
-    items = items.filter(
-      (i) =>
-        i.title.toLowerCase().includes(needle) ||
-        i.bodyMd.toLowerCase().includes(needle),
+    rows = rows.filter(
+      ({ item }) =>
+        item.title.toLowerCase().includes(needle) ||
+        item.bodyMd.toLowerCase().includes(needle),
     );
   }
   const offset = decodeCursor(q.cursor ?? null);
-  const page = items.slice(offset, offset + q.limit);
+  const page = rows.slice(offset, offset + q.limit);
   const nextOffset = offset + page.length;
   return NextResponse.json({
-    data: page.map(toFeedItem),
-    nextCursor: nextOffset >= items.length ? null : encodeCursor(nextOffset),
+    data: page.map(({ item, state }) => toFeedItem(item, state)),
+    nextCursor: nextOffset >= rows.length ? null : encodeCursor(nextOffset),
   });
 }

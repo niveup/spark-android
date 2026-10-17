@@ -132,8 +132,16 @@ describe("item state", () => {
     assert.equal(s2.dwellMs, 5000); // not doubled
 
     const saved = await api("/items/saved?q=&limit=50", { headers: authHeaders() });
-    const ids = ((saved.json as { data: { id: string }[] }).data).map((i) => i.id);
-    assert.ok(ids.includes(itemId));
+    const savedItems = (saved.json as { data: { id: string; saved: boolean }[] }).data;
+    assert.ok(savedItems.some((i) => i.id === itemId));
+    assert.equal(savedItems.find((i) => i.id === itemId)?.saved, true); // saved list carries state
+
+    // /feed carries per-device state too (5b): a saved item comes back marked.
+    const refeed = await api("/feed?limit=50&excludeSeen=false", { headers: authHeaders() });
+    const fedItem = (refeed.json as { data: { id: string; saved: boolean }[] }).data.find(
+      (i) => i.id === itemId,
+    );
+    assert.equal(fedItem?.saved, true);
 
     const u3 = await api(`/items/${itemId}/state`, {
       method: "POST",
@@ -160,5 +168,62 @@ describe("item state", () => {
       body: JSON.stringify({ seen: true }),
     });
     assert.equal(status, 404);
+  });
+});
+
+describe("batch state", () => {
+  it("uploads a batch and replays it without double-counting dwell", async () => {
+    const feed = await api("/feed?limit=2", { headers: authHeaders() });
+    const items = (feed.json as { data: { id: string }[] }).data;
+    const item0 = items[0]!;
+    const item1 = items[1]!;
+    const batch = {
+      updates: [
+        { itemId: item0.id, clientEventId: randomUUID(), seen: true, dwellMs: 3000 },
+        { itemId: item1.id, clientEventId: randomUUID(), seen: true, dwellMs: 1000 },
+      ],
+    };
+    const r1 = await api("/items/state", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(batch),
+    });
+    assert.equal(r1.status, 200);
+    const d1 = r1.json.data as {
+      states: { itemId: string; dwellMs: number }[];
+      rejected: string[];
+    };
+    assert.equal(d1.rejected.length, 0);
+    assert.equal(d1.states.length, 2);
+    const dwellBefore = new Map(d1.states.map((s) => [s.itemId, s.dwellMs]));
+
+    const r2 = await api("/items/state", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(batch), // exact replay
+    });
+    assert.equal(r2.status, 200);
+    const d2 = r2.json.data as { states: { itemId: string; dwellMs: number }[] };
+    for (const s of d2.states) {
+      assert.equal(s.dwellMs, dwellBefore.get(s.itemId)); // unchanged by replay
+    }
+  });
+});
+
+describe("stats", () => {
+  it("returns personal totals", async () => {
+    const { status, json } = await api("/stats", { headers: authHeaders() });
+    assert.equal(status, 200);
+    const d = json.data as Record<string, number>;
+    for (const key of ["seenTotal", "savedTotal", "likedTotal", "quizzesDue", "sessionsTotal"]) {
+      assert.equal(typeof d[key], "number");
+      assert.ok((d[key] as number) >= 0);
+    }
+    assert.ok(d.seenTotal! >= 1); // earlier tests in this file already marked items seen
+  });
+
+  it("no token -> 401", async () => {
+    const { status } = await api("/stats");
+    assert.equal(status, 401);
   });
 });

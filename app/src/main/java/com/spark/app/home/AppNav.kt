@@ -16,6 +16,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,15 +26,18 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.spark.app.audio.TtsHelper
+import com.spark.app.data.SettingsStore
 import com.spark.app.data.TokenStore
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.feed.FeedScreen
 import com.spark.app.feed.FeedState
 import com.spark.app.feed.FeedUiState
 import com.spark.app.feed.FeedViewModel
+import com.spark.app.sync.InteractionSync
 import com.spark.app.ui.EmptyState
 import com.spark.app.ui.ErrorState
 import com.spark.app.ui.LoadingState
+import kotlinx.coroutines.delay
 
 private enum class Tab(val label: String) {
     HOME("Home"),
@@ -51,16 +55,40 @@ fun AppNav(
     onCloseApp: () -> Unit,
     onLogout: () -> Unit
 ) {
+    val context = LocalContext.current
+    val settings = remember { SettingsStore(context.applicationContext) }
+    val scope = rememberCoroutineScope()
+    val sync = remember(api, tokens, scope) { InteractionSync(api, tokens, scope) }
+
     val feedVm: FeedViewModel = viewModel(factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return FeedViewModel(api, tokens) as T
+            return FeedViewModel(api, tokens, settings) as T
+        }
+    })
+    val savedVm: SavedViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return SavedViewModel(api, tokens) as T
+        }
+    })
+    val meVm: MeViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return MeViewModel(api, tokens) as T
         }
     })
     val feed by feedVm.state.collectAsStateWithLifecycle()
+    val saved by savedVm.state.collectAsStateWithLifecycle()
+    val stats by meVm.state.collectAsStateWithLifecycle()
+    val pendingSync by sync.pending.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { feedVm.load() }
 
     val state = remember { FeedState() }
+    // The server is the source of truth for saved/rated state — seed each fresh load.
+    LaunchedEffect(feed) {
+        (feed as? FeedUiState.Content)?.let { state.seedFrom(it.cards) }
+    }
     var tab by remember { mutableStateOf(if (startOnReels) Tab.REELS else Tab.HOME) }
     LaunchedEffect(startOnReels) {
         if (startOnReels) {
@@ -68,15 +96,33 @@ fun AppNav(
             onStartOnReelsHandled()
         }
     }
-    val context = LocalContext.current
     val tts = remember { TtsHelper(context.applicationContext) }
     DisposableEffect(Unit) {
         onDispose { tts.shutdown() }
     }
     LaunchedEffect(tab) {
-        if (tab != Tab.REELS) tts.stop()
+        if (tab != Tab.REELS) {
+            tts.stop()
+            sync.flush() // leaving Reels is a natural checkpoint for seen/dwell events
+        }
     }
-    val feedCards = (feed as? FeedUiState.Content)?.cards.orEmpty()
+
+    // Session limits: local state drives the steppers, the store persists them.
+    var cardLimit by remember { mutableStateOf(settings.cardLimit) }
+    var minuteLimit by remember { mutableStateOf(settings.minuteLimit) }
+
+    // Saved tab: load on open + debounced while typing in the search box.
+    var savedQuery by remember { mutableStateOf("") }
+    LaunchedEffect(tab, savedQuery) {
+        if (tab == Tab.SAVED) {
+            if (savedQuery.isNotBlank()) delay(300)
+            sync.awaitFlush() // a just-saved card shows without waiting for the batch flush
+            savedVm.load(savedQuery)
+        }
+    }
+    LaunchedEffect(tab) {
+        if (tab == Tab.ME) meVm.refresh()
+    }
 
     Scaffold(
         bottomBar = {
@@ -111,6 +157,8 @@ fun AppNav(
                 Tab.HOME -> HomeScreen(
                     seenCount = state.seenCount,
                     savedCount = state.saved.size,
+                    cardLimit = cardLimit,
+                    minuteLimit = minuteLimit,
                     onOpenReels = { tab = Tab.REELS },
                     onOpenSaved = { tab = Tab.SAVED }
                 )
@@ -120,7 +168,7 @@ fun AppNav(
                     }
                     is FeedUiState.Empty -> CenteredFullScreen {
                         EmptyState(
-                            "No cards published yet. The content pipeline will fill this soon."
+                            "Nothing new right now — you're all caught up."
                         )
                     }
                     is FeedUiState.Error -> CenteredFullScreen {
@@ -129,16 +177,40 @@ fun AppNav(
                     is FeedUiState.Content -> FeedScreen(
                         state = state,
                         cards = f.cards,
+                        cardLimit = f.cardLimit,
+                        minuteLimit = f.minuteLimit,
+                        startedAtElapsedMs = f.startedAtElapsedMs,
                         tts = tts,
+                        sync = sync,
+                        onSessionFinished = { reason ->
+                            feedVm.closeSession(reason, state.seenCount)
+                            sync.flush()
+                        },
                         onCloseApp = onCloseApp
                     )
                 }
                 Tab.SAVED -> SavedScreen(
-                    savedCards = feedCards.filter { state.saved.contains(it.id) }
+                    state = saved,
+                    query = savedQuery,
+                    onQueryChange = { savedQuery = it },
+                    onRetry = { savedVm.load(savedQuery) }
                 )
                 Tab.ME -> MeScreen(
-                    seenCount = state.seenCount,
-                    savedCount = state.saved.size,
+                    stats = stats,
+                    cardLimit = cardLimit,
+                    minuteLimit = minuteLimit,
+                    pendingSync = pendingSync,
+                    onCardLimitDelta = { delta ->
+                        val next = SettingsStore.clampCards(cardLimit + delta)
+                        cardLimit = next
+                        settings.cardLimit = next
+                    },
+                    onMinuteLimitDelta = { delta ->
+                        val next = SettingsStore.clampMinutes(minuteLimit + delta)
+                        minuteLimit = next
+                        settings.minuteLimit = next
+                    },
+                    onRetryStats = { meVm.refresh() },
                     onLogout = onLogout
                 )
             }

@@ -4,14 +4,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.spark.app.data.SESSION_CARD_LIMIT
+import com.spark.app.data.Card
+
+/** Why the session ended — shown on the done screen + sent to PATCH /sessions. */
+enum class FinishReason { STACK_DONE, CARD_LIMIT, TIME_LIMIT }
 
 /** In-memory session state. Persistence arrives with Room in Phase 7. */
 class FeedState {
     var maxReached: Int by mutableStateOf(-1)
         private set
-    var done: Boolean by mutableStateOf(false)
+    var finishReason: FinishReason? by mutableStateOf(null)
         private set
+
+    val done: Boolean get() = finishReason != null
 
     private val _saved = mutableStateListOf<String>()
     val saved: List<String> get() = _saved
@@ -26,10 +31,8 @@ class FeedState {
         if (page > maxReached) maxReached = page
     }
 
-    fun isLastPage(totalPages: Int): Boolean = maxReached >= totalPages - 1
-
-    fun finish() {
-        done = true
+    fun finish(reason: FinishReason) {
+        if (finishReason == null) finishReason = reason
     }
 
     fun toggleSave(id: String) {
@@ -54,7 +57,16 @@ class FeedState {
         }
     }
 
-    companion object {
-        fun limit(): Int = SESSION_CARD_LIMIT
+    /**
+     * Seeds card state from a fresh feed load so cards already saved/rated on the
+     * server render correctly (the server is the source of truth). Only adds —
+     * an in-session toggle is never overwritten.
+     */
+    fun seedFrom(cards: List<Card>) {
+        for (card in cards) {
+            if (card.saved && !_saved.contains(card.id)) _saved.add(card.id)
+            if (card.liked == true && !_liked.contains(card.id)) _liked.add(card.id)
+            if (card.liked == false && !_disliked.contains(card.id)) _disliked.add(card.id)
+        }
     }
 }
