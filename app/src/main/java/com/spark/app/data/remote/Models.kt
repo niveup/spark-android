@@ -2,6 +2,7 @@ package com.spark.app.data.remote
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 // Mirrors docs/API_CONTRACT.md. Unknown JSON fields are ignored so the app
 // never crashes on additive server changes (contract § compatibility).
@@ -87,4 +88,63 @@ data class FeedPage(
 data class HealthData(
     @SerialName("ok") val ok: Boolean = false,
     @SerialName("version") val version: String = ""
+)
+
+// --- Phase 5b: interaction sync + sessions + stats ---
+
+/** Body of POST /items/state; each update is a StateEvents-built JSON object. */
+@Serializable
+data class StateUpdateBody(
+    @SerialName("updates") val updates: List<JsonObject>
+)
+
+@Serializable
+data class ItemStateDto(
+    @SerialName("itemId") val itemId: String,
+    @SerialName("seenAt") val seenAt: String? = null,
+    @SerialName("saved") val saved: Boolean = false,
+    @SerialName("liked") val liked: Boolean? = null,
+    @SerialName("dismissed") val dismissed: Boolean = false,
+    @SerialName("dwellMs") val dwellMs: Long = 0,
+    @SerialName("srsDueAt") val srsDueAt: String? = null
+)
+
+@Serializable
+data class BatchStateData(
+    @SerialName("states") val states: List<ItemStateDto> = emptyList(),
+    @SerialName("rejected") val rejected: List<String> = emptyList()
+)
+
+@Serializable
+data class SessionRequest(
+    @SerialName("deviceId") val deviceId: String,
+    @SerialName("cardLimit") val cardLimit: Int,
+    @SerialName("minuteLimit") val minuteLimit: Int
+)
+
+@Serializable
+data class SessionOpenData(
+    @SerialName("sessionId") val sessionId: String,
+    @SerialName("startedAt") val startedAt: String = ""
+)
+
+@Serializable
+data class SessionCloseRequest(
+    @SerialName("itemsSeen") val itemsSeen: Int,
+    @SerialName("limitReached") val limitReached: Boolean
+)
+
+@Serializable
+data class SessionCloseData(
+    @SerialName("sessionId") val sessionId: String,
+    @SerialName("endedAt") val endedAt: String = ""
+)
+
+@Serializable
+data class StatsData(
+    @SerialName("seenTotal") val seenTotal: Int = 0,
+    @SerialName("savedTotal") val savedTotal: Int = 0,
+    @SerialName("likedTotal") val likedTotal: Int = 0,
+    @SerialName("quizzesDue") val quizzesDue: Int = 0,
+    @SerialName("sessionsTotal") val sessionsTotal: Int = 0
 )
