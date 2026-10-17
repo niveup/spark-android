@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.spark.app.data.Card
 import com.spark.app.data.SettingsStore
 import com.spark.app.data.TokenStore
+import com.spark.app.data.local.OfflineCache
 import com.spark.app.data.remote.SessionCloseRequest
 import com.spark.app.data.remote.SessionRequest
 import com.spark.app.data.remote.SparkApi
@@ -24,7 +25,9 @@ sealed interface FeedUiState {
         val cards: List<Card>,
         val cardLimit: Int,
         val minuteLimit: Int,
-        val startedAtElapsedMs: Long
+        val startedAtElapsedMs: Long,
+        /** True when the deck came from the Room cache (server unreachable). */
+        val offline: Boolean = false
     ) : FeedUiState
 }
 
@@ -36,7 +39,8 @@ sealed interface FeedUiState {
 class FeedViewModel(
     private val api: SparkApi,
     private val tokens: TokenStore,
-    private val settings: SettingsStore
+    private val settings: SettingsStore,
+    private val offline: OfflineCache
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
@@ -65,6 +69,7 @@ class FeedViewModel(
                     sessionId = openedSessionId
                 )
                 val cards = feedItemsToCards(page.data)
+                offline.saveFeed(page.data) // Phase 7: refresh the offline copy (server-wins)
                 _state.value = if (cards.isEmpty()) {
                     FeedUiState.Empty
                 } else {
@@ -76,9 +81,19 @@ class FeedViewModel(
                     else "Server error (${e.code()})."
                 )
             } catch (_: IOException) {
-                _state.value = FeedUiState.Error(
-                    "Can't reach your PC. Check the USB cable and that the API server is running."
-                )
+                // Phase 7: fall back to the cached deck when the server is
+                // unreachable. Seen/dwell events keep queueing locally and
+                // upload on the next successful connection.
+                val cached = offline.feedDtos()
+                val cards = feedItemsToCards(cached)
+                _state.value =
+                    if (cards.isEmpty()) {
+                        FeedUiState.Error(
+                            "Can't reach your PC. Check the USB cable and that the API server is running."
+                        )
+                    } else {
+                        FeedUiState.Content(cards, cardLimit, minuteLimit, startedAt, offline = true)
+                    }
             }
         }
     }

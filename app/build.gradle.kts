@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 // Dev helper: the API is reached through a USB tunnel ("adb reverse"), so the
@@ -119,6 +120,19 @@ dependencies {
     // MediaSessionService. Streams only — no audio files are downloaded.
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.session)
+    // Phase 7 offline: Room caches the last feed + saved cards and persists the
+    // pending-interaction queue across app restarts.
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+}
+
+// Room exports its schema as JSON so future migrations start from a known
+// history (official Room guidance for schema changes).
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
 }

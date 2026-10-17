@@ -29,4 +29,9 @@ class InteractionQueue(private val maxBatch: Int = 100) {
             removed++
         }
     }
+
+    /** Phase 7: replay events persisted by previous app sessions (oldest-first). */
+    fun restore(events: List<JsonObject>) {
+        pending.addAll(events)
+    }
 }
