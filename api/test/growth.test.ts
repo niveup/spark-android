@@ -183,12 +183,14 @@ describe("growth builders", () => {
 });
 
 describe("openingExcerpt", () => {
-  it("skips front matter and takes real paragraphs under the cap", () => {
+  it("skips front matter, illustrations and takes real paragraphs under the cap", () => {
     const raw =
       "*** START OF THE PROJECT GUTENBERG EBOOK TEST ***\n\n" +
       "Produced by Someone.\n\n" +
-      "Real opening paragraph about life and thought which is long enough to be kept here for the test.\n\n" +
-      "Second paragraph also explains the book in plain English and carries enough words to be kept in the excerpt.\n\n";
+      "[Illustration: FRANKLIN ARMS]\n\n" +
+      "AUTOBIOGRAPHY OF SOMEBODY WITH ILLUSTRATIONS AND A VERY LONG TITLE THAT PASSES EIGHTY CHARS FOR SURE\n\n" +
+      "Real opening paragraph about life and thought which is long enough to be kept in the final excerpt because the hard engineering here demands real prose of this size.\n\n" +
+      "Second paragraph also explains the book in plain English and carries enough plain words to be kept inside the opening-lines card excerpt in our library too.\n\n";
     const excerpt = openingExcerpt(raw, 300);
     assert.ok(excerpt?.startsWith("Real opening paragraph"));
     assert.ok(excerpt?.includes("Second paragraph"));

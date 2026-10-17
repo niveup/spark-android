@@ -64,9 +64,11 @@ export function parseBartlettQuotes(
 
   const emit = (attribution: string): boolean => {
     if (token === null || author === null) return false;
+    // Strip Bartlett's footnote page-ref markers, e.g. "[714-7]", "[749-1]".
     const quote = pending
       .map((l) => l.replace(/^[ \t]+/, "").replace(/[ \t]+$/, ""))
       .join("\n")
+      .replace(/\[\s*\d+(?:\s*-\s*\d+)?\s*\]/g, "")
       .trim();
     pending = [];
     if (quote.length < 40 || quote.length > 340) return false;

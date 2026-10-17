@@ -167,7 +167,7 @@ async function main(): Promise<void> {
       console.log(`wiki ${c.wiki} failed: ${String(err).slice(0, 120)}`);
       summaries.push(null);
     }
-    await sleep(600); // Wikimedia etiquette
+    await sleep(1200); // Wikimedia etiquette (a 429 came through at 600ms)
   }
   await runGroup("growth-concepts", conceptCandidates(config.concepts, summaries), bookIdBySlug);
 
@@ -175,7 +175,7 @@ async function main(): Promise<void> {
   for (const e of entries) {
     if (e.gutenbergId === null) continue;
     try {
-      const opening = await withRetry(() => gutenbergBody(e.gutenbergId ?? 0, 1400));
+      const opening = await withRetry(() => gutenbergBody(e.gutenbergId ?? 0, 9000));
       await runGroup(`growth-ideas:${e.slug}`, bookIdeaCandidates(e, opening), bookIdBySlug);
     } catch (err) {
       console.log(`gutenberg ${e.gutenbergId} (${e.slug}) failed: ${String(err).slice(0, 120)}`);

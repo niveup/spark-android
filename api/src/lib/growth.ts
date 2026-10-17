@@ -47,13 +47,58 @@ export function chapterCandidates(
 
 // Gutenberg body starts right after the license marker: producer credits,
 // title pages and contents come first — skip them and take real paragraphs.
+// Blocks printed under an "[Illustration: ..." caption can merge the caption
+// quote ("... --Some Name.]") with the first real paragraph when Gutenberg
+// uses only a single newline between them. Cut through the attribution
+// bracket so the card gets the real paragraph.
+export function stripMergedCaption(block: string): string {
+  if (!/^[ \t]*["\u201c]/.test(block)) return block;
+  // Bracketed attribution: "... --Some Name.] REAL TEXT"
+  const idx = block.indexOf("]");
+  if (idx >= 0 && idx < 600 && /--/.test(block.slice(0, idx))) {
+    return block.slice(idx + 1).trim();
+  }
+  // Bracketless duplicate of the same caption: "... --Some Name. REAL TEXT"
+  const m = /--[A-Z][\w .'’-]*\.[ \t]+(?=["\u201cA-Z])/.exec(block.slice(0, 700));
+  if (m !== null && m.index < 600) return block.slice(m.index + m[0].length).trim();
+  return block;
+}
+
 export function openingExcerpt(bodyStart: string, maxChars = 430): string | null {
   const junk =
     /^(Produced by|Credits|Title|Author|Release date|Language|More|Contents|CONTENTS|TRANSCRIBER|preferably|This eBook|Cover)/i;
   const blocks = bodyStart
     .split(/\n\s*\n/)
     .map((b) => b.replace(/\s*\n\s*/g, " ").trim())
-    .filter((b) => b.length >= 80 && !junk.test(b));
+    .map(stripMergedCaption)
+    .filter((b) => {
+      if (b.length < 140) return false;
+      if (junk.test(b)) return false;
+      if (b.includes("Project Gutenberg eBook")) return false;
+      if (b.includes("START OF THE PROJECT GUTENBERG")) return false;
+      if (b.includes("END OF THE PROJECT GUTENBERG")) return false;
+      if (/\[Illustration/i.test(b)) return false;
+      if (/\bIllustrations\b/i.test(b)) return false;
+      if (/\bCopyright\b/i.test(b)) return false;
+      if (/\bCONTENTS\b.*/i.test(b)) return false;
+      if (/\bIntroduction\s+\d+$/i.test(b)) return false;
+      if (/\]\s*$/.test(b)) return false; // caption/bracket tail "--Thomas Jefferson.]"
+      // Quote-opening blocks repeat as plate captions on later pages (the
+      // same anecdote can print twice); real opening paragraphs almost never
+      // start with a quotation mark. Epigraph-styled books fall through to
+      // their real first prose block.
+      if (/^[ \t]*["\u201c]/.test(b)) return false;
+      // Gutenberg CONTENTS tables: rows like "I. Title .... 3 II. Title .... 9"
+      if (/\b(?:X{0,3}(?:IX|IV|V?I{0,3}))\.\s+\S.*\s\d{1,3}\b/.test(b)) return false;
+      // 4+ standalone small numbers = index/table-of-contents block
+      const digits = b.match(/\b\d{1,3}\b/g) ?? [];
+      if (digits.length >= 4) return false;
+      // Aligned column layout (4+ runs of wide spacing) = table/index block
+      // even when page numbers contain OCR typos like "34O".
+      const gaps = b.match(/[ \t]{4,}/g) ?? [];
+      if (gaps.length >= 4) return false;
+      return true;
+    });
   if (blocks.length === 0) return null;
   const text = `${blocks[0] ?? ""} ${blocks[1] ?? ""}`.trim();
   if (text.length < 100) return null;

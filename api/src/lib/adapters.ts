@@ -174,8 +174,10 @@ export async function gutendexById(id: number): Promise<GutendexBook | null> {
 }
 
 // Gutenberg plain text (transient, in-memory only — never stored to disk).
-// Returns the body after the "START OF THE PROJECT GUTENBERG" marker, trimmed
-// to `limit` chars so we never hold whole multi-MB books longer than needed.
+// Cuts the full page after the "*** START OF THE PROJECT GUTENBERG EBOOK ... ***"
+// marker (verified present in pg4507/pg935/pg20203/pg34258/pg59844/pg45109),
+// then trims to `limit` chars so we never hold whole multi-MB books longer
+// than needed.
 export async function gutenbergBody(id: number, limit = 4000): Promise<string | null> {
   const res = await fetch(
     `https://www.gutenberg.org/cache/epub/${id}/pg${id}.txt`,
@@ -183,14 +185,11 @@ export async function gutenbergBody(id: number, limit = 4000): Promise<string | 
   );
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`gutenberg: HTTP ${res.status}`);
-  const cutover = res.text();
-  const text = await cutover;
-  const marker = "START OF THE PROJECT GUTENBERG EBOOK";
-  const idx = text.indexOf(" *** " + marker);
-  const body = idx >= 0 ? text.slice(idx) : text;
-  const start = body.indexOf("*/");
-  const cleaned = start >= 0 && start < 600 ? body.slice(start + 2) : body;
-  return cleaned.slice(0, limit);
+  const text = await res.text();
+  const marker = /\*\*\*\s*START OF THE PROJECT GUTENBERG[^*]+\*{3}/i;
+  const m = marker.exec(text);
+  const body = m !== null && m.index >= 0 ? text.slice(m.index + m[0].length) : text;
+  return body.replace(/^[ \n\r\t]+/, "").slice(0, limit);
 }
 
 const LibrivoxDetailed = z.object({
