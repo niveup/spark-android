@@ -28,6 +28,7 @@ export async function aiCardsToday(): Promise<number> {
 export async function runIngestJob(
   source: string,
   candidates: unknown[],
+  onCreated?: (card: PipelineCard, id: string) => Promise<void>,
 ): Promise<IngestResult> {
   const job = await db.ingestJob.create({ data: { source, status: "running" } });
   let created = 0;

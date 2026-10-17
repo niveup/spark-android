@@ -30,7 +30,7 @@ export const CardSchema = z
     actionLine: z.string().max(200).default(""),
     topicTags: z.array(z.string().min(1).max(40)).min(1).max(5),
     language: z.string().min(2).max(8).default("en"),
-    estSeconds: z.number().int().min(10).max(600).default(45),
+    estSeconds: z.number().int().min(10).max(7200).default(45),
     sourceType: z.string().min(1).max(40),
     sourceRef: z.string().min(1).max(300),
     license: z.string().min(1).max(120),
@@ -49,6 +49,9 @@ export const CardSchema = z
   })
   .refine((c) => c.type !== "audio" || c.audioUrl !== null, {
     message: "Audio cards need audioUrl.",
+  })
+  .refine((c) => c.type === "audio" || c.estSeconds <= 600, {
+    message: "Reading cards must be readable in ~10 min (estSeconds<=600); only audio lists longer.",
   });
 
 export type PipelineCard = z.infer<typeof CardSchema>;

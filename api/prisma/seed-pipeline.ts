@@ -1,5 +1,8 @@
-// Phase 3 seed: 5 public-domain books (via Gutendex adapter) + 20 GATE
-// Mechanical cards (thermo/SOM, original concept content). DEV only.
+// Phase 3b dev bootstrap for the growth library (legacy fiction/GATE removed).
+// Real library loads come from api/prisma/ingest-growth.ts (pinned IDs +
+// live LibriVox/Bartlett's/Wikipedia pulls). This script stays as a search-
+// based fallback bootstrap: resolves growth classics via Gutendex and seeds
+// the hand-written growth deck. DEV only.
 // Usage: npx tsx prisma/seed-pipeline.ts  (needs DATABASE_URL in api/.env)
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
@@ -15,15 +18,15 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" 
 const db = new PrismaClient({ adapter });
 
 const BOOK_QUERIES = [
-  "pride and prejudice",
-  "frankenstein",
-  "moby dick",
-  "sherlock holmes",
-  "jane eyre",
+  "as a man thinketh",
+  "how to live on 24 hours a day",
+  "meditations",
+  "self help samuel smiles",
+  "the game of life and how to play it",
 ];
 
-type GateCard = {
-  type: "concept" | "quiz";
+type GrowthCard = {
+  type: "concept" | "quiz" | "quote";
   title: string;
   bodyMd: string;
   actionLine: string;
@@ -31,31 +34,21 @@ type GateCard = {
   quiz?: { options: string[]; correctIndex: number; explanation: string };
 };
 
-const GATE_CARDS: GateCard[] = [
-  { type: "concept", title: "Zeroth law of thermodynamics", bodyMd: "If two bodies are each in thermal equilibrium with a third, they are in equilibrium with each other. This defines temperature: the thing thermometers measure.", actionLine: "Write the zeroth law in one sentence from memory.", topicTags: ["thermo"] },
-  { type: "concept", title: "Enthalpy in one line", bodyMd: "H = U + PV: internal energy plus flow work. For constant-pressure processes, heat added equals enthalpy change. Turbines and compressors speak enthalpy.", actionLine: "Rewrite one first-law problem using h instead of u.", topicTags: ["thermo"] },
-  { type: "quiz", title: "Quiz: cp vs cv", bodyMd: "For an ideal gas, cp − cv equals…?", actionLine: "Prove cp − cv = R starting from definitions.", topicTags: ["thermo"], quiz: { options: ["R", "γR", "R/γ", "Zero"], correctIndex: 0, explanation: "Mayer's relation: cp − cv = R for ideal gases." } },
-  { type: "concept", title: "Entropy generation", bodyMd: "Real processes generate entropy: Sgen ≥ 0, zero only for reversible. Lost work = T0 × Sgen. Find the irreversibility, find the loss.", actionLine: "Compute Sgen for throttling in one solved example.", topicTags: ["thermo"] },
-  { type: "quiz", title: "Quiz: throttling enthalpy", bodyMd: "Across a throttling valve, enthalpy…?", actionLine: "Draw the throttling process on an h-s diagram.", topicTags: ["thermo"], quiz: { options: ["Stays constant", "Always rises", "Always falls", "Becomes zero"], correctIndex: 0, explanation: "Throttling is isenthalpic: h1 = h2 (kinetic changes negligible)." } },
-  { type: "concept", title: "Otto cycle efficiency", bodyMd: "η = 1 − 1/r^(γ−1). Only compression ratio and γ matter — not fuel, not size. Raise r (knock permitting) to raise efficiency.", actionLine: "Compute η for r=8, γ=1.4.", topicTags: ["thermo"] },
-  { type: "concept", title: "Mean effective pressure", bodyMd: "MEP = work per cycle ÷ swept volume. It measures how well you use engine size. Same power from smaller engine = higher MEP.", actionLine: "Find MEP for one GATE previous-year problem.", topicTags: ["thermo"] },
-  { type: "quiz", title: "Quiz: Diesel vs Otto at same r", bodyMd: "At the same compression ratio, which is more efficient?", actionLine: "Sketch both cycles on p-v and compare areas.", topicTags: ["thermo"], quiz: { options: ["Otto", "Diesel", "Equal", "Depends on fuel"], correctIndex: 0, explanation: "At same r, Otto wins (heat added at higher average temperature)." } },
-  { type: "concept", title: "Psychrometry: WBT vs DBT", bodyMd: "Wet-bulb ≤ dry-bulb, equal only at saturation (100% RH). The gap measures dryness of air. Cooling towers live on this gap.", actionLine: "Read one state point off a psychrometric chart.", topicTags: ["thermo"] },
-  { type: "concept", title: "Critical point of water", bodyMd: "374°C, 221 bar: liquid and vapor become indistinguishable. Above it, no boiling — only supercritical fluid. Power plants flirt with it for efficiency.", actionLine: "Mark critical point on a T-v diagram from memory.", topicTags: ["thermo"] },
-  { type: "concept", title: "Axial stress and strain", bodyMd: "σ = P/A, ε = δL/L, linked by E: σ = Eε. Three equations, three unknowns for most bars — equilibrium, compatibility, constitutive.", actionLine: "Solve one statically-indeterminate bar problem.", topicTags: ["som"] },
-  { type: "quiz", title: "Quiz: thermal stress", bodyMd: "A bar fixed at both ends is heated uniformly. The stress is…?", actionLine: "Derive σ = −EαΔT once without looking.", topicTags: ["som"], quiz: { options: ["Compressive", "Tensile", "Zero", "Shear"], correctIndex: 0, explanation: "Prevented expansion → compressive stress σ = EαΔT." } },
-  { type: "concept", title: "Torsion: angle of twist", bodyMd: "θ = TL/GJ. Twist grows with torque and length, shrinks with stiffness GJ. Hollow shafts maximize J per kilogram.", actionLine: "Compute θ for a 1 m steel shaft under 500 N·m.", topicTags: ["som"] },
-  { type: "concept", title: "Euler buckling in one line", bodyMd: "Pcr = π²EI/(KL)². Long columns fail by buckling far below yield. Halve the length → 4× the load.", actionLine: "List K values for all four end conditions.", topicTags: ["som"] },
-  { type: "quiz", title: "Quiz: slenderness ratio", bodyMd: "Slenderness ratio λ is…?", actionLine: "Compute λ for one column problem and classify it.", topicTags: ["som"], quiz: { options: ["Le/k", "k/Le", "EI/L²", "P/A"], correctIndex: 0, explanation: "λ = effective length ÷ radius of gyration. High λ → Euler applies." } },
-  { type: "concept", title: "Principal stresses", bodyMd: "Rotate the element until shear vanishes: what remains are σ1, σ2. Max shear = (σ1−σ2)/2 at 45°. Every stress state has this calm orientation.", actionLine: "Find principal stresses for σx=80, σy=20, τ=30 MPa.", topicTags: ["som"] },
-  { type: "concept", title: "Deflection by integration", bodyMd: "EIv'''' = q(x): integrate four times, apply boundary conditions. Symmetry halves the work — always exploit it first.", actionLine: "Derive cantilever tip deflection δ = PL³/3EI.", topicTags: ["som"] },
-  { type: "quiz", title: "Quiz: point of contraflexure", bodyMd: "At the point of contraflexure, bending moment is…?", actionLine: "Mark it on one overhanging-beam BMD.", topicTags: ["som"], quiz: { options: ["Zero", "Maximum", "Minimum", "Equal to shear"], correctIndex: 0, explanation: "Contraflexure = BM changes sign, so it crosses zero there." } },
-  { type: "concept", title: "Strain energy in torsion", bodyMd: "U = T²L/2GJ. Energy loves high torque and compliance. Springs are just torsion bars in costume.", actionLine: "Compare strain energy of solid vs hollow shaft.", topicTags: ["som"] },
-  { type: "concept", title: "Fatigue: S-N curve", bodyMd: "Below the endurance limit, steel survives infinite cycles. Design rotating shafts under it and fatigue stops being a question.", actionLine: "Sketch an S-N curve and mark Se.", topicTags: ["som"] },
+const DECK: GrowthCard[] = [
+  { type: "concept", title: "The 2-Minute Rule", bodyMd: "Shrink any habit until starting costs two minutes: one page, one push-up, one sentence. Intensity comes later — the work is showing up.", actionLine: "Try this today: two-minute version of one habit you skipped.", topicTags: ["habits"] },
+  { type: "concept", title: "Habit stacking", bodyMd: "Attach a new habit to an old one: 'After I pour coffee, I will read a page.' The existing routine becomes the cue, so no extra motivation is needed.", actionLine: "Try this today: write one 'after X, I will Y' sentence.", topicTags: ["habits"] },
+  { type: "concept", title: "Segmented sleep is old news", bodyMd: "Pre-industrial adults slept in two shifts with a calm hour between. If you wake at 3am, tiredness is not failure — read, write, then return to sleep.", actionLine: "Try this tonight: keep the wake-up calm, no screen,20 minutes of reading.", topicTags: ["mindset"] },
+  { type: "concept", title: "Pay yourself first", bodyMd: "Move a fixed share of income to savings the day you are paid, before spending. What remains is the real budget — discipline by design, not willpower.", actionLine: "Try this today: set up one small automatic transfer.", topicTags: ["money"] },
+  { type: "concept", title: "Timeboxing beats to-do lists", bodyMd: "A to-do says what; a timebox says when. Put the task on the calendar with a start time — unfinished work gets an honest next slot.", actionLine: "Try this today: timebox tomorrow's hardest task for 25 minutes.", topicTags: ["time"] },
+  { type: "concept", title: "Systems, not goals", bodyMd: "Goals set direction; systems decide outcome. You don't rise to the level of your goals, you fall to the level of your daily systems.", actionLine: "Try this today: fix the smallest daily input behind one goal.", topicTags: ["habits"] },
+  { type: "quote", title: "James Allen", bodyMd: "As a man thinketh in his heart, so is he.", actionLine: "Try this today: audit the sentence you repeat to yourself most.", topicTags: ["mindset"] },
+  { type: "quote", title: "Seneca", bodyMd: "We suffer more often in imagination than in reality.", actionLine: "Try this today: write the worst case on paper instead of rehearsing it.", topicTags: ["mindset"] },
+  { type: "quiz", title: "Quiz: habit loop broken", bodyMd: "You want a reading habit but skip it nightly. Which fix targets the cue, not the motivation?", actionLine: "Try this today: pick the fix that needs no willpower.", topicTags: ["habits"], quiz: { options: ["Read a whole chapter", "Place a book +1 page on your pillow", "Promise a friend", "Download a speed-reading app"], correctIndex: 1, explanation: "Anchor the new habit to an existing moment and shrink it to one page — cue + easy start." } },
+  { type: "quiz", title: "Quiz: which is an asset?", bodyMd: "You receive 5,000. Which choice builds an asset under 'pay yourself first' rules?", actionLine: "Try this today: name one asset you will start this month.", topicTags: ["money"], quiz: { options: ["A phone upgrade", "A recurring savings transfer", "New sneakers", "A gaming skin"], correctIndex: 1, explanation: "An asset is stored value or income-producing. A fixed automatic transfer converts income into stored value before spending." } },
 ];
 
 async function main(): Promise<void> {
-  // 1. Books from the real Gutendex catalog (public domain only).
+  // 1. Resolve growth classics via Gutendex (search fallback; pipeline pins IDs).
   for (const q of BOOK_QUERIES) {
     const found = await gutendexSearch(q, 3);
     const pick = found.find((b) => b.textUrl) ?? found[0];
@@ -84,10 +77,10 @@ async function main(): Promise<void> {
     }
   }
 
-  // 2. GATE cards through the ingest runner (validate -> dedupe -> drafts).
+  // 2. Growth cards through the ingest runner (validate -> dedupe -> drafts).
   const result = await runIngestJob(
-    "gate-manual-v1",
-    GATE_CARDS.map((c, i) => ({
+    "growth-manual-v1",
+    DECK.map((c) => ({
       type: c.type,
       title: c.title,
       bodyMd: c.bodyMd,
@@ -96,7 +89,7 @@ async function main(): Promise<void> {
       language: "en",
       estSeconds: 45,
       sourceType: "manual",
-      sourceRef: "GATE mechanical deck v1",
+      sourceRef: "growth deck v1",
       license: "original",
       isAiGenerated: false,
       isGrounded: true,
@@ -106,14 +99,14 @@ async function main(): Promise<void> {
       durationMs: null,
     })),
   );
-  console.log(`GATE ingest: ${result.created} created, ${result.duplicates} dupes, ${result.rejected} rejected.`);
+  console.log(`Growth ingest: ${result.created} created, ${result.duplicates} dupes, ${result.rejected} rejected.`);
 
-  // 3. Publish the seeded GATE cards (owner-reviewed seed content).
+  // 3. Publish the seeded growth cards (owner-reviewed seed content).
   const published = await db.feedItem.updateMany({
-    where: { status: "draft", sourceRef: "GATE mechanical deck v1" },
+    where: { status: "draft", sourceRef: "growth deck v1" },
     data: { status: "published", publishedAt: new Date() },
   });
-  console.log(`Published ${published.count} GATE cards.`);
+  console.log(`Published ${published.count} growth cards.`);
 }
 
 await main();
