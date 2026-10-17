@@ -1,10 +1,13 @@
 package com.spark.app.feed
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spark.app.data.Card
-import com.spark.app.data.SESSION_CARD_LIMIT
+import com.spark.app.data.SettingsStore
 import com.spark.app.data.TokenStore
+import com.spark.app.data.remote.SessionCloseRequest
+import com.spark.app.data.remote.SessionRequest
 import com.spark.app.data.remote.SparkApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,17 +20,30 @@ sealed interface FeedUiState {
     data object Loading : FeedUiState
     data object Empty : FeedUiState
     data class Error(val message: String) : FeedUiState
-    data class Content(val cards: List<Card>) : FeedUiState
+    data class Content(
+        val cards: List<Card>,
+        val cardLimit: Int,
+        val minuteLimit: Int,
+        val startedAtElapsedMs: Long
+    ) : FeedUiState
 }
 
-/** Loads the ranked feed from the DEV API (Phase 5a: read side only). */
+/**
+ * Loads the ranked feed from the API and owns the server-side session
+ * (Phase 5b): POST /sessions on load, PATCH /sessions/:id on finish.
+ * Session limits come from SettingsStore (Me tab).
+ */
 class FeedViewModel(
     private val api: SparkApi,
-    private val tokens: TokenStore
+    private val tokens: TokenStore,
+    private val settings: SettingsStore
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val state: StateFlow<FeedUiState> = _state.asStateFlow()
+
+    private var openedSessionId: String? = null
+    private var sessionClosed = false
 
     fun load() {
         _state.value = FeedUiState.Loading
@@ -37,11 +53,23 @@ class FeedViewModel(
                 _state.value = FeedUiState.Error("Not logged in — log in again.")
                 return@launch
             }
+            val cardLimit = settings.cardLimit
+            val minuteLimit = settings.minuteLimit
+            val startedAt = SystemClock.elapsedRealtime()
+            openedSessionId = openSession(token, cardLimit, minuteLimit)
+            sessionClosed = false
             try {
-                val page = api.feed("Bearer $token", limit = SESSION_CARD_LIMIT)
+                val page = api.feed(
+                    "Bearer $token",
+                    limit = cardLimit,
+                    sessionId = openedSessionId
+                )
                 val cards = feedItemsToCards(page.data)
-                _state.value =
-                    if (cards.isEmpty()) FeedUiState.Empty else FeedUiState.Content(cards)
+                _state.value = if (cards.isEmpty()) {
+                    FeedUiState.Empty
+                } else {
+                    FeedUiState.Content(cards, cardLimit, minuteLimit, startedAt)
+                }
             } catch (e: HttpException) {
                 _state.value = FeedUiState.Error(
                     if (e.code() == 401) "Session expired — log out from Me and log back in."
@@ -54,4 +82,36 @@ class FeedViewModel(
             }
         }
     }
+
+    /** Close the server session once (best-effort — the phone may be offline). */
+    fun closeSession(reason: FinishReason, itemsSeen: Int) {
+        val sessionId = openedSessionId ?: return
+        if (sessionClosed) return
+        sessionClosed = true
+        viewModelScope.launch {
+            val token = tokens.getToken() ?: return@launch
+            try {
+                api.closeSession(
+                    "Bearer $token",
+                    sessionId,
+                    SessionCloseRequest(itemsSeen, limitReached = reason != FinishReason.STACK_DONE)
+                )
+            } catch (_: HttpException) {
+                // Best-effort: the session row just stays open server-side.
+            } catch (_: IOException) {
+            }
+        }
+    }
+
+    private suspend fun openSession(token: String, cardLimit: Int, minuteLimit: Int): String? =
+        try {
+            api.openSession(
+                "Bearer $token",
+                SessionRequest(settings.deviceId, cardLimit, minuteLimit)
+            ).data.sessionId
+        } catch (_: HttpException) {
+            null // feed still works without a server session
+        } catch (_: IOException) {
+            null
+        }
 }

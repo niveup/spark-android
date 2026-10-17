@@ -4,14 +4,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.spark.app.data.SESSION_CARD_LIMIT
+
+/** Why the session ended — shown on the done screen + sent to PATCH /sessions. */
+enum class FinishReason { STACK_DONE, CARD_LIMIT, TIME_LIMIT }
 
 /** In-memory session state. Persistence arrives with Room in Phase 7. */
 class FeedState {
     var maxReached: Int by mutableStateOf(-1)
         private set
-    var done: Boolean by mutableStateOf(false)
+    var finishReason: FinishReason? by mutableStateOf(null)
         private set
+
+    val done: Boolean get() = finishReason != null
 
     private val _saved = mutableStateListOf<String>()
     val saved: List<String> get() = _saved
@@ -26,10 +30,8 @@ class FeedState {
         if (page > maxReached) maxReached = page
     }
 
-    fun isLastPage(totalPages: Int): Boolean = maxReached >= totalPages - 1
-
-    fun finish() {
-        done = true
+    fun finish(reason: FinishReason) {
+        if (finishReason == null) finishReason = reason
     }
 
     fun toggleSave(id: String) {
@@ -52,9 +54,5 @@ class FeedState {
             _disliked.add(id)
             _liked.remove(id)
         }
-    }
-
-    companion object {
-        fun limit(): Int = SESSION_CARD_LIMIT
     }
 }
