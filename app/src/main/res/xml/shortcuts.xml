@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static app shortcut: long-press the SPARK icon -> "I'm bored" -> Reels tab. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_reels"
+        android:shortcutId="bored"
+        android:shortcutLongLabel="@string/shortcut_bored_long"
+        android:shortcutShortLabel="@string/shortcut_bored_short">
+        <intent android:action="com.spark.app.action.OPEN_REELS" />
+    </shortcut>
+</shortcuts>

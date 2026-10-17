@@ -13,12 +13,12 @@ class FeedState {
     var done: Boolean by mutableStateOf(false)
         private set
 
-    private val _saved = mutableStateListOf<Int>()
-    val saved: List<Int> get() = _saved
-    private val _liked = mutableStateListOf<Int>()
-    val liked: List<Int> get() = _liked
-    private val _disliked = mutableStateListOf<Int>()
-    val disliked: List<Int> get() = _disliked
+    private val _saved = mutableStateListOf<String>()
+    val saved: List<String> get() = _saved
+    private val _liked = mutableStateListOf<String>()
+    val liked: List<String> get() = _liked
+    private val _disliked = mutableStateListOf<String>()
+    val disliked: List<String> get() = _disliked
 
     val seenCount: Int get() = maxReached + 1
 
@@ -32,11 +32,11 @@ class FeedState {
         done = true
     }
 
-    fun toggleSave(id: Int) {
+    fun toggleSave(id: String) {
         if (_saved.contains(id)) _saved.remove(id) else _saved.add(id)
     }
 
-    fun toggleLike(id: Int) {
+    fun toggleLike(id: String) {
         if (_liked.contains(id)) {
             _liked.remove(id)
         } else {
@@ -45,7 +45,7 @@ class FeedState {
         }
     }
 
-    fun toggleDislike(id: Int) {
+    fun toggleDislike(id: String) {
         if (_disliked.contains(id)) {
             _disliked.remove(id)
         } else {

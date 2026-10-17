@@ -57,6 +57,14 @@ fun CardView(
                 )
                 Text(text = counter, style = MaterialTheme.typography.labelLarge)
             }
+            if (!card.grounded) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "AI-written, unverified",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
             Spacer(modifier = Modifier.height(16.dp))
             key(card.id) {
                 when (card.type) {
@@ -120,13 +128,18 @@ fun CardView(
             title = { Text("Why am I seeing this?") },
             text = {
                 Column {
+                    Text("Type: ${card.type.name.lowercase()} · Topic: ${card.topic}")
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text("Source: ${card.source}")
+                    if (card.bookLine != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Book: ${card.bookLine}")
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        if (card.grounded) "[Grounded ✓]" else "[AI-written, unverified]"
+                        if (card.grounded) "Grounded in the source text ✓"
+                        else "AI-written, unverified — treat as a lead, not a fact."
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Topic: ${card.topic}")
                 }
             },
             confirmButton = {
