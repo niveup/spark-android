@@ -1,19 +1,26 @@
 package com.spark.app.feed
 
 import android.os.SystemClock
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.spark.app.audio.AudioPlayerBox
 import com.spark.app.audio.TtsHelper
 import com.spark.app.data.Card
@@ -38,7 +45,9 @@ fun FeedScreen(
     sync: InteractionSync,
     player: AudioPlayerBox?,
     onSessionFinished: (FinishReason) -> Unit,
-    onCloseApp: () -> Unit
+    onCloseApp: () -> Unit,
+    /** Phase 7: deck came from the Room cache (server unreachable). */
+    offline: Boolean = false
 ) {
     if (state.done) {
         val reason = state.finishReason
@@ -86,7 +95,7 @@ fun FeedScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         VerticalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
             val card = cards[page]
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -105,6 +114,22 @@ fun FeedScreen(
                             else FinishReason.STACK_DONE
                         )
                     }
+                )
+            }
+        }
+        if (offline) {
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 8.dp),
+                shape = RoundedCornerShape(50),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shadowElevation = 2.dp
+            ) {
+                Text(
+                    text = "Offline library",
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                 )
             }
         }

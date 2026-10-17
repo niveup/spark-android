@@ -1,6 +1,5 @@
 package com.spark.app.sync
 
-import com.spark.app.data.TokenStore
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.data.remote.StateUpdateBody
 import kotlinx.coroutines.CancellationException
@@ -14,6 +13,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 /**
  * Uploads interaction events to POST /items/state in batches.
@@ -22,19 +23,37 @@ import kotlinx.serialization.json.JsonObject
  *   the backoff timer after a failure.
  * - Failures keep the queue intact and retry with exponential backoff
  *   (5s -> 60s cap). Nothing is lost while the app stays open.
+ * - Phase 7: a [PendingEventStore] (Room) persists unsent events across app
+ *   restarts — on startup [restore] replays them oldest-first and retrys
+ *   the upload automatically.
  * - Idempotent end-to-end: every event carries a clientEventId, so a replay
  *   after a network timeout never double-counts; unknown items are dropped.
  */
 class InteractionSync(
     private val api: SparkApi,
-    private val tokens: TokenStore,
+    tokens: TokenReader,
     private val scope: CoroutineScope,
-    private val flushAt: Int = 10
+    private val flushAt: Int = 10,
+    private val store: PendingEventStore = NoopPendingEventStore,
+    /** Test seam only — production resolves the token from [TokenStore]. */
+    private val tokenProvider: suspend () -> String? = { tokens.getToken() }
 ) {
     private val queue = InteractionQueue()
     private val drainMutex = Mutex()
     private var retryJob: Job? = null
     private var backoffMs = INITIAL_BACKOFF_MS
+
+    init {
+        // Replay events persisted by previous sessions, then immediately
+        // retry the upload (they were never accepted by the server).
+        scope.launch {
+            drainMutex.withLock {
+                queue.restore(store.all())
+            }
+            _pending.value = queue.size
+            flush()
+        }
+    }
 
     private val _pending = MutableStateFlow(0)
 
@@ -44,6 +63,7 @@ class InteractionSync(
     fun record(update: JsonObject) {
         queue.enqueue(update)
         _pending.value = queue.size
+        scope.launch { store.persist(listOf(update)) }
         if (queue.size >= flushAt) flush()
     }
 
@@ -71,7 +91,7 @@ class InteractionSync(
                     _pending.value = 0
                     return
                 }
-                val token = tokens.getToken() ?: return
+                val token = tokenProvider() ?: return
                 val uploaded = try {
                     api.postStateBatch("Bearer $token", StateUpdateBody(batch))
                     true
@@ -85,6 +105,9 @@ class InteractionSync(
                     return
                 }
                 queue.onFlushed(batch)
+                // Server accepted the batch — drop only those rows from the
+                // persistent store (idempotent replays are safe anyway).
+                store.delete(batch.mapNotNull { it.clientEventIdOrNull() })
                 _pending.value = queue.size
             }
         }
@@ -98,6 +121,9 @@ class InteractionSync(
             drain()
         }
     }
+
+    private fun JsonObject.clientEventIdOrNull(): String? =
+        (this["clientEventId"] as? JsonPrimitive)?.contentOrNull
 
     private companion object {
         const val INITIAL_BACKOFF_MS = 5_000L

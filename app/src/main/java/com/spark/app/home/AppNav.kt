@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -29,6 +30,7 @@ import com.spark.app.audio.AudioPlayerBox
 import com.spark.app.audio.TtsHelper
 import com.spark.app.data.SettingsStore
 import com.spark.app.data.TokenStore
+import com.spark.app.data.local.OfflineCache
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.feed.FeedScreen
 import com.spark.app.feed.FeedState
@@ -39,6 +41,7 @@ import com.spark.app.ui.EmptyState
 import com.spark.app.ui.ErrorState
 import com.spark.app.ui.LoadingState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private enum class Tab(val label: String) {
     HOME("Home"),
@@ -59,18 +62,21 @@ fun AppNav(
     val context = LocalContext.current
     val settings = remember { SettingsStore(context.applicationContext) }
     val scope = rememberCoroutineScope()
-    val sync = remember(api, tokens, scope) { InteractionSync(api, tokens, scope) }
+    // Phase 7: Room-backed offline cache — deck/saved snapshots + pending
+    // interaction events. It doubles as InteractionSync's persistent store.
+    val offline = remember { OfflineCache(context.applicationContext) }
+    val sync = remember(api, tokens, scope) { InteractionSync(api, tokens, scope, store = offline) }
 
     val feedVm: FeedViewModel = viewModel(factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return FeedViewModel(api, tokens, settings) as T
+            return FeedViewModel(api, tokens, settings, offline) as T
         }
     })
     val savedVm: SavedViewModel = viewModel(factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return SavedViewModel(api, tokens) as T
+            return SavedViewModel(api, tokens, offline) as T
         }
     })
     val meVm: MeViewModel = viewModel(factory = object : ViewModelProvider.Factory {
@@ -128,8 +134,13 @@ fun AppNav(
             savedVm.load(savedQuery)
         }
     }
+    // Offline cache row on the Me tab (+ refreshed after clearing).
+    var cachedCount by remember { mutableIntStateOf(0) }
     LaunchedEffect(tab) {
-        if (tab == Tab.ME) meVm.refresh()
+        if (tab == Tab.ME) {
+            meVm.refresh()
+            cachedCount = offline.cachedCount()
+        }
     }
 
     Scaffold(
@@ -188,6 +199,7 @@ fun AppNav(
                         cardLimit = f.cardLimit,
                         minuteLimit = f.minuteLimit,
                         startedAtElapsedMs = f.startedAtElapsedMs,
+                        offline = f.offline,
                         tts = tts,
                         sync = sync,
                         player = player,
@@ -220,6 +232,13 @@ fun AppNav(
                         settings.minuteLimit = next
                     },
                     onRetryStats = { meVm.refresh() },
+                    cachedCount = cachedCount,
+                    onClearCache = {
+                        scope.launch {
+                            offline.clearAll()
+                            cachedCount = 0
+                        }
+                    },
                     onLogout = onLogout
                 )
             }

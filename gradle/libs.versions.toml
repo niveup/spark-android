@@ -17,6 +17,14 @@ navigation = "2.10.2"
 securityCrypto = "1.1.0"
 # Media3 verified live against Google Maven (Oct 2026): 1.11.1 is the latest stable.
 media3 = "1.11.1"
+# Room verified live against Google Maven (Oct 2026): 2.8.5 latest stable.
+# KSP must match the Kotlin version the build actually uses — AGP 9.3 pulls
+# Kotlin Gradle plugin 2.2.10, and KSP refuses older pairings. 2.2.10-2.0.2
+# verified live on Maven Central (Oct 2026). Room needs KSP.
+room = "2.8.5"
+ksp = "2.2.10-2.0.2"
+# Coroutines test utilities (JVM tests for the Phase 7 sync persistence).
+coroutinesTest = "1.11.0"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -35,11 +43,16 @@ retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = 
 retrofit-serialization = { group = "com.squareup.retrofit2", name = "converter-kotlinx-serialization", version.ref = "retrofit" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
+room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
