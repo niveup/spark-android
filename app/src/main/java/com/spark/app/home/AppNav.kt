@@ -30,7 +30,7 @@ private enum class Tab(val label: String) {
 }
 
 @Composable
-fun AppNav(onCloseApp: () -> Unit) {
+fun AppNav(onCloseApp: () -> Unit, onLogout: () -> Unit) {
     val cards = remember { sampleCards }
     val state = remember { FeedState() }
     var tab by remember { mutableStateOf(Tab.HOME) }
@@ -89,7 +89,8 @@ fun AppNav(onCloseApp: () -> Unit) {
                 )
                 Tab.ME -> MeScreen(
                     seenCount = state.seenCount,
-                    savedCount = state.saved.size
+                    savedCount = state.saved.size,
+                    onLogout = onLogout
                 )
             }
         }

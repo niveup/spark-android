@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG ONLY. Allows plain http:// to the dev API at 127.0.0.1:3000,
+  which is reached over the USB tunnel (`adb reverse tcp:3000 tcp:3000`).
+  Release builds keep usesCleartextTraffic="false" (security checklist).
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:usesCleartextTraffic="true"
+        tools:replace="android:usesCleartextTraffic" />
+
+</manifest>
