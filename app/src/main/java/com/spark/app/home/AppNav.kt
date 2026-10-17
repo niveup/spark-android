@@ -85,6 +85,10 @@ fun AppNav(
     LaunchedEffect(Unit) { feedVm.load() }
 
     val state = remember { FeedState() }
+    // The server is the source of truth for saved/rated state — seed each fresh load.
+    LaunchedEffect(feed) {
+        (feed as? FeedUiState.Content)?.let { state.seedFrom(it.cards) }
+    }
     var tab by remember { mutableStateOf(if (startOnReels) Tab.REELS else Tab.HOME) }
     LaunchedEffect(startOnReels) {
         if (startOnReels) {
@@ -97,7 +101,10 @@ fun AppNav(
         onDispose { tts.shutdown() }
     }
     LaunchedEffect(tab) {
-        if (tab != Tab.REELS) tts.stop()
+        if (tab != Tab.REELS) {
+            tts.stop()
+            sync.flush() // leaving Reels is a natural checkpoint for seen/dwell events
+        }
     }
 
     // Session limits: local state drives the steppers, the store persists them.
@@ -109,6 +116,7 @@ fun AppNav(
     LaunchedEffect(tab, savedQuery) {
         if (tab == Tab.SAVED) {
             if (savedQuery.isNotBlank()) delay(300)
+            sync.awaitFlush() // a just-saved card shows without waiting for the batch flush
             savedVm.load(savedQuery)
         }
     }

@@ -53,6 +53,15 @@ class InteractionSync(
         retryJob = scope.launch { drain() }
     }
 
+    /**
+     * Suspends until the queued events are uploaded, or a retry is scheduled after a
+     * failure. Used before screens that read server state (the Saved tab) so a
+     * just-recorded save is visible immediately, not only after the next batch flush.
+     */
+    suspend fun awaitFlush() {
+        if (queue.size > 0) drain()
+    }
+
     private suspend fun drain() {
         drainMutex.withLock {
             while (true) {

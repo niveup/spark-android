@@ -75,6 +75,9 @@ data class FeedItemDto(
     @SerialName("license") val license: String = "",
     @SerialName("isAiGenerated") val isAiGenerated: Boolean = false,
     @SerialName("isGrounded") val isGrounded: Boolean = true,
+    @SerialName("saved") val saved: Boolean = false,
+    @SerialName("liked") val liked: Boolean? = null,
+    @SerialName("dismissed") val dismissed: Boolean = false,
     @SerialName("publishedAt") val publishedAt: String = ""
 )
 

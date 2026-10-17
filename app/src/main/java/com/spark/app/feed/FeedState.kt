@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.spark.app.data.Card
 
 /** Why the session ended — shown on the done screen + sent to PATCH /sessions. */
 enum class FinishReason { STACK_DONE, CARD_LIMIT, TIME_LIMIT }
@@ -53,6 +54,19 @@ class FeedState {
         } else {
             _disliked.add(id)
             _liked.remove(id)
+        }
+    }
+
+    /**
+     * Seeds card state from a fresh feed load so cards already saved/rated on the
+     * server render correctly (the server is the source of truth). Only adds —
+     * an in-session toggle is never overwritten.
+     */
+    fun seedFrom(cards: List<Card>) {
+        for (card in cards) {
+            if (card.saved && !_saved.contains(card.id)) _saved.add(card.id)
+            if (card.liked == true && !_liked.contains(card.id)) _liked.add(card.id)
+            if (card.liked == false && !_disliked.contains(card.id)) _disliked.add(card.id)
         }
     }
 }

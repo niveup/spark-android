@@ -36,7 +36,10 @@ data class Card(
     /** "Title — Author" when the card belongs to a book, else null. */
     val bookLine: String? = null,
     val quiz: QuizData? = null,
-    val durationLabel: String? = null
+    val durationLabel: String? = null,
+    /** Server-side interaction state at load time (Phase 5b). */
+    val saved: Boolean = false,
+    val liked: Boolean? = null
 )
 
 const val SESSION_CARD_LIMIT = 20

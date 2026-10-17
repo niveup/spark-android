@@ -1,5 +1,7 @@
 package com.spark.app
 
+import com.spark.app.data.Card
+import com.spark.app.data.CardType
 import com.spark.app.feed.FeedState
 import com.spark.app.feed.FinishReason
 import org.junit.Assert.assertEquals
@@ -52,4 +54,32 @@ class FeedStateTest {
         assertFalse(state.liked.contains("cuid_5"))
         assertTrue(state.disliked.contains("cuid_5"))
     }
+
+    @Test
+    fun `seedFrom marks saved and rated cards from the server`() {
+        val state = FeedState()
+        state.seedFrom(
+            listOf(
+                card("a", saved = true),
+                card("b", liked = true),
+                card("c", liked = false)
+            )
+        )
+        assertTrue(state.saved.contains("a"))
+        assertTrue(state.liked.contains("b"))
+        assertTrue(state.disliked.contains("c"))
+    }
+
+    private fun card(id: String, saved: Boolean = false, liked: Boolean? = null) = Card(
+        id = id,
+        type = CardType.CONCEPT,
+        topic = "General",
+        title = "Title",
+        body = "Body",
+        actionLine = "",
+        source = "test",
+        grounded = true,
+        saved = saved,
+        liked = liked
+    )
 }
