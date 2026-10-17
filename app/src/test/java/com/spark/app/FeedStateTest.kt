@@ -1,9 +1,10 @@
 package com.spark.app
 
-import com.spark.app.data.SESSION_CARD_LIMIT
 import com.spark.app.feed.FeedState
+import com.spark.app.feed.FinishReason
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -13,17 +14,25 @@ class FeedStateTest {
         val state = FeedState()
         assertEquals(0, state.seenCount)
         assertFalse(state.done)
-        assertEquals(SESSION_CARD_LIMIT, FeedState.limit())
+        assertNull(state.finishReason)
     }
 
     @Test
-    fun `reaching last page then finish ends session`() {
+    fun `settling pages tracks the furthest seen`() {
         val state = FeedState()
-        for (page in 0 until SESSION_CARD_LIMIT) state.onPageSettled(page)
-        assertEquals(SESSION_CARD_LIMIT, state.seenCount)
-        assertTrue(state.isLastPage(SESSION_CARD_LIMIT))
-        state.finish()
+        state.onPageSettled(0)
+        state.onPageSettled(4)
+        state.onPageSettled(2) // scrolling back does not lower the count
+        assertEquals(5, state.seenCount)
+    }
+
+    @Test
+    fun `finish records the reason once and ends the session`() {
+        val state = FeedState()
+        state.finish(FinishReason.CARD_LIMIT)
+        state.finish(FinishReason.TIME_LIMIT) // first reason wins
         assertTrue(state.done)
+        assertEquals(FinishReason.CARD_LIMIT, state.finishReason)
     }
 
     @Test
