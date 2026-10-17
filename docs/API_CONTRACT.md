@@ -77,7 +77,9 @@ optional but recommended), `excludeSeen=true` (default; `false` refills
 from saved/older), `topics=` (comma list, optional boost filter).
 Response `200`: `{ "data": FeedItem[], "nextCursor": string | null }`.
 Ranking (server, v1, no ML): SRS-due first → unseen from liked/saved topics →
-~20% exploration → never seen-within-30d unless saved. Deterministic per token
+~20% exploration → never seen-within-30d unless saved (a due review resurfaces
+even if recently seen — rule 1 outranks rule 4, or SRS could never fire).
+Deterministic per token
 within a session (seeded by `sessionId` when given, otherwise by token) so pages
 don't reshuffle mid-scroll.
 
@@ -122,6 +124,13 @@ Response `201`: `{ "data": { "sessionId": string, "startedAt": "string" } }`.
 Auth required. Request: `{ "itemsSeen": number, "limitReached": boolean }`.
 Response `200`: `{ "data": { "sessionId": string, "endedAt": "string" } }`.
 Unknown/foreign session id → `NOT_FOUND`.
+
+### GET /stats — personal totals (additive v1.1, used by the Me tab)
+Auth required. Response `200`:
+`{ "data": { "seenTotal": number, "savedTotal": number, "likedTotal": number,
+             "quizzesDue": number, "sessionsTotal": number } }`.
+Item totals are token-scoped; `quizzesDue` counts items whose SRS due date has
+passed; `sessionsTotal` counts closed sessions (single-user app: all of them).
 
 ### GET /health — unauthenticated probe
 Response `200`: `{ "data": { "ok": true, "version": "v1" } }`. Used by the app's

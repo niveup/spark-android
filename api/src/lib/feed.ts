@@ -88,6 +88,18 @@ export function toItemState(itemId: string, s: DbState): ApiItemState {
 // --- Ranking v1 (contract §GET /feed, no ML) ---
 // 1. SRS-due first · 2. unseen from liked/saved topics · 3. ~20% exploration
 // 4. never seen-within-30d unless saved. Deterministic per seed (sessionId).
+// Rule 1 outranks rule 4: a due review must resurface even if recently seen,
+// otherwise SRS intervals (1-3-7 days) could never fire inside the 30-day block.
+
+// Minimal shapes so the ranker is unit-testable with plain objects (no DB rows).
+export type RankableItem = { id: string; topicTags: string[] };
+export type RankableState = {
+  itemId: string;
+  seenAt: Date | null;
+  saved: boolean;
+  liked: boolean | null;
+  srsDueAt: Date | null;
+};
 
 export function hashSeed(seed: string): number {
   let h = 2166136261;
@@ -109,11 +121,11 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-export function rankFeed(
-  items: ItemWithBook[],
-  statesById: Map<string, DbState>,
+export function rankFeed<T extends RankableItem>(
+  items: T[],
+  statesById: Map<string, RankableState>,
   seed: string,
-): ItemWithBook[] {
+): T[] {
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
   const likedTopics = new Set<string>();
@@ -123,17 +135,17 @@ export function rankFeed(
       item?.topicTags.forEach((t) => likedTopics.add(t));
     }
   }
-  const due: ItemWithBook[] = [];
-  const preferred: ItemWithBook[] = [];
-  const explore: ItemWithBook[] = [];
+  const due: T[] = [];
+  const preferred: T[] = [];
+  const explore: T[] = [];
   for (const item of items) {
     const st = statesById.get(item.id);
-    const seenRecently = !!st?.seenAt && st.seenAt.getTime() > thirtyDaysAgo;
-    if (seenRecently && !st?.saved) continue; // rule 4
     if (st?.srsDueAt && st.srsDueAt.getTime() <= now) {
-      due.push(item); // rule 1
+      due.push(item); // rule 1 — before rule 4 on purpose (see header)
       continue;
     }
+    const seenRecently = !!st?.seenAt && st.seenAt.getTime() > thirtyDaysAgo;
+    if (seenRecently && !st?.saved) continue; // rule 4
     if (st?.seenAt) {
       explore.push(item); // seen long ago / saved refill
       continue;
@@ -144,8 +156,8 @@ export function rankFeed(
   // ~20% exploration interleaved deterministically (rule 3).
   const rand = mulberry32(hashSeed(seed));
   const ordered = [...due];
-  const exp: ItemWithBook[] = [];
-  const rest: ItemWithBook[] = [];
+  const exp: T[] = [];
+  const rest: T[] = [];
   for (const item of explore) {
     (rand() < 0.2 ? exp : rest).push(item);
   }

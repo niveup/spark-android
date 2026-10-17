@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { toItemState } from "@/lib/feed";
+import { nextSrsDue } from "./srs";
 
 // Shared single-update logic for POST /items/:id/state and POST /items/state.
 // Idempotent per clientEventId: replays never double-count dwellMs.
@@ -12,21 +13,6 @@ export type StateUpdate = {
   quizCorrect?: boolean | null;
   clientEventId?: string;
 };
-
-const SRS_STEPS = [1, 3, 7, 14, 30, 60]; // days; v1 scheduler
-
-function nextSrsDue(currentInterval: number | null, correct: boolean): { due: Date; interval: number } {
-  let interval: number;
-  if (!correct) {
-    interval = 1;
-  } else if (currentInterval == null) {
-    interval = SRS_STEPS[0]!;
-  } else {
-    const idx = SRS_STEPS.indexOf(currentInterval);
-    interval = SRS_STEPS[Math.min(idx + 1, SRS_STEPS.length - 1)]!;
-  }
-  return { due: new Date(Date.now() + interval * 24 * 60 * 60 * 1000), interval };
-}
 
 export async function applyStateUpdate(tokenHash: string, itemId: string, update: StateUpdate) {
   const existing = await db.itemState.findUnique({
