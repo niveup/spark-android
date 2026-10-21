@@ -59,12 +59,27 @@ SECURITY.md review, dependency audit, Sentry test crash, coverage API/auth/ranki
 Done this pass: Prisma 7.10.1 (npm audit 0) + CI audit gate; backup exclusions +
 network security config; POST_NOTIFICATIONS removed; explicit shortcut; R8 +
 resource shrinking + QA smoke variant; a11y labels/headings; 8 Compose
-on-device tests; Kover 12% floor (actual 14.18%); saved JSON/Markdown export
+on-device tests; Kover 12% floor (actual 15.48%); saved JSON/Markdown export
 via FileProvider share sheet. Error-state audit: feed (offline banner + retry),
 saved (loading/error/empty), me (loading/error/retry), login (inline error),
-audio (failure text), export (Toast on failure). Pending owner-visible checks:
-Sentry test crash in dashboard, QA (R8) login/feed, export share sheet,
-startup/memory numbers.
+audio (failure text), export (Toast on failure).
+
+Verified on the phone: lint/unit/Kover and 8/8 Compose tests; debug and QA
+(R8) login + feed; QA save → Saved shows the just-saved card immediately;
+6 rapid debug Save→Saved cycles and 2 QA cycles with no fatal crash; export
+share sheet opened and the pulled JSON parsed; Sentry test crash captured
+locally (event `81a88465e42f4087ad60d1397466cb30`) — owner dashboard/PII check
+still pending. QA and release R8 builds succeed.
+
+Crash found and fixed during hardening: Material3 1.4.0 throws
+`visitAncestors called on an unattached node` from `ChildSemanticsNode` when
+Save changes a `TextButton`'s semantics and the card is disposed by an
+immediate tab switch. Card actions now use a plain clickable `CardAction`
+(same button role, content description and state description). The Saved tab
+also waits at most 2s for a queued upload and refreshes when `pendingSync`
+reaches 0, so a slow upload cannot leave the just-saved card missing. Revisit
+the workaround when a stable Material3 release fixes the Surface
+child-semantics bug.
 
 ## PHASE 9 — Release, backup, runbook
 **Backend deployment to Vercel (free tier) + Supabase happens here** — after hardening, before the signed release. User-facing effect: the phone no longer needs the PC (app talks to the public HTTPS API URL; dev build keeps the USB tunnel for development). Then: identity/icon/splash, versionCode+1, signing key backup x2 (never repo), signed release APK via Studio or Actions, prod env + migration after backup, smoke test, RUNBOOK.md (deploy/rollback/revoke/restore/re-run/lost-phone), monthly checklist.
@@ -100,3 +115,6 @@ Scope = **visual/interaction only, no new features**: icons, type scale, spacing
 12. **Bottom nav** — selected tab currently shows only a colour change; theme preview shows a filled "pill" indicator.
 13. **a11y** — Phase 8 landed content descriptions for card actions/steppers, heading semantics, and default 48.dp Material touch targets. Remaining 8.5 pass: full TalkBack order on cards, focus after swipe, and a screen-reader walkthrough with the owner.
 14. **Me tab** — owner wants this screen to feel excellent, not just functional: a clear identity header, grouped settings (session limits, audio, offline cache), readable stats, and a calm sign-out area. Keep every existing action working. Visual/interaction only — parked for 8.5.
+15. **Saved export buttons** - "Export Markdown" wraps to two lines in the half-width button. Use short labels (`Export .json` / `Export .md`) or a small overflow menu; keep both formats.
+16. **Saved empty state** - export buttons are always composed but disabled while loading/empty (kept stable to avoid tab-transition churn). Decide in 8.5 whether to hide them on empty; keep them reachable whenever cards exist.
+17. **Card action row** - `CardAction` is a plain clickable (workaround for the Material3 1.4.0 `ChildSemanticsNode` crash). Give it the final alignment/ripple/padding treatment in 8.5 and restore standard Material3 buttons once a stable release fixes the bug; keep the role + state descriptions.
