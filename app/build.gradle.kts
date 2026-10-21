@@ -12,6 +12,7 @@ plugins {
     // Phase 8: uploads the R8 mapping file + source context on release builds
     // so release stack traces are readable in Sentry.
     alias(libs.plugins.sentry.android.gradle)
+    alias(libs.plugins.kover)
 }
 
 // Dev helper: the API is reached through a USB tunnel ("adb reverse"), so the
@@ -101,6 +102,7 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0-phase0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -183,6 +185,27 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Phase 8: on-device Compose UI tests (no emulator; runs on the owner's phone).
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    debugImplementation(libs.compose.ui.test.manifest)
+}
+
+// Phase 8 coverage floor. This measures JVM unit tests only; the on-device
+// Compose tests are run separately (connectedDebugAndroidTest) and are not
+// merged into this number. The floor guards against losing the tested core
+// (ranking/SRS/queue/settings) while the UI layer keeps growing.
+kover {
+    reports {
+        verify {
+            rule {
+                minBound(12)
+            }
+        }
+    }
 }
 
 // Room exports its schema as JSON so future migrations start from a known

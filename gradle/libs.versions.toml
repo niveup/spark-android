@@ -25,6 +25,11 @@ room = "2.8.5"
 ksp = "2.2.10-2.0.2"
 # Coroutines test utilities (JVM tests for the Phase 7 sync persistence).
 coroutinesTest = "1.11.0"
+# Instrumented Compose UI tests (Phase 8).
+androidxTestExtJunit = "1.3.0"
+androidxTestRunner = "1.7.0"
+# Coverage reports + minimum floor (Phase 8).
+kover = "0.9.11"
 # Sentry crash reporting (Phase 8). The SDK and the Gradle plugin are versioned
 # SEPARATELY by Sentry — the plugin is NOT the SDK version. Verified live on
 # Maven Central (Oct 2026): sentry-android 8.61.0, plugin 6.24.0.
@@ -50,6 +55,10 @@ okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhtt
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "media3" }
 media3-session = { group = "androidx.media3", name = "media3-session", version.ref = "media3" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
@@ -65,3 +74,4 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 sentry-android-gradle = { id = "io.sentry.android.gradle", version.ref = "sentryGradlePlugin" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
