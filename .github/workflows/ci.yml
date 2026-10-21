@@ -55,5 +55,8 @@ jobs:
       - name: Install API dependencies
         run: npm ci
 
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: API unit tests
         run: npm run test:unit
