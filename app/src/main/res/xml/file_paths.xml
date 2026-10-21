@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the app's cache/exports folder is exposed through FileProvider.
+     Files are written by SavedExporter for ACTION_SEND and are deleted by
+     Android when the cache is cleared. -->
+<paths>
+    <cache-path name="exports" path="exports/" />
+</paths>

@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spark.app.BuildConfig
 import com.spark.app.data.Card
+import com.spark.app.data.SavedExportFormat
 
 @Composable
 fun SavedScreen(
@@ -40,6 +41,7 @@ fun SavedScreen(
     query: String,
     onQueryChange: (String) -> Unit,
     onRetry: () -> Unit,
+    onExport: (SavedExportFormat) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -62,6 +64,24 @@ fun SavedScreen(
             singleLine = true,
             placeholder = { Text("Search saved cards…") }
         )
+        // Keep the export row composed while loading/empty so it does not
+        // appear and disappear during tab transitions; disabled until there is
+        // content. The Material3 1.4.0 child-semantics crash itself is
+        // worked around in CardAction (feed/CardViews.kt).
+        val canExport = state is SavedUiState.Content && state.cards.isNotEmpty()
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedButton(
+                onClick = { onExport(SavedExportFormat.JSON) },
+                enabled = canExport,
+                modifier = Modifier.weight(1f)
+            ) { Text("Export JSON") }
+            OutlinedButton(
+                onClick = { onExport(SavedExportFormat.MARKDOWN) },
+                enabled = canExport,
+                modifier = Modifier.weight(1f)
+            ) { Text("Export Markdown") }
+        }
         Spacer(modifier = Modifier.height(12.dp))
         when (state) {
             is SavedUiState.Loading -> Text("Loading saved cards…")

@@ -12,6 +12,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.spark.app.auth.AuthStatus
 import com.spark.app.auth.AuthUiState
 import com.spark.app.auth.LoginScreen
+import com.spark.app.data.Card
+import com.spark.app.data.CardType
+import com.spark.app.data.SavedExportFormat
 import com.spark.app.data.remote.StatsData
 import com.spark.app.feed.DoneScreen
 import com.spark.app.feed.FinishReason
@@ -114,7 +117,8 @@ class UiSmokeTest {
                     state = SavedUiState.Content(emptyList(), ""),
                     query = "",
                     onQueryChange = {},
-                    onRetry = {}
+                    onRetry = {},
+                    onExport = {}
                 )
             }
         }
@@ -132,13 +136,45 @@ class UiSmokeTest {
                     state = SavedUiState.Error("Could not load saved cards."),
                     query = "",
                     onQueryChange = {},
-                    onRetry = { retried = true }
+                    onRetry = { retried = true },
+                    onExport = {}
                 )
             }
         }
 
         compose.onNodeWithText("Retry").performClick()
         assertTrue(retried)
+    }
+
+    @Test
+    fun savedScreenExportsVisibleCardsInBothFormats() {
+        val card = Card(
+            id = "card-1",
+            type = CardType.CONCEPT,
+            topic = "habits",
+            title = "Start small",
+            body = "Make the habit obvious.",
+            actionLine = "Do two minutes today.",
+            source = "Test source",
+            grounded = true
+        )
+        var requested: SavedExportFormat? = null
+        compose.setContent {
+            SparkTheme {
+                SavedScreen(
+                    state = SavedUiState.Content(listOf(card), ""),
+                    query = "",
+                    onQueryChange = {},
+                    onRetry = {},
+                    onExport = { requested = it }
+                )
+            }
+        }
+
+        compose.onNodeWithText("Export Markdown").performClick()
+        assertEquals(SavedExportFormat.MARKDOWN, requested)
+        compose.onNodeWithText("Export JSON").performClick()
+        assertEquals(SavedExportFormat.JSON, requested)
     }
 
     @Test

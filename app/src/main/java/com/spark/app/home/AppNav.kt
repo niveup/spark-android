@@ -28,6 +28,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.spark.app.audio.AudioPlayerBox
 import com.spark.app.audio.TtsHelper
+import com.spark.app.data.SavedExportFormat
+import com.spark.app.data.SavedExporter
 import com.spark.app.data.SettingsStore
 import com.spark.app.data.TokenStore
 import com.spark.app.data.local.OfflineCache
@@ -42,6 +44,7 @@ import com.spark.app.ui.ErrorState
 import com.spark.app.ui.LoadingState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 private enum class Tab(val label: String) {
     HOME("Home"),
@@ -126,11 +129,16 @@ fun AppNav(
     var minuteLimit by remember { mutableStateOf(settings.minuteLimit) }
 
     // Saved tab: load on open + debounced while typing in the search box.
+    // Upload a just-recorded save first, but never block the tab forever on a
+    // dead network: after 2s, show the server/cache result. Keying on
+    // pendingSync refreshes once more when the queued save reaches the server,
+    // so a slow upload cannot leave the just-saved card missing.
     var savedQuery by remember { mutableStateOf("") }
-    LaunchedEffect(tab, savedQuery) {
+    LaunchedEffect(tab, savedQuery, pendingSync) {
         if (tab == Tab.SAVED) {
             if (savedQuery.isNotBlank()) delay(300)
-            sync.awaitFlush() // a just-saved card shows without waiting for the batch flush
+            withTimeoutOrNull(2_000) { sync.awaitFlush() }
+            if (sync.pending.value > 0) sync.flush()
             savedVm.load(savedQuery)
         }
     }
@@ -214,7 +222,11 @@ fun AppNav(
                     state = saved,
                     query = savedQuery,
                     onQueryChange = { savedQuery = it },
-                    onRetry = { savedVm.load(savedQuery) }
+                    onRetry = { savedVm.load(savedQuery) },
+                    onExport = { format ->
+                        val cards = (saved as? SavedUiState.Content)?.cards.orEmpty()
+                        SavedExporter.share(context, cards, format)
+                    }
                 )
                 Tab.ME -> MeScreen(
                     stats = stats,
