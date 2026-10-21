@@ -1,8 +1,7 @@
 name: CI
 
 # Phase 0 rule: lint + unit tests on every push.
-# No Gradle wrapper in repo (Studio builds locally), so CI installs
-# Gradle 9.6.0 directly — same version as gradle/wrapper/gradle-wrapper.properties.
+# Gradle wrapper is committed (9.6.0) and checksum-pinned; CI uses it directly.
 # Runner already has Android SDK + Java setup; we add JDK 17 and the
 # exact platform/build-tools this project uses (see local SDK: android-37, 36.0.0).
 # API integration tests (api/test/api.test.ts) need a running dev server + the
@@ -25,20 +24,17 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Gradle 9.6.0
-        run: |
-          curl -L https://services.gradle.org/distributions/gradle-9.6.0-bin.zip -o /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp
-          echo "/tmp/gradle-9.6.0/bin" >> "$GITHUB_PATH"
-
       - name: Install Android packages
         run: |
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$PATH"
           yes | sdkmanager --licenses > /dev/null || true
           sdkmanager "platforms;android-37.0" "build-tools;36.0.0"
 
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
       - name: Lint and unit tests
-        run: gradle :app:lintDebug :app:testDebugUnitTest --console=plain
+        run: ./gradlew :app:lintDebug :app:testDebugUnitTest --console=plain
 
   api-unit:
     runs-on: ubuntu-latest
