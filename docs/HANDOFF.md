@@ -58,3 +58,23 @@ SECURITY.md review, dependency audit, Sentry test crash, coverage API/auth/ranki
 
 ## PHASE 9 — Release, backup, runbook
 **Backend deployment to Vercel (free tier) + Supabase happens here** — after hardening, before the signed release. User-facing effect: the phone no longer needs the PC (app talks to the public HTTPS API URL; dev build keeps the USB tunnel for development). Then: identity/icon/splash, versionCode+1, signing key backup x2 (never repo), signed release APK via Studio or Actions, prod env + migration after backup, smoke test, RUNBOOK.md (deploy/rollback/revoke/restore/re-run/lost-phone), monthly checklist.
+
+## PHASE 8.5 — UI polish pass [NOT STARTED — owner triggers it]
+Owner's standing instruction (AGENTS.md rule 13): **the agent flags when polish is due; the owner says go.** Recommended trigger point: after Phase 8 hardening, before Phase 9 release — that is the last moment the whole app can be looked at as a whole (all 6 card types, offline states, audio, saved, me) without release pressure. Second acceptable trigger: a week of real daily use on the phone, so the owner can judge what actually annoys him.
+
+Scope = **visual/interaction only, no new features**: icons, type scale, spacing rhythm, motion/haptics, states, labels. Everything here is deliberately parked until then.
+
+### UI polish backlog (check items off as they land)
+1. **Icons** — replace emoji glyphs (`♡ ♥ 👍 👎 🔊 ⓘ ▶ ⏸ ⌂ ▤ ☺`) with Material icons (`material-icons-extended`); emoji render per-phone-font and look inconsistent. Note: `material-icons-extended` = a new dependency → must ask the owner first (AGENTS.md rule 3).
+2. **Type scale** — no `MaterialTheme.typography` overrides exist; screens hardcode `30.sp / 24.sp / 18.sp`. Define one scale in `ui/theme/Theme.kt` (display/headline/body/label) and use tokens everywhere.
+3. **Spacing rhythm** — 20.dp/24.dp paddings scattered per screen; define a spacing scale (8/12/16/24/32) in the theme and apply it consistently.
+4. **Haptics** — no feedback on Save / Like / Dislike / card snap (`LocalHapticFeedback`); a swipe-scroller feels dead without it.
+5. **Motion** — pager cards change instantly; consider a subtle enter transition + `AnimatedContent` for the body when a card settles.
+6. **"AI-written, unverified" label** — currently painted in `error` red (reads as a failure). Should be a neutral/amber "unverified" chip (warning, not error).
+7. **Card header chip** — raw enum lowercase `[concept·thermo]` → pretty `CONCEPT · THERMO` with a filled chip (matches `docs/theme-preview.html` card/tag mock).
+8. **Home "TODAY" block** — currently shows session limits ("● 20 cards per session"), but wireframe §0b wants weak topics / due counts. Needs server data (weak topics) — only if the API can supply it cheaply.
+9. **Saved tab** — tapping a row should open the full card (wireframe §10); today the row is inert. Add a per-type dot colour.
+10. **Audio overlay** — full-screen "Now playing" (wireframe §13): resume position, −10s/+30s, speed, sleep timer. Functionality parked from Phase 6.
+11. **Loading / empty states** — plain text ("Loading saved cards…") → branded state blocks with an icon + one line of guidance (there is `ui/States.kt` to rework).
+12. **Bottom nav** — selected tab currently shows only a colour change; theme preview shows a filled "pill" indicator.
+13. **a11y** — `contentDescription` on every icon button, 48.dp touch targets, sensible TalkBack order on cards (overlaps Phase 8's a11y audit — do it once, together).
