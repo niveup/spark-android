@@ -19,6 +19,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SPARK"
         android:usesCleartextTraffic="false">
+        <!-- Phase 8: the Sentry SDK auto-installs a ContentProvider that runs
+             BEFORE Application.onCreate() and initialises the SDK itself. With
+             our DSN coming from BuildConfig (not the manifest) that provider
+             has no DSN and kills the app at startup. Turning auto-init off
+             leaves exactly one init path: SentryAndroid.init in SparkApp. -->
+        <meta-data
+            android:name="io.sentry.auto-init"
+            android:value="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
