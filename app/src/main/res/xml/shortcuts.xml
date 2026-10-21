@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Static app shortcut: long-press the SPARK icon -> "I'm bored" -> Reels tab. -->
+<!-- Static app shortcut: long-press the SPARK icon -> "I'm bored" -> Reels tab.
+     The intent is explicit, so MainActivity no longer needs an exported
+     custom-action intent-filter. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
         android:enabled="true"
@@ -7,6 +9,9 @@
         android:shortcutId="bored"
         android:shortcutLongLabel="@string/shortcut_bored_long"
         android:shortcutShortLabel="@string/shortcut_bored_short">
-        <intent android:action="com.spark.app.action.OPEN_REELS" />
+        <intent
+            android:action="com.spark.app.action.OPEN_REELS"
+            android:targetClass="com.spark.app.MainActivity"
+            android:targetPackage="com.spark.app" />
     </shortcut>
 </shortcuts>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug build variant: applicationId has the ".debug" suffix, so the
+     explicit shortcut target must use that package. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_reels"
+        android:shortcutId="bored"
+        android:shortcutLongLabel="@string/shortcut_bored_long"
+        android:shortcutShortLabel="@string/shortcut_bored_short">
+        <intent
+            android:action="com.spark.app.action.OPEN_REELS"
+            android:targetClass="com.spark.app.MainActivity"
+            android:targetPackage="com.spark.app.debug" />
+    </shortcut>
+</shortcuts>
