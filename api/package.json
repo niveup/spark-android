@@ -8,15 +8,17 @@
     "build": "next build",
     "start": "next start",
     "test": "tsx --test test/*.test.ts",
-    "test:unit": "tsx --test test/client-ip.test.ts test/ranking.test.ts test/pipeline.test.ts test/growth.test.ts",
+    "test:unit": "tsx --test test/client-ip.test.ts test/ranking.test.ts test/pipeline.test.ts test/growth.test.ts test/quotes.test.ts",
     "db:validate": "prisma validate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "ingest:resolve": "tsx prisma/resolve-books.ts",
     "ingest:growth": "tsx prisma/ingest-growth.ts",
+    "ingest:quotes": "tsx prisma/ingest-quotes.ts",
     "ingest:review": "tsx prisma/review-growth.ts",
     "ingest:publish": "tsx prisma/publish-growth.ts",
-    "content:archive-audio": "tsx prisma/archive-audio.ts"
+    "content:archive-audio": "tsx prisma/archive-audio.ts",
+    "content:archive-legacy-quotes": "tsx prisma/archive-legacy-quotes.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.1",

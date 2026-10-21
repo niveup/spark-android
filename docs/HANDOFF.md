@@ -53,11 +53,29 @@ Media3 1.11.1 background + lock controls implemented: `AudioBookService` (MediaS
 ## PHASE 7 — Offline Room + sync [DONE — verified on phone Oct 2026]
 Room 2.8.5 (`spark-offline.db`, schema exported to `app/schemas/`): cached deck (max 50 fresh cards, saved always kept) + saved snapshots + pending interaction events. Offline Reels shows the cached deck with an "Offline library" chip; Saved tab mirrors cached saved cards with local substring search; every queued event persists across app restarts and replays on startup (idempotent via clientEventId). Me tab shows cache size + a confirm-dialog "Clear offline cache". Phone-verified: force-stopped the app → removed USB tunnel → relaunch served the cached deck (1/13, chip visible) offline; tapping Save offline survived force-stop — 9 queued changes uploaded and "All changes synced ✓" as soon as the tunnel returned; clear-cache emptied the store. Server-wins content / last-write-wins state per the plan.
 
-## PHASE 8 — Hardening
+## PHASE 8 — Hardening [IN PROGRESS — Oct 2026]
 SECURITY.md review, dependency audit, Sentry test crash, coverage API/auth/ranking/SRS/queue, startup/memory pass, a11y, error-state audit, saved export JSON/Markdown.
+
+Done this pass: Prisma 7.10.1 (npm audit 0) + CI audit gate; backup exclusions +
+network security config; POST_NOTIFICATIONS removed; explicit shortcut; R8 +
+resource shrinking + QA smoke variant; a11y labels/headings; 8 Compose
+on-device tests; Kover 12% floor (actual 14.18%); saved JSON/Markdown export
+via FileProvider share sheet. Error-state audit: feed (offline banner + retry),
+saved (loading/error/empty), me (loading/error/retry), login (inline error),
+audio (failure text), export (Toast on failure). Pending owner-visible checks:
+Sentry test crash in dashboard, QA (R8) login/feed, export share sheet,
+startup/memory numbers.
 
 ## PHASE 9 — Release, backup, runbook
 **Backend deployment to Vercel (free tier) + Supabase happens here** — after hardening, before the signed release. User-facing effect: the phone no longer needs the PC (app talks to the public HTTPS API URL; dev build keeps the USB tunnel for development). Then: identity/icon/splash, versionCode+1, signing key backup x2 (never repo), signed release APK via Studio or Actions, prod env + migration after backup, smoke test, RUNBOOK.md (deploy/rollback/revoke/restore/re-run/lost-phone), monthly checklist.
+
+## Deck change (Oct 2026) — quotes now come from the books SPARK recommends
+Owner feedback: the old quote cards were the weakest content in the feed — Bartlett's 1905 anthology produced Victorian verse and providentialism ("Do you seek Alcides' equal?"), the hand-written seed quotes were the generic Instagram kind, and every card in a group shared one action line ("name one outside event you will stop arguing with" glued onto three different Marcus Aurelius quotes, one of them about the gods). Owner decision: **option A — quotes come from the books SPARK already recommends.**
+- New pipeline: `prisma/data/growth-quotes.json` (curated: book slug, chapter, `match` prefix, per-quote action line) + `prisma/ingest-quotes.ts`, which re-fetches each book's Gutenberg text and pulls the **verbatim sentence** from it. A `match` that is not found verbatim is a hard error — a quote can never drift from the book it claims to come from. The quote text is grounded (`isGrounded = true`); the action line is written per quote, so the card is flagged `isAiGenerated = true` like the existing summary cards.
+- 16 quotes live in the deck now, from 6 books: As a Man Thinketh (3) · 24 Hours (3) · Franklin (3) · Acres of Diamonds (2) · Science of Getting Rich (2) · Enchiridion of Epictetus (3). Each links to its Book row, so "Why this?" shows the book and chapter.
+- Legacy quote cards (9 Bartlett + 4 hand-typed) are archived, not deleted: `npm run content:archive-legacy-quotes` (`-- --restore` to bring them back).
+- Discovery helper: `npx tsx prisma/quote-candidates.ts [slug]` prints ranked candidate sentences per book (filters out archaic/religious register, narration and verse). Unit tests: `api/test/quotes.test.ts`.
+- Deck now: 16 quote · 14 concept · 12 book_idea · 3 challenge = 45 cards, 0 audio.
 
 ## Deck change (Oct 2026) — audiobook cards removed
 Owner feedback: the LibriVox chapter cards were pure boilerplate ("Section 3 of the public-domain LibriVox reading of *X* by *Y*"), every one of them shared the same action line, and they made up ~41% of the published deck. Removed two ways, both reversible: (1) 29 published audio cards were **archived** (`status: published → archived`, nothing deleted, saved state kept) via the new `npm run content:archive-audio` — add `--restore` to publish them again; (2) the ingest no longer produces them (`prisma/data/growth-config.json` → `audio.enabled: false`). Published deck is now 42 cards: 14 concept · 13 quote · 12 book_idea · 3 challenge. The Media3 player code stays in the app (dormant) so audio can come back cheaply once a card body carries a real excerpt of the chapter instead of a template sentence.
@@ -80,5 +98,5 @@ Scope = **visual/interaction only, no new features**: icons, type scale, spacing
 10. **Audio overlay** — full-screen "Now playing" (wireframe §13): resume position, −10s/+30s, speed, sleep timer. Functionality parked from Phase 6.
 11. **Loading / empty states** — plain text ("Loading saved cards…") → branded state blocks with an icon + one line of guidance (there is `ui/States.kt` to rework).
 12. **Bottom nav** — selected tab currently shows only a colour change; theme preview shows a filled "pill" indicator.
-13. **a11y** — `contentDescription` on every icon button, 48.dp touch targets, sensible TalkBack order on cards (overlaps Phase 8's a11y audit — do it once, together).
+13. **a11y** — Phase 8 landed content descriptions for card actions/steppers, heading semantics, and default 48.dp Material touch targets. Remaining 8.5 pass: full TalkBack order on cards, focus after swipe, and a screen-reader walkthrough with the owner.
 14. **Me tab** — owner wants this screen to feel excellent, not just functional: a clear identity header, grouped settings (session limits, audio, offline cache), readable stats, and a calm sign-out area. Keep every existing action working. Visual/interaction only — parked for 8.5.

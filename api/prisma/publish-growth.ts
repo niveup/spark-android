@@ -5,7 +5,7 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
-const SOURCES = ["librivox", "bartletts-1905", "wikipedia", "gutenberg"];
+const SOURCES = ["librivox", "bartletts-1905", "wikipedia", "gutenberg", "gutenberg-book"];
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL ?? "" });
 const db = new PrismaClient({ adapter });

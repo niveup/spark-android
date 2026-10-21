@@ -1,0 +1,133 @@
+{
+  "comment": "Quote cards taken from the books SPARK already recommends (owner decision, Oct 2026 — option A). Every quote is a VERBATIM sentence from that book's Gutenberg text; this file stores only a `match` prefix, and the ingest re-fetches the book and pulls the exact sentence from the source, so a quote can never drift from the book it claims to come from. `actionLine` is written per quote (not per author). If a `match` is not found verbatim in the book, the ingest fails loudly instead of publishing a paraphrase.",
+  "quotes": [
+    {
+      "slug": "as-a-man-thinketh",
+      "authorName": "James Allen",
+      "chapter": "EFFECT OF THOUGHT ON HEALTH AND THE BODY",
+      "match": "If you would protect your body",
+      "actionLine": "Try this today: no screens for the last 20 minutes before bed.",
+      "topicTags": ["health", "focus"]
+    },
+    {
+      "slug": "as-a-man-thinketh",
+      "authorName": "James Allen",
+      "chapter": "EFFECT OF THOUGHT ON CIRCUMSTANCES",
+      "match": "Men imagine that thought can be kept secret",
+      "actionLine": "Try this today: name one habit you repeat daily, and decide whether you want it to become your life.",
+      "topicTags": ["mindset", "habits"]
+    },
+    {
+      "slug": "as-a-man-thinketh",
+      "authorName": "James Allen",
+      "chapter": "THOUGHT AND PURPOSE",
+      "match": "Thoughts of doubt and fear never accomplished",
+      "actionLine": "Try this today: write the worst case on paper, then the one step you can take today.",
+      "topicTags": ["mindset", "focus"]
+    },
+    {
+      "slug": "how-to-live-on-24-hours",
+      "authorName": "Arnold Bennett",
+      "chapter": "THE DAILY MIRACLE",
+      "match": "You cannot waste the next hour",
+      "actionLine": "Try this today: protect the next hour from your phone before anything else touches it.",
+      "topicTags": ["time", "focus"]
+    },
+    {
+      "slug": "how-to-live-on-24-hours",
+      "authorName": "Arnold Bennett",
+      "chapter": "PRECAUTIONS BEFORE BEGINNING",
+      "match": "If you imagine that you will be able to achieve your ideal",
+      "actionLine": "Try this today: plan the next hour, not the next month — then start the first task.",
+      "topicTags": ["time", "focus"]
+    },
+    {
+      "slug": "how-to-live-on-24-hours",
+      "authorName": "Arnold Bennett",
+      "chapter": "PRECAUTIONS BEFORE BEGINNING",
+      "match": "You can turn over a new leaf every hour",
+      "actionLine": "Try this today: when an hour goes badly, take the next one and start clean.",
+      "topicTags": ["time"]
+    },
+    {
+      "slug": "franklin-autobiography",
+      "authorName": "Benjamin Franklin",
+      "chapter": "PLAN FOR ATTAINING MORAL PERFECTION",
+      "match": "Resolve to perform what you ought",
+      "actionLine": "Try this today: write the one decision you already made, then do it before noon.",
+      "topicTags": ["habits"]
+    },
+    {
+      "slug": "franklin-autobiography",
+      "authorName": "Benjamin Franklin",
+      "chapter": "PLAN FOR ATTAINING MORAL PERFECTION",
+      "match": "Let all your things have their places",
+      "actionLine": "Try this today: give your phone, keys and wallet one fixed place — and one fixed time to plan.",
+      "topicTags": ["habits", "focus"]
+    },
+    {
+      "slug": "franklin-autobiography",
+      "authorName": "Benjamin Franklin",
+      "chapter": "BUSINESS SUCCESS AND FIRST PUBLIC SERVICE",
+      "match": "The present little sacrifice of your vanity",
+      "actionLine": "Try this today: send the message you were waiting to send, without the extra paragraph.",
+      "topicTags": ["communication", "mindset"]
+    },
+    {
+      "slug": "acres-of-diamonds",
+      "authorName": "Russell Conwell",
+      "chapter": "ACRES OF DIAMONDS",
+      "match": "You must first know what people need",
+      "actionLine": "Try this today: ask one person what they can't get, then solve exactly that.",
+      "topicTags": ["money"]
+    },
+    {
+      "slug": "acres-of-diamonds",
+      "authorName": "Russell Conwell",
+      "chapter": "ACRES OF DIAMONDS",
+      "match": "Young man, remember if you know what people need",
+      "actionLine": "Try this today: ask one person what they need, and write down what you could build for them.",
+      "topicTags": ["money", "mindset"]
+    },
+    {
+      "slug": "science-of-getting-rich",
+      "authorName": "Wallace D. Wattles",
+      "chapter": "THE AUTHOR",
+      "match": "No matter how poor you may be",
+      "actionLine": "Try this today: do the one money task you've been avoiding, before you feel ready.",
+      "topicTags": ["money", "mindset"]
+    },
+    {
+      "slug": "science-of-getting-rich",
+      "authorName": "Wallace D. Wattles",
+      "chapter": "THE AUTHOR",
+      "match": "Riches secured on the competitive plane",
+      "actionLine": "Try this today: write down what you want your money for, before you chase more of it.",
+      "topicTags": ["money"]
+    },
+    {
+      "slug": "enchiridion",
+      "authorName": "Epictetus",
+      "chapter": "VIII",
+      "match": "Demand not that events should happen as you wish",
+      "actionLine": "Try this today: write one thing you can't control today, and one thing you can.",
+      "topicTags": ["mindset"]
+    },
+    {
+      "slug": "enchiridion",
+      "authorName": "Epictetus",
+      "chapter": "VIII",
+      "match": "Upon every accident, remember to turn toward yourself",
+      "actionLine": "Try this today: when something goes wrong, name the skill of yours that would fix the next one.",
+      "topicTags": ["mindset", "focus"]
+    },
+    {
+      "slug": "enchiridion",
+      "authorName": "Epictetus",
+      "chapter": "XIII",
+      "match": "If you would improve, be content to be thought foolish",
+      "actionLine": "Try this today: do one small useful thing today, without telling anyone about it.",
+      "topicTags": ["mindset"]
+    }
+  ]
+}
