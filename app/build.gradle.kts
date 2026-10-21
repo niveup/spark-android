@@ -58,6 +58,7 @@ val adbReverseDev = tasks.register("adbReverseDev", SparkAdbReverseTask::class) 
     adbPath.set(sparkAdb?.absolutePath ?: "")
 }
 
+
 // Sentry DSN — this is NOT a secret. A DSN is a public identifier that only
 // allows *sending* events to this one Sentry project (it grants no read
 // access to your data). Sentry's own docs put it in the app. The secret is
@@ -74,7 +75,11 @@ val sparkSentryAuthToken: String? = System.getenv("SENTRY_AUTH_TOKEN")
     ?: rootProject.file("sentry.properties")
         .takeIf { it.exists() }
         ?.readLines()
-        ?.firstOrNull { it.trim().startsWith("authToken=") }
+        // Accept Sentry's official `auth.token=` key and the short form.
+        ?.firstOrNull {
+            val line = it.trim()
+            line.startsWith("auth.token=") || line.startsWith("authToken=")
+        }
         ?.substringAfter("=")
         ?.trim()
         ?.takeIf { it.isNotEmpty() }
@@ -107,8 +112,27 @@ android {
             buildConfigField("String", "SENTRY_DSN", "\"$sparkSentryDsn\"")
         }
         release {
-            isMinifyEnabled = false
+            // Phase 8: production builds are minified and resource-shrunk.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             buildConfigField("String", "API_BASE_URL", "\"https://example.com\"")
+            buildConfigField("String", "SENTRY_DSN", "\"$sparkSentryDsn\"")
+        }
+        // Phase 8 QA: a release-like, R8-minified build signed with the local
+        // debug key and pointed at the USB-tunnel API. This is how the release
+        // shrinking pipeline is smoke-tested on the phone before Phase 9.
+        // Never distribute this variant.
+        create("qa") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".qa"
+            versionNameSuffix = "-qa"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:3000\"")
             buildConfigField("String", "SENTRY_DSN", "\"$sparkSentryDsn\"")
         }
     }
@@ -176,6 +200,11 @@ sentry {
     org = "nive-kb"
     projectName = "spark-android"
     authToken = sparkSentryAuthToken
-    autoUploadProguardMapping = true
-    includeSourceContext = true
+    // Only run sentry-cli when a token is configured. Without a token the
+    // mapping/source upload is pointless, and sentry-cli's Windows argument
+    // handling fails on project paths containing spaces ("D:\new something").
+    // With a token, run the mapping upload in CI or from a space-free path.
+    includeProguardMapping = sparkSentryAuthToken != null
+    autoUploadProguardMapping = sparkSentryAuthToken != null
+    includeSourceContext = sparkSentryAuthToken != null
 }
