@@ -25,6 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -109,25 +113,43 @@ fun CardView(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TextButton(onClick = {
-                    val nowSaved = !state.saved.contains(card.id)
-                    state.toggleSave(card.id)
-                    sync.record(StateEvents.saved(card.id, nowSaved))
-                }) {
+                TextButton(
+                    onClick = {
+                        val nowSaved = !state.saved.contains(card.id)
+                        state.toggleSave(card.id)
+                        sync.record(StateEvents.saved(card.id, nowSaved))
+                    },
+                    modifier = Modifier.semantics {
+                        contentDescription = "Save card"
+                        stateDescription = if (state.saved.contains(card.id)) "Saved" else "Not saved"
+                    }
+                ) {
                     Text(if (state.saved.contains(card.id)) "♥ Saved" else "♡ Save")
                 }
-                TextButton(onClick = {
-                    val wasLiked = state.liked.contains(card.id)
-                    state.toggleLike(card.id)
-                    sync.record(StateEvents.rating(card.id, if (wasLiked) null else true))
-                }) {
+                TextButton(
+                    onClick = {
+                        val wasLiked = state.liked.contains(card.id)
+                        state.toggleLike(card.id)
+                        sync.record(StateEvents.rating(card.id, if (wasLiked) null else true))
+                    },
+                    modifier = Modifier.semantics {
+                        contentDescription = "Like card"
+                        stateDescription = if (state.liked.contains(card.id)) "Liked" else "Not liked"
+                    }
+                ) {
                     Text(if (state.liked.contains(card.id)) "👍!" else "👍")
                 }
-                TextButton(onClick = {
-                    val wasDisliked = state.disliked.contains(card.id)
-                    state.toggleDislike(card.id)
-                    sync.record(StateEvents.rating(card.id, if (wasDisliked) null else false))
-                }) {
+                TextButton(
+                    onClick = {
+                        val wasDisliked = state.disliked.contains(card.id)
+                        state.toggleDislike(card.id)
+                        sync.record(StateEvents.rating(card.id, if (wasDisliked) null else false))
+                    },
+                    modifier = Modifier.semantics {
+                        contentDescription = "Dislike card"
+                        stateDescription = if (state.disliked.contains(card.id)) "Disliked" else "Not disliked"
+                    }
+                ) {
                     Text(if (state.disliked.contains(card.id)) "👎!" else "👎")
                 }
             }
@@ -136,11 +158,17 @@ fun CardView(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 if (card.audioUrl == null) {
-                    TextButton(onClick = { tts.speak("${card.title}. ${card.body}") }) {
+                    TextButton(
+                        onClick = { tts.speak("${card.title}. ${card.body}") },
+                        modifier = Modifier.semantics { contentDescription = "Listen to this card" }
+                    ) {
                         Text("🔊 Listen")
                     }
                 }
-                TextButton(onClick = { showWhy = true }) {
+                TextButton(
+                    onClick = { showWhy = true },
+                    modifier = Modifier.semantics { contentDescription = "Why am I seeing this?" }
+                ) {
                     Text("ⓘ Why this?")
                 }
             }
@@ -181,7 +209,12 @@ fun CardView(
 
 @Composable
 private fun StandardBody(card: Card) {
-    Text(text = card.title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    Text(
+        text = card.title,
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.semantics { heading() }
+    )
     Spacer(modifier = Modifier.height(12.dp))
     Text(text = card.body, fontSize = 18.sp, lineHeight = 26.sp)
     if (card.durationLabel != null) {
@@ -196,7 +229,12 @@ private fun StandardBody(card: Card) {
 /** Audiobook chapter card body: stream player (Phase 6). */
 @Composable
 private fun AudioBody(card: Card, player: AudioPlayerBox?) {
-    Text(text = card.title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    Text(
+        text = card.title,
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.semantics { heading() }
+    )
     if (card.bookLine != null) {
         Spacer(modifier = Modifier.height(6.dp))
         Text(
@@ -235,6 +273,9 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?) {
                 } else {
                     player.playUrl(url, card.title)
                 }
+            },
+            modifier = Modifier.semantics {
+                contentDescription = if (playing) "Pause audiobook" else "Play audiobook"
             }
         ) {
             Text(text = if (playing) "⏸" else "▶", fontSize = 20.sp)
@@ -244,7 +285,9 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?) {
                 value = (ui.positionMs.takeIf { isThis } ?: 0).toFloat().coerceIn(0f, duration.toFloat()),
                 onValueChange = { player.seekTo(it.toLong()) },
                 valueRange = 0f..duration.toFloat(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = "Audiobook position" }
             )
         } else {
             LinearProgressIndicator(
@@ -297,7 +340,11 @@ private fun QuoteBody(card: Card) {
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(text = card.title, style = MaterialTheme.typography.labelLarge)
+        Text(
+            text = card.title,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.semantics { heading() }
+        )
         Spacer(modifier = Modifier.height(24.dp))
         // The server body usually carries its own quotation marks already —
         // strip edge quotes before adding ours so the card never shows two.
@@ -308,7 +355,12 @@ private fun QuoteBody(card: Card) {
 @Composable
 private fun QuizBody(card: Card, onAnswered: (Boolean) -> Unit) {
     val quiz = card.quiz
-    Text(text = card.title, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+    Text(
+        text = card.title,
+        fontSize = 24.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.semantics { heading() }
+    )
     Spacer(modifier = Modifier.height(12.dp))
     Text(text = card.body, fontSize = 18.sp)
     Spacer(modifier = Modifier.height(12.dp))
@@ -326,7 +378,16 @@ private fun QuizBody(card: Card, onAnswered: (Boolean) -> Unit) {
                     onAnswered(index == quiz.correctIndex) // feeds the SRS scheduler
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    if (selected != null) {
+                        when {
+                            index == quiz.correctIndex -> stateDescription = "Correct answer"
+                            index == selected -> stateDescription = "Your answer, incorrect"
+                        }
+                    }
+                }
         ) {
             val mark = when {
                 selected == null -> ""

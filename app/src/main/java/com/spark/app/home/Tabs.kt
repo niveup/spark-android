@@ -25,6 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,7 +48,12 @@ fun SavedScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Saved", fontSize = 30.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = "Saved",
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.semantics { heading() }
+        )
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
             value = query,
@@ -120,7 +128,12 @@ fun MeScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.Top
     ) {
-        Text(text = "Me", fontSize = 30.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = "Me",
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.semantics { heading() }
+        )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = "SPARK · my personal feed", style = MaterialTheme.typography.bodyLarge)
 
@@ -254,14 +267,20 @@ private fun StepperRow(label: String, value: Int, onDelta: (Int) -> Unit) {
     ) {
         Text(label, style = MaterialTheme.typography.bodyLarge)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { onDelta(-1) }) { Text("-", fontSize = 20.sp) }
+            TextButton(
+                onClick = { onDelta(-1) },
+                modifier = Modifier.semantics { contentDescription = "Decrease $label" }
+            ) { Text("-", fontSize = 20.sp) }
             Text(
                 text = "$value",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(horizontal = 10.dp)
             )
-            TextButton(onClick = { onDelta(+1) }) { Text("+", fontSize = 20.sp) }
+            TextButton(
+                onClick = { onDelta(+1) },
+                modifier = Modifier.semantics { contentDescription = "Increase $label" }
+            ) { Text("+", fontSize = 20.sp) }
         }
     }
 }
