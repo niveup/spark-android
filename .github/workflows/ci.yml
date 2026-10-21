@@ -5,6 +5,8 @@ name: CI
 # Gradle 9.6.0 directly — same version as gradle/wrapper/gradle-wrapper.properties.
 # Runner already has Android SDK + Java setup; we add JDK 17 and the
 # exact platform/build-tools this project uses (see local SDK: android-37, 36.0.0).
+# API integration tests (api/test/api.test.ts) need a running dev server + the
+# DEV database, so CI runs only the pure-logic API unit tests (test:unit).
 
 on:
   push:
@@ -37,3 +39,25 @@ jobs:
 
       - name: Lint and unit tests
         run: gradle :app:lintDebug :app:testDebugUnitTest --console=plain
+
+  api-unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install API dependencies
+        run: npm ci
+
+      - name: API unit tests
+        run: npm run test:unit

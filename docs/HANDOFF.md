@@ -78,3 +78,4 @@ Scope = **visual/interaction only, no new features**: icons, type scale, spacing
 11. **Loading / empty states** — plain text ("Loading saved cards…") → branded state blocks with an icon + one line of guidance (there is `ui/States.kt` to rework).
 12. **Bottom nav** — selected tab currently shows only a colour change; theme preview shows a filled "pill" indicator.
 13. **a11y** — `contentDescription` on every icon button, 48.dp touch targets, sensible TalkBack order on cards (overlaps Phase 8's a11y audit — do it once, together).
+14. **Me tab** — owner wants this screen to feel excellent, not just functional: a clear identity header, grouped settings (session limits, audio, offline cache), readable stats, and a calm sign-out area. Keep every existing action working. Visual/interaction only — parked for 8.5.

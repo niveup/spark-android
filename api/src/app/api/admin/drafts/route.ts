@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { fail } from "@/lib/api";
-import { requireAuth } from "@/lib/auth";
+import { rateLimited, requireAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { decodeCursor, encodeCursor, toFeedItem } from "@/lib/feed";
 
@@ -10,6 +10,9 @@ import { decodeCursor, encodeCursor, toFeedItem } from "@/lib/feed";
 export async function GET(req: Request) {
   const authed = await requireAuth(req);
   if (!authed) return fail("UNAUTHORIZED", "Login required.");
+  if (rateLimited(`admin:${authed.tokenId}`, 30)) {
+    return fail("RATE_LIMITED", "Too many admin requests. Wait a minute.");
+  }
   const url = new URL(req.url);
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 20), 1), 50);
   const offset = decodeCursor(url.searchParams.get("cursor"));
@@ -31,6 +34,9 @@ const PublishBody = z.object({ ids: z.array(z.string().min(1)).min(1).max(100) }
 export async function POST(req: Request) {
   const authed = await requireAuth(req);
   if (!authed) return fail("UNAUTHORIZED", "Login required.");
+  if (rateLimited(`admin:${authed.tokenId}`, 30)) {
+    return fail("RATE_LIMITED", "Too many admin requests. Wait a minute.");
+  }
   let body: unknown;
   try {
     body = await req.json();
