@@ -116,26 +116,32 @@ async function main(): Promise<void> {
   }
 
   // ---- 2. Audiobook chapters (streamed MP3 URLs from LibriVox) ----
-  for (const e of entries) {
-    if (e.librivoxId === null) continue;
-    let lvx = null;
-    try {
-      lvx = await withRetry(() => librivoxBook(e.librivoxId ?? ""));
-    } catch (err) {
-      console.log(`librivox ${e.librivoxId} (${e.slug}) failed: ${String(err).slice(0, 120)}`);
-      continue;
+  // OFF by default (data/growth-config.json -> audio.enabled). The cards were
+  // boilerplate and crowded out better content. Re-enabling is one flag flip.
+  if (!config.audio.enabled) {
+    console.log("audio: skipped (audio.enabled = false in growth-config.json).");
+  } else {
+    for (const e of entries) {
+      if (e.librivoxId === null) continue;
+      let lvx = null;
+      try {
+        lvx = await withRetry(() => librivoxBook(e.librivoxId ?? ""));
+      } catch (err) {
+        console.log(`librivox ${e.librivoxId} (${e.slug}) failed: ${String(err).slice(0, 120)}`);
+        continue;
+      }
+      if (lvx === null) {
+        console.log(`librivox ${e.librivoxId} (${e.slug}): no data.`);
+        continue;
+      }
+      const bookId = bookIdBySlug.get(e.slug);
+      if (bookId !== undefined && lvx.zipUrl !== null) {
+        await db.book.update({ where: { id: bookId }, data: { audioUrl: lvx.zipUrl } });
+      }
+      const candidates = chapterCandidates(e, lvx, AUDIO_CHAPTERS_PER_BOOK);
+      await runGroup(`growth-chapters:${e.slug}`, candidates, bookIdBySlug);
+      await sleep(900); // polite to LibriVox between books
     }
-    if (lvx === null) {
-      console.log(`librivox ${e.librivoxId} (${e.slug}): no data.`);
-      continue;
-    }
-    const bookId = bookIdBySlug.get(e.slug);
-    if (bookId !== undefined && lvx.zipUrl !== null) {
-      await db.book.update({ where: { id: bookId }, data: { audioUrl: lvx.zipUrl } });
-    }
-    const candidates = chapterCandidates(e, lvx, AUDIO_CHAPTERS_PER_BOOK);
-    await runGroup(`growth-chapters:${e.slug}`, candidates, bookIdBySlug);
-    await sleep(900); // polite to LibriVox between books
   }
 
   // ---- 3. Quotes from Bartlett's 1905 (transient fetch, in-memory parse) ----

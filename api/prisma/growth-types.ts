@@ -31,4 +31,11 @@ export type ConceptTarget = {
 export type GrowthConfig = {
   quotes: QuoteTarget[];
   concepts: ConceptTarget[];
+  /**
+   * Audiobook (LibriVox) chapter cards. Disabled by default: the cards were
+   * pure boilerplate ("Section 3 of the public-domain LibriVox reading of…")
+   * and made up ~38% of the deck. Re-enable once the card body carries a real
+   * excerpt from the chapter instead of a template sentence.
+   */
+  audio: { enabled: boolean };
 };

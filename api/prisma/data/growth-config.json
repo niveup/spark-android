@@ -1,5 +1,9 @@
 {
   "comment": "Growth-content config for ingest-growth.ts. Quote targets are Bartlett's (1905, PG #27889) author-header substrings; concept targets are Wikipedia REST summary pages. Tag taxonomy per AGENTS.md 1.7.",
+  "audio": {
+    "enabled": false,
+    "comment": "Audiobook (LibriVox) chapter cards are OFF. They were template boilerplate with one shared action line and crowded the deck. Turn back on only once the card body holds a real excerpt of the chapter."
+  },
   "quotes": [
     {
       "match": "AURELIUS",
