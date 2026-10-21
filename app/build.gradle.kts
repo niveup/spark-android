@@ -66,6 +66,19 @@ val adbReverseDev = tasks.register("adbReverseDev", SparkAdbReverseTask::class) 
 val sparkSentryDsn =
     "https://f9dea375bbd32c349f695538275262af@o4512291522215936.ingest.de.sentry.io/4512291567763536"
 
+// Sentry org auth token (build-time only — never enters the APK).
+// Resolution order: SENTRY_AUTH_TOKEN env var, then `sentry.properties` in the
+// repo root (git-ignored). Without it the build still works; only the R8
+// mapping upload is skipped.
+val sparkSentryAuthToken: String? = System.getenv("SENTRY_AUTH_TOKEN")
+    ?: rootProject.file("sentry.properties")
+        .takeIf { it.exists() }
+        ?.readLines()
+        ?.firstOrNull { it.trim().startsWith("authToken=") }
+        ?.substringAfter("=")
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+
 // preBuild does not exist at plain script time (AGP creates/tasks register in
 // afterEvaluate), so attach the dependency there. With configuration cache
 // disabled this takes effect on every build (verified locally).
@@ -162,7 +175,7 @@ ksp {
 sentry {
     org = "nive-kb"
     projectName = "spark-android"
-    authToken = System.getenv("SENTRY_AUTH_TOKEN")
+    authToken = sparkSentryAuthToken
     autoUploadProguardMapping = true
     includeSourceContext = true
 }
