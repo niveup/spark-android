@@ -25,6 +25,11 @@ room = "2.8.5"
 ksp = "2.2.10-2.0.2"
 # Coroutines test utilities (JVM tests for the Phase 7 sync persistence).
 coroutinesTest = "1.11.0"
+# Sentry crash reporting (Phase 8). The SDK and the Gradle plugin are versioned
+# SEPARATELY by Sentry — the plugin is NOT the SDK version. Verified live on
+# Maven Central (Oct 2026): sentry-android 8.61.0, plugin 6.24.0.
+sentry = "8.61.0"
+sentryGradlePlugin = "6.24.0"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -50,9 +55,13 @@ media3-session = { group = "androidx.media3", name = "media3-session", version.r
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+# Sentry: BOM pins every io.sentry:* artifact to the same version.
+sentry-bom = { group = "io.sentry", name = "sentry-bom", version.ref = "sentry" }
+sentry-android = { group = "io.sentry", name = "sentry-android", version.ref = "sentry" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+sentry-android-gradle = { id = "io.sentry.android.gradle", version.ref = "sentryGradlePlugin" }

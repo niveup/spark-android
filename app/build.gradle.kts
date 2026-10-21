@@ -9,6 +9,9 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    // Phase 8: uploads the R8 mapping file + source context on release builds
+    // so release stack traces are readable in Sentry.
+    alias(libs.plugins.sentry.android.gradle)
 }
 
 // Dev helper: the API is reached through a USB tunnel ("adb reverse"), so the
@@ -55,6 +58,14 @@ val adbReverseDev = tasks.register("adbReverseDev", SparkAdbReverseTask::class) 
     adbPath.set(sparkAdb?.absolutePath ?: "")
 }
 
+// Sentry DSN — this is NOT a secret. A DSN is a public identifier that only
+// allows *sending* events to this one Sentry project (it grants no read
+// access to your data). Sentry's own docs put it in the app. The secret is
+// the org auth token, which is only used by the build to upload R8 mapping
+// files and never enters the APK (see sentry.properties / SENTRY_AUTH_TOKEN).
+val sparkSentryDsn =
+    "https://f9dea375bbd32c349f695538275262af@o4512291522215936.ingest.de.sentry.io/4512291567763536"
+
 // preBuild does not exist at plain script time (AGP creates/tasks register in
 // afterEvaluate), so attach the dependency there. With configuration cache
 // disabled this takes effect on every build (verified locally).
@@ -80,10 +91,12 @@ android {
             // Dev: USB tunnel — adb reverse tcp:3000 tcp:3000 makes the
             // phone's 127.0.0.1:3000 hit the PC's API (Wi-Fi is blocked by firewall).
             buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:3000\"")
+            buildConfigField("String", "SENTRY_DSN", "\"$sparkSentryDsn\"")
         }
         release {
             isMinifyEnabled = false
             buildConfigField("String", "API_BASE_URL", "\"https://example.com\"")
+            buildConfigField("String", "SENTRY_DSN", "\"$sparkSentryDsn\"")
         }
     }
     compileOptions {
@@ -125,6 +138,11 @@ dependencies {
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
+    // Phase 8 crash reporting: the BOM keeps every io.sentry:* artifact on
+    // one version. Errors + ANRs are captured automatically; no source changes
+    // needed for the basic setup.
+    implementation(platform(libs.sentry.bom))
+    implementation(libs.sentry.android)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -135,4 +153,16 @@ dependencies {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.incremental", "true")
+}
+
+// Sentry Gradle plugin configuration (Phase 8).
+// The auth token is needed ONLY to upload the R8 mapping file + source context
+// for release builds. It is read from SENTRY_AUTH_TOKEN (env) or sentry.properties
+// (git-ignored). Without it the build still succeeds — only the upload is skipped.
+sentry {
+    org = "nive-kb"
+    projectName = "spark-android"
+    authToken = System.getenv("SENTRY_AUTH_TOKEN")
+    autoUploadProguardMapping = true
+    includeSourceContext = true
 }

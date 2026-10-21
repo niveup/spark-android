@@ -21,6 +21,8 @@ api/generated/
 *.jks
 *.keystore
 keystore.properties
+# Sentry: holds the org auth token used to upload R8 mapping files.
+sentry.properties
 
 # OS
 .DS_Store

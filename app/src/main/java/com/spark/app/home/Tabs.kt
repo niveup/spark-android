@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.spark.app.BuildConfig
 import com.spark.app.data.Card
 
 @Composable
@@ -198,6 +199,22 @@ fun MeScreen(
         Text("● Build better habits, one card a day")
         Text("● Read public-domain books, one card a day")
         Text("● Scroll less, do more")
+
+        // Phase 8 diagnostics: only in debug builds. Crashes the app on
+        // purpose so we can prove the Sentry pipeline works end to end
+        // (event appears in Sentry within seconds).
+        if (BuildConfig.DEBUG) {
+            Spacer(modifier = Modifier.height(16.dp))
+            SectionLabel("DIAGNOSTICS")
+            OutlinedButton(
+                onClick = {
+                    throw IllegalStateException("SPARK test crash (debug build only)")
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Send test crash to Sentry")
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedButton(onClick = onLogout, modifier = Modifier.fillMaxWidth()) {
