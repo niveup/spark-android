@@ -1,13 +1,17 @@
 package com.spark.app.feed
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
@@ -25,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -113,64 +119,53 @@ fun CardView(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TextButton(
+                CardAction(
+                    label = if (state.saved.contains(card.id)) "♥ Saved" else "♡ Save",
+                    contentDescription = "Save card",
+                    stateDescription = if (state.saved.contains(card.id)) "Saved" else "Not saved",
                     onClick = {
                         val nowSaved = !state.saved.contains(card.id)
                         state.toggleSave(card.id)
                         sync.record(StateEvents.saved(card.id, nowSaved))
-                    },
-                    modifier = Modifier.semantics {
-                        contentDescription = "Save card"
-                        stateDescription = if (state.saved.contains(card.id)) "Saved" else "Not saved"
                     }
-                ) {
-                    Text(if (state.saved.contains(card.id)) "♥ Saved" else "♡ Save")
-                }
-                TextButton(
+                )
+                CardAction(
+                    label = if (state.liked.contains(card.id)) "👍!" else "👍",
+                    contentDescription = "Like card",
+                    stateDescription = if (state.liked.contains(card.id)) "Liked" else "Not liked",
                     onClick = {
                         val wasLiked = state.liked.contains(card.id)
                         state.toggleLike(card.id)
                         sync.record(StateEvents.rating(card.id, if (wasLiked) null else true))
-                    },
-                    modifier = Modifier.semantics {
-                        contentDescription = "Like card"
-                        stateDescription = if (state.liked.contains(card.id)) "Liked" else "Not liked"
                     }
-                ) {
-                    Text(if (state.liked.contains(card.id)) "👍!" else "👍")
-                }
-                TextButton(
+                )
+                CardAction(
+                    label = if (state.disliked.contains(card.id)) "👎!" else "👎",
+                    contentDescription = "Dislike card",
+                    stateDescription = if (state.disliked.contains(card.id)) "Disliked" else "Not disliked",
                     onClick = {
                         val wasDisliked = state.disliked.contains(card.id)
                         state.toggleDislike(card.id)
                         sync.record(StateEvents.rating(card.id, if (wasDisliked) null else false))
-                    },
-                    modifier = Modifier.semantics {
-                        contentDescription = "Dislike card"
-                        stateDescription = if (state.disliked.contains(card.id)) "Disliked" else "Not disliked"
                     }
-                ) {
-                    Text(if (state.disliked.contains(card.id)) "👎!" else "👎")
-                }
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 if (card.audioUrl == null) {
-                    TextButton(
-                        onClick = { tts.speak("${card.title}. ${card.body}") },
-                        modifier = Modifier.semantics { contentDescription = "Listen to this card" }
-                    ) {
-                        Text("🔊 Listen")
-                    }
+                    CardAction(
+                        label = "🔊 Listen",
+                        contentDescription = "Listen to this card",
+                        onClick = { tts.speak("${card.title}. ${card.body}") }
+                    )
                 }
-                TextButton(
-                    onClick = { showWhy = true },
-                    modifier = Modifier.semantics { contentDescription = "Why am I seeing this?" }
-                ) {
-                    Text("ⓘ Why this?")
-                }
+                CardAction(
+                    label = "ⓘ Why this?",
+                    contentDescription = "Why am I seeing this?",
+                    onClick = { showWhy = true }
+                )
             }
             if (!tts.isReady) {
                 Text(
@@ -203,6 +198,42 @@ fun CardView(
             confirmButton = {
                 TextButton(onClick = { showWhy = false }) { Text("Close") }
             }
+        )
+    }
+}
+
+/**
+ * Card actions are plain clickable boxes, not Material3 TextButtons.
+ *
+ * Tapping Save changes the button's text/semantics and then immediately
+ * switching tabs disposes the card. In Material3 1.4.0 that can detach a
+ * Surface's ChildSemanticsNode during traversal and crash the app
+ * ("visitAncestors called on an unattached node"). A plain clickable keeps the
+ * same accessibility role/state without that Surface semantics node.
+ */
+@Composable
+private fun CardAction(
+    label: String,
+    contentDescription: String,
+    stateDescription: String? = null,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .semantics {
+                this.contentDescription = contentDescription
+                stateDescription?.let { this.stateDescription = it }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
