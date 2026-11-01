@@ -1,12 +1,28 @@
 package com.spark.app.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -21,7 +37,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +70,18 @@ private enum class Tab(val label: String) {
     REELS("Reels"),
     SAVED("Saved"),
     ME("Me")
+}
+
+/**
+ * Material 3 convention: the selected destination gets the solid icon, the
+ * others the outline. Selection therefore reads from shape as well as colour,
+ * which the old text glyphs could not express.
+ */
+private fun Tab.icon(selected: Boolean): ImageVector = when (this) {
+    Tab.HOME -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
+    Tab.REELS -> if (selected) Icons.AutoMirrored.Filled.List else Icons.AutoMirrored.Outlined.List
+    Tab.SAVED -> if (selected) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder
+    Tab.ME -> if (selected) Icons.Filled.Person else Icons.Outlined.Person
 }
 
 @Composable
@@ -153,22 +184,62 @@ fun AppNav(
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            // Quiet tone step (surfaceContainerLow) instead of a divider line:
+            // the bar separates from the page by luminance, not by a hairline.
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                tonalElevation = 0.dp
+            ) {
                 Tab.entries.forEach { entry ->
+                    val selected = tab == entry
                     NavigationBarItem(
-                        selected = tab == entry,
+                        selected = selected,
                         onClick = { tab = entry },
                         icon = {
+                            // Indicator, hand-drawn: Material 3's default is a
+                            // 64x32 dp stadium filled with indicatorColor. At
+                            // amber-on-dark that fill reads as muddy gold, and
+                            // it is far wider than the 24 dp glyph it sits
+                            // behind. A compact neutral key (tone step, not a
+                            // tint) marks "where I am" quietly, and leaves the
+                            // amber for the icon and label only.
+                            Box(
+                                modifier = Modifier
+                                    .width(40.dp)
+                                    .height(28.dp)
+                                    .background(
+                                        color = if (selected) {
+                                            MaterialTheme.colorScheme.surfaceContainerHighest
+                                        } else {
+                                            Color.Transparent
+                                        },
+                                        shape = RoundedCornerShape(10.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = entry.icon(selected),
+                                    // The label already names the destination,
+                                    // so the icon must not repeat it in TalkBack.
+                                    contentDescription = null
+                                )
+                            }
+                        },
+                        label = {
                             Text(
-                                when (entry) {
-                                    Tab.HOME -> "⌂"
-                                    Tab.REELS -> "▤"
-                                    Tab.SAVED -> "♡"
-                                    Tab.ME -> "☺"
-                                }
+                                text = entry.label,
+                                style = MaterialTheme.typography.labelMedium
                             )
                         },
-                        label = { Text(entry.label) }
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            // The built-in indicator is replaced above; keep its
+                            // own fill out of the way.
+                            indicatorColor = Color.Transparent,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     )
                 }
             }

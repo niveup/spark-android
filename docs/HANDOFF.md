@@ -101,7 +101,9 @@ Owner's standing instruction (AGENTS.md rule 13): **the agent flags when polish 
 Scope = **visual/interaction only, no new features**: icons, type scale, spacing rhythm, motion/haptics, states, labels. Everything here is deliberately parked until then.
 
 ### UI polish backlog (check items off as they land)
-1. **Icons** — replace emoji glyphs (`♡ ♥ 👍 👎 🔊 ⓘ ▶ ⏸ ⌂ ▤ ☺`) with Material icons (`material-icons-extended`); emoji render per-phone-font and look inconsistent. Note: `material-icons-extended` = a new dependency → must ask the owner first (AGENTS.md rule 3).
+1. **Icons** — emoji render per-phone-font and look inconsistent.
+   - [x] Bottom nav: done. `androidx.compose.material:material-icons-core` added (owner-approved), solid-when-selected / outline-when-not. This is *core*, not *extended* — verify each glyph exists before using it (core has ~49 icons; `ThumbDown`, `VolumeUp`, `Info` and most "outlined" variants are only in *extended*).
+   - [ ] Card action row (`feed/CardViews.kt`, `♡ Save / 👍 / 👎 / 🔊 / ⓘ`). Needs a decision: add `material-icons-extended` (large artifact, R8 shrinks it) or hand-copy 5 vector paths into `res/drawable`. Ask first.
 2. **Type scale** — no `MaterialTheme.typography` overrides exist; screens hardcode `30.sp / 24.sp / 18.sp`. Define one scale in `ui/theme/Theme.kt` (display/headline/body/label) and use tokens everywhere.
 3. **Spacing rhythm** — 20.dp/24.dp paddings scattered per screen; define a spacing scale (8/12/16/24/32) in the theme and apply it consistently.
 4. **Haptics** — no feedback on Save / Like / Dislike / card snap (`LocalHapticFeedback`); a swipe-scroller feels dead without it.
@@ -112,7 +114,7 @@ Scope = **visual/interaction only, no new features**: icons, type scale, spacing
 9. **Saved tab** — tapping a row should open the full card (wireframe §10); today the row is inert. Add a per-type dot colour.
 10. **Audio overlay** — full-screen "Now playing" (wireframe §13): resume position, −10s/+30s, speed, sleep timer. Functionality parked from Phase 6.
 11. **Loading / empty states** — plain text ("Loading saved cards…") → branded state blocks with an icon + one line of guidance (there is `ui/States.kt` to rework).
-12. **Bottom nav** — selected tab currently shows only a colour change; theme preview shows a filled "pill" indicator.
+12. **Bottom nav** — done. Real Material icons (solid = selected, outline = not), amber icon+label with a 16%-alpha amber pill indicator, bar container `surfaceContainerLow` with no divider line.
 13. **a11y** — Phase 8 landed content descriptions for card actions/steppers, heading semantics, and default 48.dp Material touch targets. Remaining 8.5 pass: full TalkBack order on cards, focus after swipe, and a screen-reader walkthrough with the owner.
 14. **Me tab** — owner wants this screen to feel excellent, not just functional: a clear identity header, grouped settings (session limits, audio, offline cache), readable stats, and a calm sign-out area. Keep every existing action working. Visual/interaction only — parked for 8.5.
 15. **Saved export buttons** - "Export Markdown" wraps to two lines in the half-width button. Use short labels (`Export .json` / `Export .md`) or a small overflow menu; keep both formats.

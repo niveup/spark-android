@@ -30,3 +30,6 @@ Thumbs.db
 
 # Kotlin IDE sessions
 .kotlin/
+
+# Local scratch: adb screenshots, extracted AARs, one-off scripts output
+.tmp/
