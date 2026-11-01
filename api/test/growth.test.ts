@@ -11,25 +11,7 @@ import {
   openingExcerpt,
   quoteCandidates,
 } from "../src/lib/growth";
-
-const BASE_CARD = {
-  type: "concept",
-  title: "The 2-Minute Rule",
-  bodyMd: "Shrink any habit until starting costs two minutes.",
-  actionLine: "Try the two-minute version.",
-  topicTags: ["habits"],
-  language: "en",
-  estSeconds: 45,
-  sourceType: "manual",
-  sourceRef: "growth deck",
-  license: "original",
-  isAiGenerated: false,
-  isGrounded: true,
-  modelUsed: null,
-  quiz: null,
-  audioUrl: null,
-  durationMs: null,
-};
+import { BASE_CARD } from "./fixtures";
 
 const FIXTURE = `
 JUNK INDEX TABLE

@@ -7,6 +7,7 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
+import { stripEdgeQuotes } from "../src/lib/text";
 
 if (process.env.NODE_ENV === "production") {
   throw new Error("Refusing to run in production.");
@@ -34,12 +35,7 @@ const quotes = await db.feedItem.findMany({
 });
 let qFixed = 0;
 for (const q of quotes) {
-  const cleaned = q.bodyMd
-    .trim()
-    .replace(/^[\u201c"]+/, "")
-    .trim()
-    .replace(/[\u201d"]+$/, "")
-    .trim();
+  const cleaned = stripEdgeQuotes(q.bodyMd);
   const body = `"${cleaned}"`;
   if (body !== q.bodyMd) {
     await db.feedItem.update({ where: { id: q.id }, data: { bodyMd: body } });

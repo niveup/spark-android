@@ -4,6 +4,7 @@
 import type { BookEntry, ConceptTarget, QuoteTarget } from "../../prisma/growth-types";
 import type { LibrivoxDetailedBook } from "./adapters";
 import type { BartlettQuote } from "./bartlett";
+import { stripEdgeQuotes } from "./text";
 
 export type GrowthCandidate = {
   bookSlug: string | null;
@@ -154,13 +155,6 @@ export function quoteCandidates(
   const perAuthor = new Map<string, number>();
   // Bartlett's source lines already carry their own quotation marks in some
   // editions; strip any edge quotes here so the card body wraps exactly once.
-  const cleanQuote = (raw: string) =>
-    raw
-      .trim()
-      .replace(/^["\u201c\u201d]+/, "")
-      .trim()
-      .replace(/["\u201c\u201d]+$/, "")
-      .trim();
   for (const q of quotes) {
     const target = targets.find((t) => q.header.toUpperCase().includes(t.match.toUpperCase()));
     if (target === undefined) continue;
@@ -172,7 +166,7 @@ export function quoteCandidates(
       card: {
         type: "quote",
         title: target.authorName.slice(0, 80),
-        bodyMd: `"${cleanQuote(q.quote)}"`.slice(0, 600),
+        bodyMd: `"${stripEdgeQuotes(q.quote)}"`.slice(0, 600),
         actionLine: target.actionLine,
         topicTags: target.topicTags.slice(0, 5),
         language: "en",

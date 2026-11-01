@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { stripGutenbergBoilerplate } from "./text";
 
 // Phase 3 source adapters. Each fetches a free, legal source (AGENTS.md 1.7)
 // and normalizes to plain data. Network errors throw with the source name.
@@ -132,10 +133,7 @@ export async function gutenbergBody(id: number, limit = 4000): Promise<string | 
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`gutenberg: HTTP ${res.status}`);
   const text = await res.text();
-  const marker = /\*\*\*\s*START OF THE PROJECT GUTENBERG[^*]+\*{3}/i;
-  const m = marker.exec(text);
-  const body = m !== null && m.index >= 0 ? text.slice(m.index + m[0].length) : text;
-  return body.replace(/^[ \n\r\t]+/, "").slice(0, limit);
+  return stripGutenbergBoilerplate(text).replace(/^[ \n\r\t]+/, "").slice(0, limit);
 }
 
 const LibrivoxDetailed = z.object({

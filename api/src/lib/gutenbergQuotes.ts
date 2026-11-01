@@ -8,6 +8,8 @@
 // This module is a pure function (no network): give it the raw book text, get
 // back ranked candidate sentences with a chapter anchor.
 
+import { stripGutenbergBoilerplate } from "./text";
+
 export type QuoteCandidate = {
   /** Verbatim sentence from the source text. */
   text: string;
@@ -147,18 +149,6 @@ export function findQuoteSentence(normalizedText: string, match: string): string
     return sentence;
   }
   return null;
-}
-
-/** Cut the Project Gutenberg header/footer and the license/credits blocks. */
-export function stripGutenbergBoilerplate(text: string): string {
-  const start = /\*\*\*\s*START OF THE PROJECT GUTENBERG[^*]*\*\*\*/i.exec(text);
-  let body = text;
-  if (start !== null && start.index >= 0) {
-    body = text.slice(start.index + start[0].length);
-  }
-  const end = /\*\*\*\s*END OF THE PROJECT GUTENBERG/i.exec(body);
-  if (end !== null && end.index >= 0) body = body.slice(0, end.index);
-  return body;
 }
 
 /** 0 = reject, higher = better standalone quote. */
