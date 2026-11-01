@@ -7,6 +7,7 @@ import com.spark.app.data.Card
 import com.spark.app.data.SettingsStore
 import com.spark.app.data.TokenStore
 import com.spark.app.data.local.OfflineCache
+import com.spark.app.data.remote.ApiErrors
 import com.spark.app.data.remote.SessionCloseRequest
 import com.spark.app.data.remote.SessionRequest
 import com.spark.app.data.remote.SparkApi
@@ -54,7 +55,7 @@ class FeedViewModel(
         viewModelScope.launch {
             val token = tokens.getToken()
             if (token == null) {
-                _state.value = FeedUiState.Error("Not logged in — log in again.")
+                _state.value = FeedUiState.Error(ApiErrors.NOT_LOGGED_IN)
                 return@launch
             }
             val cardLimit = settings.cardLimit
@@ -76,10 +77,7 @@ class FeedViewModel(
                     FeedUiState.Content(cards, cardLimit, minuteLimit, startedAt)
                 }
             } catch (e: HttpException) {
-                _state.value = FeedUiState.Error(
-                    if (e.code() == 401) "Session expired — log out from Me and log back in."
-                    else "Server error (${e.code()})."
-                )
+                _state.value = FeedUiState.Error(ApiErrors.forHttp(e.code()))
             } catch (_: IOException) {
                 // Phase 7: fall back to the cached deck when the server is
                 // unreachable. Seen/dwell events keep queueing locally and
@@ -88,9 +86,7 @@ class FeedViewModel(
                 val cards = feedItemsToCards(cached)
                 _state.value =
                     if (cards.isEmpty()) {
-                        FeedUiState.Error(
-                            "Can't reach your PC. Check the USB cable and that the API server is running."
-                        )
+                        FeedUiState.Error(ApiErrors.OFFLINE)
                     } else {
                         FeedUiState.Content(cards, cardLimit, minuteLimit, startedAt, offline = true)
                     }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.spark.app.data.Card
 import com.spark.app.data.TokenStore
 import com.spark.app.data.local.OfflineCache
+import com.spark.app.data.remote.ApiErrors
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.feed.feedItemsToCards
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,7 +43,7 @@ class SavedViewModel(
         viewModelScope.launch {
             val token = tokens.getToken()
             if (token == null) {
-                _state.value = SavedUiState.Error("Not logged in — log in again.")
+                _state.value = SavedUiState.Error(ApiErrors.NOT_LOGGED_IN)
                 return@launch
             }
             val result = try {
@@ -50,18 +51,13 @@ class SavedViewModel(
                 offline.saveFeed(page.data) // cached rows keep `saved = true` for offline reads
                 SavedUiState.Content(feedItemsToCards(page.data), query)
             } catch (e: HttpException) {
-                SavedUiState.Error(
-                    if (e.code() == 401) "Session expired — log out from Me and log back in."
-                    else "Server error (${e.code()})."
-                )
+                SavedUiState.Error(ApiErrors.forHttp(e.code()))
             } catch (_: IOException) {
                 // Phase 7: offline — show the cached saved cards, filtered here
                 // (the local search mirrors the server's substring match).
                 val cards = feedItemsToCards(offline.savedDtos())
                 if (cards.isEmpty()) {
-                    SavedUiState.Error(
-                        "Can't reach your PC. Check the USB cable and that the API server is running."
-                    )
+                    SavedUiState.Error(ApiErrors.OFFLINE)
                 } else {
                     val filtered = if (query.isBlank()) cards else cards.filterByQuery(query)
                     SavedUiState.Content(filtered, query, offline = true)

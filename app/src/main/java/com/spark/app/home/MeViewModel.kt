@@ -3,6 +3,7 @@ package com.spark.app.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spark.app.data.TokenStore
+import com.spark.app.data.remote.ApiErrors
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.data.remote.StatsData
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,20 +33,15 @@ class MeViewModel(
         viewModelScope.launch {
             val token = tokens.getToken()
             if (token == null) {
-                _state.value = StatsUiState.Error("Not logged in — log in again.")
+                _state.value = StatsUiState.Error(ApiErrors.NOT_LOGGED_IN)
                 return@launch
             }
             _state.value = try {
                 StatsUiState.Content(api.stats("Bearer $token").data)
             } catch (e: HttpException) {
-                StatsUiState.Error(
-                    if (e.code() == 401) "Session expired — log out and log back in."
-                    else "Server error (${e.code()})."
-                )
+                StatsUiState.Error(ApiErrors.forHttp(e.code()))
             } catch (_: IOException) {
-                StatsUiState.Error(
-                    "Can't reach your PC. Check the USB cable and that the API server is running."
-                )
+                StatsUiState.Error(ApiErrors.OFFLINE)
             }
         }
     }
