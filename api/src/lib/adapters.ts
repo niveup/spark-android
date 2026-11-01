@@ -39,43 +39,6 @@ export async function gutendexSearch(query: string, limit = 5): Promise<Gutendex
   }));
 }
 
-const OpenLibraryResp = z.object({
-  docs: z
-    .array(
-      z.object({
-        key: z.string(),
-        title: z.string(),
-        author_name: z.array(z.string()).optional(),
-        cover_i: z.number().optional(),
-        first_publish_year: z.number().optional(),
-      }),
-    )
-    .default([]),
-});
-
-export type OpenLibraryWork = {
-  key: string;
-  title: string;
-  author: string;
-  coverUrl: string | null;
-};
-
-export async function openLibrarySearch(query: string, limit = 5): Promise<OpenLibraryWork[]> {
-  const url =
-    `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}` +
-    `&limit=${limit}&fields=key,title,author_name,cover_i,first_publish_year`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`openlibrary: HTTP ${res.status}`);
-  const parsed = OpenLibraryResp.safeParse(await res.json());
-  if (!parsed.success) throw new Error("openlibrary: unexpected shape");
-  return parsed.data.docs.map((d) => ({
-    key: d.key,
-    title: d.title,
-    author: d.author_name?.join(", ") ?? "",
-    coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null,
-  }));
-}
-
 const LibrivoxResp = z.union([
   z.object({ books: z.array(z.object({
     id: z.string(),
@@ -154,23 +117,6 @@ export async function withRetry<T>(fn: () => Promise<T>, attempts = 3, baseDelay
     }
   }
   throw lastError;
-}
-
-export async function gutendexById(id: number): Promise<GutendexBook | null> {
-  const res = await withRetry(() => fetch(`https://gutendex.com/books/${id}`));
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`gutendex: HTTP ${res.status}`);
-  const parsed = GutendexBook.safeParse(await res.json());
-  if (!parsed.success) throw new Error("gutendex: unexpected shape");
-  const b = parsed.data;
-  return {
-    gutenbergId: b.id,
-    title: b.title,
-    author: b.authors.map((a) => a.name).join(", "),
-    language: b.languages[0] ?? "en",
-    textUrl: b.formats["text/plain; charset=utf-8"] ?? b.formats["text/plain"] ?? null,
-    coverUrl: b.formats["image/jpeg"] ?? null,
-  };
 }
 
 // Gutenberg plain text (transient, in-memory only — never stored to disk).
