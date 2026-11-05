@@ -103,7 +103,7 @@ Scope = **visual/interaction only, no new features**: icons, type scale, spacing
 ### UI polish backlog (check items off as they land)
 1. **Icons** — emoji render per-phone-font and look inconsistent.
    - [x] Bottom nav: done. `androidx.compose.material:material-icons-core` added (owner-approved), solid-when-selected / outline-when-not. This is *core*, not *extended* — verify each glyph exists before using it (core has ~49 icons; `ThumbDown`, `VolumeUp`, `Info` and most "outlined" variants are only in *extended*).
-   - [ ] Card action row (`feed/CardViews.kt`, `♡ Save / 👍 / 👎 / 🔊 / ⓘ`). Needs a decision: add `material-icons-extended` (large artifact, R8 shrinks it) or hand-copy 5 vector paths into `res/drawable`. Ask first.
+   - [x] Card action row (`feed/CardViews.kt`): done — five 48 dp icon targets, grey at rest, amber only when on. `thumb_down` shipped as two local vector drawables (Google path data from the material-design-icons repo, Apache 2.0) because *core* has no thumb-down.
 2. **Type scale** — no `MaterialTheme.typography` overrides exist; screens hardcode `30.sp / 24.sp / 18.sp`. Define one scale in `ui/theme/Theme.kt` (display/headline/body/label) and use tokens everywhere.
 3. **Spacing rhythm** — 20.dp/24.dp paddings scattered per screen; define a spacing scale (8/12/16/24/32) in the theme and apply it consistently.
 4. **Haptics** — no feedback on Save / Like / Dislike / card snap (`LocalHapticFeedback`); a swipe-scroller feels dead without it.

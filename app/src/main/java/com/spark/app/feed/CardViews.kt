@@ -6,15 +6,23 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -30,6 +38,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -39,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spark.app.R
 import com.spark.app.audio.AudioPlayerBox
 import com.spark.app.audio.AudioUi
 import com.spark.app.audio.TtsHelper
@@ -115,54 +129,65 @@ fun CardView(
             }
         }
         Column {
+            // One row of icon actions instead of two rows of emoji labels.
+            // Emoji came out of the phone's own font at uneven sizes and read
+            // as decoration, not controls. Each action is a 48 dp target that
+            // sits in onSurfaceVariant at rest; the accent appears only when
+            // the state it stands for is actually on.
+            val saved = state.saved.contains(card.id)
+            val liked = state.liked.contains(card.id)
+            val disliked = state.disliked.contains(card.id)
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 CardAction(
-                    label = if (state.saved.contains(card.id)) "♥ Saved" else "♡ Save",
+                    icon = if (saved) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     contentDescription = "Save card",
-                    stateDescription = if (state.saved.contains(card.id)) "Saved" else "Not saved",
+                    stateDescription = if (saved) "Saved" else "Not saved",
+                    active = saved,
                     onClick = {
-                        val nowSaved = !state.saved.contains(card.id)
                         state.toggleSave(card.id)
-                        sync.record(StateEvents.saved(card.id, nowSaved))
+                        sync.record(StateEvents.saved(card.id, !saved))
                     }
                 )
                 CardAction(
-                    label = if (state.liked.contains(card.id)) "👍!" else "👍",
+                    icon = if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
                     contentDescription = "Like card",
-                    stateDescription = if (state.liked.contains(card.id)) "Liked" else "Not liked",
+                    stateDescription = if (liked) "Liked" else "Not liked",
+                    active = liked,
                     onClick = {
-                        val wasLiked = state.liked.contains(card.id)
                         state.toggleLike(card.id)
-                        sync.record(StateEvents.rating(card.id, if (wasLiked) null else true))
+                        sync.record(StateEvents.rating(card.id, if (liked) null else true))
                     }
                 )
                 CardAction(
-                    label = if (state.disliked.contains(card.id)) "👎!" else "👎",
+                    // Core icons ship thumb_up but no thumb_down, so the
+                    // thumb_down below is a local vector drawn from Google's
+                    // own path data (see res/drawable).
+                    icon = if (disliked) {
+                        ImageVector.vectorResource(R.drawable.ic_thumb_down_filled_24)
+                    } else {
+                        ImageVector.vectorResource(R.drawable.ic_thumb_down_24)
+                    },
                     contentDescription = "Dislike card",
-                    stateDescription = if (state.disliked.contains(card.id)) "Disliked" else "Not disliked",
+                    stateDescription = if (disliked) "Disliked" else "Not disliked",
+                    active = disliked,
                     onClick = {
-                        val wasDisliked = state.disliked.contains(card.id)
                         state.toggleDislike(card.id)
-                        sync.record(StateEvents.rating(card.id, if (wasDisliked) null else false))
+                        sync.record(StateEvents.rating(card.id, if (disliked) null else false))
                     }
                 )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
                 if (card.audioUrl == null) {
                     CardAction(
-                        label = "🔊 Listen",
+                        icon = Icons.Filled.PlayArrow,
                         contentDescription = "Listen to this card",
                         onClick = { tts.speak("${card.title}. ${card.body}") }
                     )
                 }
                 CardAction(
-                    label = "ⓘ Why this?",
+                    icon = Icons.Outlined.Info,
                     contentDescription = "Why am I seeing this?",
                     onClick = { showWhy = true }
                 )
@@ -203,37 +228,45 @@ fun CardView(
 }
 
 /**
- * Card actions are plain clickable boxes, not Material3 TextButtons.
+ * One card action: a 48 dp icon target.
  *
- * Tapping Save changes the button's text/semantics and then immediately
- * switching tabs disposes the card. In Material3 1.4.0 that can detach a
- * Surface's ChildSemanticsNode during traversal and crash the app
- * ("visitAncestors called on an unattached node"). A plain clickable keeps the
- * same accessibility role/state without that Surface semantics node.
+ * A plain clickable, not Material3's IconButton. In Material3 1.4.0, tapping an
+ * action that then changes its own semantics and is disposed with the card can
+ * detach a Surface's ChildSemanticsNode during traversal and crash the app
+ * ("visitAncestors called on an unattached node"). This keeps the same role and
+ * state for TalkBack without that semantics node.
+ *
+ * The light haptic tick matches the bottom bar, so every control in the app
+ * answers a press the same way.
  */
 @Composable
 private fun CardAction(
-    label: String,
+    icon: ImageVector,
     contentDescription: String,
     stateDescription: String? = null,
+    active: Boolean = false,
     onClick: () -> Unit
 ) {
+    val colors = MaterialTheme.colorScheme
+    val haptics = LocalHapticFeedback.current
     Box(
         modifier = Modifier
-            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(12.dp))
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp)
+            .clickable(role = Role.Button) {
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                onClick()
+            }
             .semantics {
                 this.contentDescription = contentDescription
                 stateDescription?.let { this.stateDescription = it }
             },
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (active) colors.primary else colors.onSurfaceVariant
         )
     }
 }

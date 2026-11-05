@@ -33,3 +33,7 @@ Thumbs.db
 
 # Local scratch: adb screenshots, extracted AARs, one-off scripts output
 .tmp/
+
+# IDE Agent skills
+.agents/
+skills-lock.json
