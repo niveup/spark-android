@@ -37,3 +37,8 @@ Thumbs.db
 # IDE Agent skills
 .agents/
 skills-lock.json
+
+# Design-skill working files: direction seed and candidate source photos.
+# The bundled, cropped cover lives in app/src/main/res/drawable-nodpi/.
+.taste-skill/
+assets/

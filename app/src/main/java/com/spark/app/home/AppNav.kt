@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.spark.app.audio.AudioPlayerBox
 import com.spark.app.audio.TtsHelper
+import com.spark.app.data.CardType
 import com.spark.app.data.SavedExportFormat
 import com.spark.app.data.SavedExporter
 import com.spark.app.data.SettingsStore
@@ -138,6 +139,19 @@ fun AppNav(
     // The server is the source of truth for saved/rated state — seed each fresh load.
     LaunchedEffect(feed) {
         (feed as? FeedUiState.Content)?.let { state.seedFrom(it.cards) }
+    }
+
+    // Home shows the card the reader will meet next, plus a real grounded
+    // quote from the same deck. Both come from data the app already holds;
+    // nothing on Home is a sample or an invented statistic.
+    val currentFeed = feed
+    val feedContent = currentFeed as? FeedUiState.Content
+    val feedCards = feedContent?.cards.orEmpty()
+    val nextCard = feedCards.getOrNull(state.seenCount)
+    val dailyQuote = feedCards.firstOrNull { card ->
+        card.type == CardType.QUOTE &&
+            card.grounded &&
+            card.id != nextCard?.id
     }
     var tab by remember { mutableStateOf(if (startOnReels) Tab.REELS else Tab.HOME) }
     LaunchedEffect(startOnReels) {
@@ -225,8 +239,17 @@ fun AppNav(
                 Tab.HOME -> HomeScreen(
                     seenCount = state.seenCount,
                     savedCount = state.saved.size,
-                    cardLimit = cardLimit,
-                    minuteLimit = minuteLimit,
+                    // The loaded session owns its limits; the Me-tab values are
+                    // only a fallback while the deck is still loading.
+                    cardLimit = feedContent?.cardLimit ?: cardLimit,
+                    minuteLimit = feedContent?.minuteLimit ?: minuteLimit,
+                    deckSize = when (currentFeed) {
+                        is FeedUiState.Loading -> null
+                        is FeedUiState.Content -> currentFeed.cards.size
+                        is FeedUiState.Error, is FeedUiState.Empty -> 0
+                    },
+                    nextCard = nextCard,
+                    dailyQuote = dailyQuote,
                     onOpenReels = { tab = Tab.REELS },
                     onOpenSaved = { tab = Tab.SAVED }
                 )
@@ -360,14 +383,14 @@ private fun RowScope.TabItem(
                 // The label already names the destination, so the icon must
                 // not repeat it in TalkBack.
                 contentDescription = null,
-                tint = if (selected) colors.primary else colors.onSurfaceVariant
+                tint = if (selected) colors.onSurface else colors.onSurfaceVariant
             )
         }
         Spacer(Modifier.height(3.dp))
         Text(
             text = entry.label,
             style = MaterialTheme.typography.labelMedium,
-            color = if (selected) colors.primary else colors.onSurfaceVariant
+            color = if (selected) colors.onSurface else colors.onSurfaceVariant
         )
     }
 }
