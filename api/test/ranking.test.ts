@@ -66,6 +66,15 @@ describe("rankFeed", () => {
     assert.ok(ranked.includes("seenOld"));
   });
 
+  it("keeps recently seen cards when refill mode is on", () => {
+    const items = [item("seenRecent"), item("fresh")];
+    const states = stateMap(state("seenRecent", { seenAt: past(10) }), state("fresh"));
+    const ranked = ids(rankFeed(items, states, "seed-6", true));
+    assert.equal(ranked.length, 2);
+    assert.ok(ranked.includes("seenRecent"));
+    assert.ok(ranked.includes("fresh"));
+  });
+
   it("prefers unseen items from topics saved/liked before", () => {
     const items = [item("likedTopic", ["habits"]), item("other", ["misc"])];
     const states = stateMap(state("likedTopic", { saved: true }));

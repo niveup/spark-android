@@ -53,12 +53,21 @@ fun ErrorState(
 }
 
 @Composable
-fun EmptyState(text: String, modifier: Modifier = Modifier) {
+fun EmptyState(
+    text: String,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier.fillMaxWidth().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(text = text, style = MaterialTheme.typography.bodyMedium)
+        if (actionLabel != null && onAction != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onAction) { Text(actionLabel) }
+        }
     }
 }
 
