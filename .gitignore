@@ -28,3 +28,8 @@ Thumbs.db
 
 # Kotlin IDE sessions
 .kotlin/
+
+# Content automation: the inbox payload is data, never source. The workflow
+# also writes it to $RUNNER_TEMP, so nothing generated reaches this file.
+api/prisma/inbox/cards.json
+api/prisma/inbox/*.incoming.json
