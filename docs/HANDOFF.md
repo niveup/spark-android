@@ -58,3 +58,14 @@ SECURITY.md review, dependency audit, Sentry test crash, coverage API/auth/ranki
 
 ## PHASE 9 — Release, backup, runbook
 **Backend deployment to Vercel (free tier) + Supabase happens here** — after hardening, before the signed release. User-facing effect: the phone no longer needs the PC (app talks to the public HTTPS API URL; dev build keeps the USB tunnel for development). Then: identity/icon/splash, versionCode+1, signing key backup x2 (never repo), signed release APK via Studio or Actions, prod env + migration after backup, smoke test, RUNBOOK.md (deploy/rollback/revoke/restore/re-run/lost-phone), monthly checklist.
+
+## Phase 3c.1 - Cloud importer (GitHub Actions) [DONE Nov 2026 - Phase 1 only]
+The importer can now run without the owner's PC. `.github/workflows/import-cards.yml`
+(Node 24, `npm ci` in `api`) starts on `repository_dispatch`
+(`spark-content-import`) or `workflow_dispatch`, validates the payload in
+`.github/scripts/build-payload.mjs` (50 cards / 60 KB ceiling, `{cards:[...]}`),
+writes it to `$RUNNER_TEMP/cards.json` (never the repo), runs
+`node prisma/import-cards.ts --summary ... [--dry-run]`, and reports to Telegram
+via `.github/scripts/import-report.mjs`. `concurrency: content-import`,
+`contents: read`, no `NODE_ENV`. Setup and troubleshooting:
+`docs/CONTENT_AUTOMATION.md`. No schedule and no Gmail trigger yet (Phase 2).
