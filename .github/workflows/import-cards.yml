@@ -1,0 +1,106 @@
+name: Content import
+
+# Phase 1 of the content automation: a cloud runner imports a SPARK cards
+# payload into Supabase with no laptop involved.
+#
+# Triggers
+#   - repository_dispatch (spark-content-import): the future Apps Script path.
+#     client_payload is the SPARK JSON itself, optionally with
+#     { "mode": "dry-run" } or { "dryRun": true }.
+#   - workflow_dispatch: paste the same JSON in the GitHub UI for manual tests.
+#
+# The payload is written to $RUNNER_TEMP and never touches the repository, so
+# nothing generated is ever committed. Node 24 is required: the importer is a
+# .ts file executed by plain node (built-in type stripping).
+#
+# NOTE: NODE_ENV must never be set to "production" here — the importer refuses
+# to run then, by design.
+
+on:
+  repository_dispatch:
+    types: [spark-content-import]
+  workflow_dispatch:
+    inputs:
+      cards_json:
+        description: 'SPARK cards JSON — the same { "cards": [ … ] } format the importer uses'
+        required: true
+        type: string
+      dry_run:
+        description: 'Validate and roll back (publishes nothing)'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: content-import
+  cancel-in-progress: false
+
+jobs:
+  import:
+    name: Import cards
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check required secrets
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL repository secret is missing."
+            exit 1
+          fi
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install API dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Validate payload
+        id: payload
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+          INPUT_CARDS: ${{ inputs.cards_json }}
+          INPUT_DRY_RUN: ${{ inputs.dry_run }}
+        run: node .github/scripts/build-payload.mjs
+
+      - name: Run importer
+        id: import
+        if: steps.payload.outputs.ready == 'true'
+        working-directory: api
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -o pipefail
+          FLAGS=""
+          if [ "${{ steps.payload.outputs.dry_run }}" = "true" ]; then
+            FLAGS="--dry-run"
+          fi
+          node prisma/import-cards.ts "$RUNNER_TEMP/cards.json" \
+            --summary "$RUNNER_TEMP/summary.json" $FLAGS | tee "$RUNNER_TEMP/import.log"
+
+      - name: Notify Telegram
+        if: always()
+        continue-on-error: true
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+          DRY_RUN: ${{ steps.payload.outputs.dry_run }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: node .github/scripts/import-report.mjs

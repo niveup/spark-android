@@ -33,6 +33,12 @@ Thumbs.db
 
 # Local scratch: adb screenshots, extracted AARs, one-off scripts output
 .tmp/
+_tmp-*
+
+# Content automation: the inbox payload is data, never source. The workflow
+# also writes it to $RUNNER_TEMP, so nothing generated reaches this file.
+api/prisma/inbox/cards.json
+api/prisma/inbox/*.incoming.json
 
 # IDE Agent skills
 .agents/

@@ -95,6 +95,65 @@ Owner feedback: the old quote cards were the weakest content in the feed — Bar
 ## Deck change (Oct 2026) — audiobook cards removed
 Owner feedback: the LibriVox chapter cards were pure boilerplate ("Section 3 of the public-domain LibriVox reading of *X* by *Y*"), every one of them shared the same action line, and they made up ~41% of the published deck. Removed two ways, both reversible: (1) 29 published audio cards were **archived** (`status: published → archived`, nothing deleted, saved state kept) via the new `npm run content:archive-audio` — add `--restore` to publish them again; (2) the ingest no longer produces them (`prisma/data/growth-config.json` → `audio.enabled: false`). Published deck is now 42 cards: 14 concept · 13 quote · 12 book_idea · 3 challenge. The Media3 player code stays in the app (dormant) so audio can come back cheaply once a card body carries a real excerpt of the chapter instead of a template sentence.
 
+## Deck change (Nov 2026) — OpenStax physics cards archived
+Owner asked for the three physics concept cards to go: **Carnot efficiency**,
+**First law of thermodynamics**, **Second law: entropy** (OpenStax *University
+Physics*, CC BY). They came from an earlier pipeline pass — no current ingest
+script produces them — and thermodynamics sits outside the personal-growth
+deck. Archived, not deleted: rows, content hashes and saved/liked state are
+untouched, and the feed only serves `status = 'published'`.
+- `node prisma/archive-physics.ts` from `api/` (`--restore` publishes them
+  again). Scoped by `sourceType = 'openstax'` **and** `type = 'concept'`, so a
+  future growth-topic OpenStax card is never swept up.
+- Published deck is now **42 cards: 16 quote · 11 concept · 12 book_idea ·
+  3 challenge**, 0 audio, 0 quiz (these numbers supersede the 42 in the
+  October entries above). Remaining concept cards: 11 Wikipedia summaries
+  (CC BY-SA, attribution in `sourceRef`).
+- On a phone that already cached the deck, the three cards may linger in the
+  offline library until the cache refreshes (Me → Clear offline cache).
+
+## Phase 3c — AI content inbox [DONE Nov 2026 — importer verified]
+Owner goal: any good AI fills a JSON file, the app shows the cards, with no
+coding work in between.
+- `api/prisma/import-cards.ts` reads `api/prisma/inbox/cards.json`, validates
+  against `CardSchema`, dedupes by `contentHash`, inserts into Supabase, and
+  publishes (or holds as drafts with `--draft`). Runs with plain `node`
+  (Node 24 type stripping) so it does not need the tsx/esbuild runner.
+- **Quote gate:** a `quote` card needs `gutenbergId` + `match`; the sentence is
+  re-fetched from the real Gutenberg text and a miss is a hard rejection. This
+  is the line that keeps fabricated attributions out: the AI may *claim* a
+  quote, only the source may *certify* one. Non-quote cards are original
+  AI text (`isAiGenerated=true`, `isGrounded=false`) and therefore render with
+  the "AI-written, unverified" chip. Book rows are created on demand for
+  verified quotes, so "Why this?" still names the book.
+- Format + the copy-paste prompt for the owner's AI: `docs/AI_CONTENT_PROMPT.md`.
+  Example inbox: `api/prisma/inbox/cards.example.json`.
+- Verified: dry run on the example accepted 1 Epictetus quote (verified
+  verbatim against Gutenberg #45109) + 2 original cards; a run with a fabricated
+  Steve Jobs quote, a fake Epictetus line and a malformed card rejected all
+  three with reasons; rolled back cleanly (deck stayed 42).
+- Still missing for fully hands-off: the GitHub Action that runs the importer
+  when the inbox file changes (needs `DATABASE_URL` as a repo secret), and a
+  review screen for `--draft` mode.
+
+## Phase 3c.1 — Cloud importer (GitHub Actions) [DONE Nov 2026 — Phase 1 only]
+The importer can now run without the owner's PC: `.github/workflows/import-cards.yml`
+(Node 24, `npm ci` in `api`) starts on `repository_dispatch`
+(`spark-content-import`) or `workflow_dispatch`, validates the payload in
+`.github/scripts/build-payload.mjs` (≤50 cards, ≤60 KB, `{cards:[…]}`), writes it
+to `$RUNNER_TEMP/cards.json` (never the repo), runs
+`node prisma/import-cards.ts --summary … [--dry-run]`, and reports to Telegram
+via `.github/scripts/import-report.mjs` (split at Telegram's limit, with
+per-card results). `concurrency: content-import`, `contents: read`,
+no `NODE_ENV`. Importer gained three additive behaviours only: `--summary`
+machine-readable output, `on conflict ("contentHash") do nothing`, per-card
+error isolation (errors still exit non-zero) + savepoints in dry-run.
+Verified locally: payload validation (empty/bad JSON/51 cards/70 KB all
+rejected), publish run (3 stored), immediate re-run (3 duplicates), dry-run
+rollback, and Telegram rendering/splitting. Still to do: re-run on a real
+GitHub runner, and Phase 2 (Gmail → Apps Script trigger). Setup + troubleshooting:
+`docs/CONTENT_AUTOMATION.md`.
+
 ## PHASE 8.5 — UI polish pass [NOT STARTED — owner triggers it]
 Owner's standing instruction (AGENTS.md rule 13): **the agent flags when polish is due; the owner says go.** Recommended trigger point: after Phase 8 hardening, before Phase 9 release — that is the last moment the whole app can be looked at as a whole (all 6 card types, offline states, audio, saved, me) without release pressure. Second acceptable trigger: a week of real daily use on the phone, so the owner can judge what actually annoys him.
 
@@ -120,5 +179,5 @@ Scope = **visual/interaction only, no new features**: icons, type scale, spacing
 15. **Saved export buttons** - "Export Markdown" wraps to two lines in the half-width button. Use short labels (`Export .json` / `Export .md`) or a small overflow menu; keep both formats.
 16. **Saved empty state** - export buttons are always composed but disabled while loading/empty (kept stable to avoid tab-transition churn). Decide in 8.5 whether to hide them on empty; keep them reachable whenever cards exist.
 17. **Card action row** - `CardAction` is a plain clickable (workaround for the Material3 1.4.0 `ChildSemanticsNode` crash). Give it the final alignment/ripple/padding treatment in 8.5 and restore standard Material3 buttons once a stable release fixes the bug; keep the role + state descriptions.
-18. **Home dashboard** — [x] done Nov 2026. Rebuilt as the front page of a finite edition: a real CC BY 2.0 photograph as the cover (credit under it and in `docs/CREDITS.md`), a twenty-step session strip (exact count above; fills by fraction), one inverted primary action whose label follows the session (Start / Continue / Review), the real next card from the loaded deck, and a real grounded quote from the same deck. The session total is `min(deck size, card limit)`, so a short deck reads as a short session; with no deck loaded, Home says “No cards” and points at the feed instead of inventing a 21-card session. Removed the drawn mountain canvas, radial glows, gradient button, fake “Atomic Habits” quote, hardcoded “Deep Work” preview, uppercase micro-labels, the three-column stats card, the duplicate “cards left” line, and the decorative amber quote mark. Quote bodies get curly outer quotes; the offline banner is now a quiet `surfaceContainerHigh` strip with an amber dot and a 48 dp Retry. Amber marks data only; nav selection is neutral white. Home reads session-scoped data (`FeedState.seenCount`), not a server “today” total — a daily-total API is still future work.
+18. **Home dashboard** — [x] done Nov 2026. Rebuilt as the front page of a finite edition: a real public-domain NPS photograph (“Morning Mist”, Tim Rains) as the cover — neutral layered mountains and still water that work at any hour (credit under it and in `docs/CREDITS.md`), a twenty-step session strip (exact count above; fills by fraction), one inverted primary action whose label follows the session (Start / Continue / Review), the real next card from the loaded deck, and a real grounded quote from the same deck. The session total is `min(deck size, card limit)`, so a short deck reads as a short session; with no deck loaded, Home says “No cards” and points at the feed instead of inventing a 21-card session. Removed the drawn mountain canvas, radial glows, gradient button, fake “Atomic Habits” quote, hardcoded “Deep Work” preview, uppercase micro-labels, the three-column stats card, the duplicate “cards left” line, and the decorative amber quote mark. Quote bodies get curly outer quotes; the offline banner is now a quiet `surfaceContainerHigh` strip with an amber dot and a 48 dp Retry. Amber marks data only; nav selection is neutral white. Home reads session-scoped data (`FeedState.seenCount`), not a server “today” total — a daily-total API is still future work.
 19. **Reels offline badge** — the “Offline library” pill is drawn over the card's type/topic header and hides it; move it to a corner chip or below the header. The raw `[QUOTE·communication]` header is item 7.
