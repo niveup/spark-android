@@ -5,10 +5,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -65,26 +67,26 @@ import java.util.Locale
 /*
  * SPARK Home.
  *
- * One surface on the screen: the card you are about to read. Everything else
- * is type on the ground. The screen answers one question first — "what next?" —
- * then how far into today's finite session you are, then what you kept.
+ * Home is a reading dashboard: a real next card, a finite-session snapshot,
+ * and shortcuts to content the reader has already saved.
  *
- * Hierarchy, in order: the wordmark (drawn), the greeting (grey + amber name),
- * the card, the session bar, saved, today's line.
+ * Everything shown comes from the local feed/session state. The small cover
+ * art is drawn with Compose shapes, so Home remains useful offline.
  */
 
-private val SparkBg = Color(0xFF0E0E11)
-private val SparkCard = Color(0xFF191921)
-private val SparkCardBorder = Color(0xFF2C2C38)
-private val SparkTrack = Color(0xFF4A4A56)
+private val SparkBg = Color(0xFF121110)
+private val SparkCard = Color(0xFF1E1C1B)
+private val SparkCardBorder = Color(0xFF312D2A)
+private val SparkTrack = Color(0xFF4C4540)
 
 private val SparkGold = Color(0xFFF5A844)
 
-private val TextPrimary = Color(0xFFF4F4F6)
-private val TextSecondary = Color(0xFFA1A1AA)
-private val TextTertiary = Color(0xFF8C8C96)
+private val TextPrimary = Color(0xFFECE6E0)
+private val TextSecondary = Color(0xFFC3BBB1)
+private val TextTertiary = Color(0xFF9C9289)
 
 private val Gutter = 20.dp
+private val CardCornerRadius = 20.dp
 
 /** The one person this app is for. */
 private const val OWNER_NAME = "Satyam"
@@ -98,11 +100,11 @@ private val LabelStyle = TextStyle(
 )
 
 private val QuoteStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
+    fontFamily = FontFamily.Serif,
     fontWeight = FontWeight.Normal,
-    fontSize = 18.sp,
-    lineHeight = 28.sp,
-    letterSpacing = (-0.15).sp
+    fontSize = 17.5.sp,
+    lineHeight = 26.sp,
+    letterSpacing = (-0.1).sp
 )
 
 private val ActionStyle = TextStyle(
@@ -127,7 +129,7 @@ private val CaptionStyle = TextStyle(
 )
 
 private val DailyQuoteStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
+    fontFamily = FontFamily.Serif,
     fontWeight = FontWeight.Normal,
     fontSize = 17.sp,
     lineHeight = 26.sp,
@@ -224,17 +226,17 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = Gutter)
     ) {
-        Spacer(modifier = Modifier.height(26.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
         DatelineHeader(dayName = dayName, dateLabel = dateLabel)
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(26.dp))
 
         Greeting(greeting = greeting)
 
         when {
             nextCard != null -> {
-                Spacer(modifier = Modifier.height(26.dp))
+                Spacer(modifier = Modifier.height(22.dp))
                 NextCard(card = nextCard, onClick = onOpenReels)
             }
 
@@ -251,21 +253,19 @@ fun HomeScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(36.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        SessionBar(seenCount = seenCount, total = sessionTotal)
+        SessionBar(seenCount = seenCount, total = sessionTotal, minuteLimit = minuteLimit)
 
-        if (savedCount > 0) {
-            Spacer(modifier = Modifier.height(18.dp))
-            SavedRow(count = savedCount, onClick = onOpenSaved)
-        }
+        Spacer(modifier = Modifier.height(12.dp))
+        SavedRow(count = savedCount, onClick = onOpenSaved)
 
         if (dailyQuote != null) {
-            Spacer(modifier = Modifier.height(46.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             TodayLine(card = dailyQuote)
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
@@ -291,32 +291,41 @@ private fun DatelineHeader(dayName: String, dateLabel: String) {
     }
 }
 
-/** Context in grey, the person in amber: the only warm thing above the card. */
+/** A short welcome plus a clear statement of what this screen is for. */
 @Composable
 private fun Greeting(greeting: String) {
-    Text(
-        text = buildAnnotatedString {
-            withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Medium)) {
-                append("$greeting, ")
-            }
-            withStyle(SpanStyle(color = SparkGold, fontWeight = FontWeight.SemiBold)) {
-                append(OWNER_NAME)
-            }
-        },
-        fontSize = 18.sp,
-        lineHeight = 26.sp,
-        letterSpacing = (-0.1).sp
-    )
+    Column {
+        Text(
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Medium)) {
+                    append("$greeting, ")
+                }
+                withStyle(SpanStyle(color = SparkGold, fontWeight = FontWeight.SemiBold)) {
+                    append(OWNER_NAME)
+                }
+            },
+            fontSize = 16.sp,
+            lineHeight = 22.sp,
+            letterSpacing = 0.sp
+        )
+        Spacer(modifier = Modifier.height(5.dp))
+        Text(
+            text = "Make a little room for a better idea.",
+            fontSize = 23.sp,
+            lineHeight = 29.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = (-0.45).sp,
+            color = TextPrimary,
+            modifier = Modifier.semantics { heading() }
+        )
+    }
 }
 
-/**
- * The screen's one block: the book's own words, carrying the accent rule, then
- * the instruction in the app's voice, then the citation and the way in.
- */
+/** The featured card pairs a real deck item with an offline-drawn cover. */
 @Composable
 private fun NextCard(card: Card, onClick: () -> Unit) {
     val haptics = LocalHapticFeedback.current
-    val shape = RoundedCornerShape(18.dp)
+    val shape = RoundedCornerShape(CardCornerRadius)
 
     Surface(
         shape = shape,
@@ -330,40 +339,57 @@ private fun NextCard(card: Card, onClick: () -> Unit) {
                 onClick()
             }
     ) {
-        Column(modifier = Modifier.padding(22.dp)) {
-            Text(text = "From the book", style = LabelStyle, color = TextTertiary)
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(modifier = Modifier.height(IntrinsicSize.Min)) {
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .fillMaxHeight()
-                        .background(SparkGold)
-                )
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = "YOUR NEXT IDEA", style = LabelStyle, color = SparkGold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = card.title,
+                        fontSize = 20.sp,
+                        lineHeight = 25.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = (-0.25).sp,
+                        color = TextPrimary,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    TopicChip(topic = card.topic, type = card.type.name)
+                }
                 Spacer(modifier = Modifier.width(14.dp))
-                Text(
-                    text = card.body.displayBody().asQuote(),
-                    style = QuoteStyle,
-                    color = TextPrimary
-                )
+                BookCoverArt(title = card.bookLine ?: card.title, topic = card.topic)
             }
 
+            Spacer(modifier = Modifier.height(15.dp))
+
+            Text(
+                text = card.body.displayBody().asQuote(),
+                style = QuoteStyle,
+                color = TextPrimary,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+
             if (card.actionLine.isNotBlank()) {
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = actionText(card.actionLine),
                     style = ActionStyle,
-                    color = TextSecondary
+                    color = TextSecondary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Bottom
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 val source = card.bookLine ?: card.source
                 Text(
@@ -374,9 +400,86 @@ private fun NextCard(card: Card, onClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 ReadItAffordance()
             }
+        }
+    }
+}
+
+@Composable
+private fun TopicChip(topic: String, type: String) {
+    Surface(
+        color = SparkGold.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(50.dp)
+    ) {
+        Text(
+            text = "${topic.uppercase(Locale.ROOT)}  ·  ${typeLabel(type)}",
+            style = LabelStyle.copy(fontSize = 9.5.sp, letterSpacing = 0.65.sp),
+            color = SparkGold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+        )
+    }
+}
+
+private fun typeLabel(type: String): String =
+    type.replace('_', ' ').uppercase(Locale.ROOT)
+
+/** A tiny editorial cover made from Compose shapes, so it works offline. */
+@Composable
+private fun BookCoverArt(title: String, topic: String) {
+    Box(
+        modifier = Modifier
+            .size(width = 84.dp, height = 118.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(Color(0xFF60411F), Color(0xFF2C2119))
+                )
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 8.dp, end = 8.dp)
+                .size(36.dp)
+                .background(Color(0x26FFD59A), CircleShape)
+        )
+        Box(
+            modifier = Modifier
+                .width(3.dp)
+                .height(62.dp)
+                .align(Alignment.CenterStart)
+                .background(SparkGold.copy(alpha = 0.75f))
+        )
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 11.dp, end = 8.dp, bottom = 10.dp)
+        ) {
+            Text(
+                text = topic.uppercase(Locale.ROOT),
+                fontSize = 8.sp,
+                lineHeight = 10.sp,
+                letterSpacing = 1.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFFFD7A6),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(5.dp))
+            Text(
+                text = title,
+                fontFamily = FontFamily.Serif,
+                fontSize = 12.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFFFF2DF),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }
@@ -395,59 +498,159 @@ private fun ReadItAffordance() {
     }
 }
 
-/** One 2px bar is the whole progress story: read against the session's size. */
+/** A compact dashboard card for the session limit and actual reading progress. */
 @Composable
-private fun SessionBar(seenCount: Int, total: Int) {
-    val fraction = if (total <= 0) 0f else (seenCount.toFloat() / total).coerceIn(0f, 1f)
+private fun SessionBar(seenCount: Int, total: Int, minuteLimit: Int) {
+    val isComplete = total > 0 && seenCount >= total
+    val isCaughtUp = total <= 0
+    val fraction = when {
+        isComplete -> 1f
+        isCaughtUp -> 0f
+        else -> (seenCount.toFloat() / total).coerceIn(0f, 1f)
+    }
 
-    Column {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(2.dp)
-                .clip(RoundedCornerShape(1.dp))
-                .background(SparkTrack)
-        ) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = SparkCard,
+        border = BorderStroke(1.dp, SparkCardBorder)
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "TODAY'S RHYTHM", style = LabelStyle, color = TextTertiary)
+                Spacer(modifier = Modifier.weight(1f))
+                Surface(
+                    shape = RoundedCornerShape(50.dp),
+                    color = Color(0xFF30271E)
+                ) {
+                    Text(
+                        text = "$minuteLimit MIN",
+                        style = LabelStyle.copy(fontSize = 10.sp),
+                        color = SparkGold,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = "$seenCount",
+                    fontSize = 29.sp,
+                    lineHeight = 32.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = (-0.6).sp,
+                    color = TextPrimary
+                )
+                Text(
+                    text = if (total > 0) " / $total cards" else " cards",
+                    style = CaptionStyle,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(start = 3.dp, bottom = 3.dp)
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = when {
+                        isComplete -> "Session complete"
+                        isCaughtUp -> "All caught up"
+                        else -> "${(total - seenCount).coerceAtLeast(0)} left"
+                    },
+                    style = CaptionStyle.copy(fontSize = 11.5.sp),
+                    color = if (isComplete) SparkGold else TextTertiary,
+                    modifier = Modifier.padding(bottom = 3.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
             Box(
                 modifier = Modifier
-                    .fillMaxWidth(fraction)
-                    .fillMaxHeight()
-                    .background(SparkGold)
-            )
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(SparkTrack)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(fraction)
+                        .fillMaxHeight()
+                        .background(SparkGold)
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = "$seenCount of $total read",
-            style = CaptionStyle,
-            color = TextSecondary
-        )
     }
 }
 
-/** A quiet line, not a second card: the box count stays at one. */
+/** A tappable preview of the real saved-card list. */
 @Composable
 private fun SavedRow(count: Int, onClick: () -> Unit) {
-    Row(
+    val shape = RoundedCornerShape(18.dp)
+    Surface(
+        shape = shape,
+        color = SparkCard,
+        border = BorderStroke(1.dp, SparkCardBorder),
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clickable(role = Role.Button, onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically
+            .clip(shape)
+            .clickable(role = Role.Button, onClick = onClick)
     ) {
-        Text(text = "Saved", style = BodyStyle, color = TextSecondary)
-        Spacer(modifier = Modifier.width(7.dp))
-        Text(
-            text = count.toString(),
-            style = BodyStyle.copy(fontWeight = FontWeight.SemiBold),
-            color = TextPrimary
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Icon(
-            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-            contentDescription = null,
-            tint = TextTertiary,
-            modifier = Modifier.size(14.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 72.dp)
+                .padding(horizontal = 15.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .background(Color(0xFF30271E), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.FavoriteBorder,
+                    contentDescription = null,
+                    tint = SparkGold,
+                    modifier = Modifier.size(19.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Your saved shelf",
+                    style = BodyStyle.copy(fontWeight = FontWeight.SemiBold),
+                    color = TextPrimary
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = if (count == 0) "Keep the ideas you want to revisit" else "$count ${if (count == 1) "idea" else "ideas"} to revisit",
+                    style = CaptionStyle,
+                    color = TextTertiary
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                color = Color(0xFF30271E)
+            ) {
+                Text(
+                    text = count.toString(),
+                    style = BodyStyle.copy(fontWeight = FontWeight.SemiBold),
+                    color = SparkGold,
+                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = TextTertiary,
+                modifier = Modifier.size(14.dp)
+            )
+        }
     }
 }
 
@@ -463,8 +666,11 @@ private fun DoneBlock(
 ) {
     val context = LocalContext.current
 
+    val isCaughtUp = total <= 0
+    val isDone = complete || isCaughtUp
     val title = when {
         complete -> "That\u2019s today\u2019s $total."
+        isCaughtUp -> "You\u2019re all caught up."
         hasCards -> "Nothing to show yet."
         else -> "No cards in the deck."
     }
@@ -475,90 +681,128 @@ private fun DoneBlock(
                 "session starts fresh."
         complete ->
             "Nothing left to scroll. That\u2019s the point. Tomorrow\u2019s session starts fresh."
+        isCaughtUp ->
+            "No endless queue, no doomscrolling. You\u2019ve read today\u2019s batch \u2014 take a breath and step away, or revisit your saved notes."
         else -> "Open the feed to load today\u2019s cards."
     }
 
-    Column {
-        Text(
-            text = title,
-            style = DoneTitleStyle,
-            color = TextPrimary,
-            modifier = Modifier.semantics { heading() }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = body,
-            style = BodyStyle,
-            color = TextSecondary
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Button(
-            onClick = onCta,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            shape = RoundedCornerShape(100.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = TextPrimary,
-                contentColor = SparkBg
-            ),
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 0.dp,
-                pressedElevation = 0.dp
-            )
-        ) {
+    Surface(
+        shape = RoundedCornerShape(CardCornerRadius),
+        color = SparkCard,
+        border = BorderStroke(1.dp, SparkCardBorder)
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
             Text(
-                text = ctaLabel,
-                style = TextStyle(
-                    fontFamily = FontFamily.SansSerif,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp
-                )
+                text = if (isDone) "TODAY'S SESSION" else "GET STARTED",
+                style = LabelStyle,
+                color = SparkGold
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                modifier = Modifier.size(15.dp)
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = title,
+                style = DoneTitleStyle,
+                color = TextPrimary,
+                modifier = Modifier.semantics { heading() }
             )
-        }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = body,
+                style = BodyStyle,
+                color = TextSecondary
+            )
 
-        if (complete) {
-            TextButton(
-                onClick = { (context as? Activity)?.finishAffinity() },
-                modifier = Modifier.fillMaxWidth()
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Button(
+                onClick = onCta,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                shape = RoundedCornerShape(100.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = TextPrimary,
+                    contentColor = SparkBg
+                ),
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 0.dp,
+                    pressedElevation = 0.dp
+                )
             ) {
-                Text(text = "Close app", style = CiteStyle.copy(fontSize = 13.sp), color = TextTertiary)
+                Text(
+                    text = ctaLabel,
+                    style = TextStyle(
+                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp
+                    )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
+
+            if (isDone) {
+                TextButton(
+                    onClick = { (context as? Activity)?.finishAffinity() },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "Close app", style = CiteStyle.copy(fontSize = 13.sp), color = TextTertiary)
+                }
             }
         }
     }
 }
 
-/** The closing beat: one line to keep, and where it came from. */
+/** A highlighted quote from the real deck, with its source kept in view. */
 @Composable
 private fun TodayLine(card: Card) {
-    Column {
-        Text(text = "Today\u2019s line", style = LabelStyle, color = TextTertiary)
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = card.body.displayBody().asQuote(),
-            style = DailyQuoteStyle,
-            color = TextPrimary
-        )
-        val attribution = card.bookLine
-        if (!attribution.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .width(12.dp)
-                        .height(2.dp)
-                        .background(SparkGold)
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = Color(0xFF211E1A),
+        border = BorderStroke(1.dp, SparkCardBorder)
+    ) {
+        Box {
+            Text(
+                text = "“",
+                fontFamily = FontFamily.Serif,
+                fontSize = 76.sp,
+                lineHeight = 76.sp,
+                color = SparkGold.copy(alpha = 0.12f),
+                modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp)
+            )
+            Column(modifier = Modifier.padding(18.dp)) {
+                Text(text = "A THOUGHT TO KEEP", style = LabelStyle, color = SparkGold)
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = card.body.displayBody().asQuote(),
+                    style = DailyQuoteStyle,
+                    color = TextPrimary,
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = attribution, style = CiteStyle, color = TextTertiary)
+                val attribution = card.bookLine
+                if (!attribution.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .width(12.dp)
+                                .height(2.dp)
+                                .background(SparkGold)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = attribution,
+                            style = CiteStyle,
+                            color = TextTertiary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
         }
     }

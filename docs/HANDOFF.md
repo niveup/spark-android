@@ -154,10 +154,10 @@ rollback, and Telegram rendering/splitting. Still to do: re-run on a real
 GitHub runner, and Phase 2 (Gmail → Apps Script trigger). Setup + troubleshooting:
 `docs/CONTENT_AUTOMATION.md`.
 
-## PHASE 8.5 — UI polish pass [NOT STARTED — owner triggers it]
-Owner's standing instruction (AGENTS.md rule 13): **the agent flags when polish is due; the owner says go.** Recommended trigger point: after Phase 8 hardening, before Phase 9 release — that is the last moment the whole app can be looked at as a whole (all 6 card types, offline states, audio, saved, me) without release pressure. Second acceptable trigger: a week of real daily use on the phone, so the owner can judge what actually annoys him.
+## PHASE 8.5 — UI polish pass [IN PROGRESS — Home dashboard pass complete]
+Owner triggered a Home dashboard visual pass on 9 Nov 2026. Other screens and remaining backlog items stay parked for a later owner-approved pass.
 
-Scope = **visual/interaction only, no new features**: icons, type scale, spacing rhythm, motion/haptics, states, labels. Everything here is deliberately parked until then.
+Scope = **visual/interaction only, no new features**: icons, type scale, spacing rhythm, motion/haptics, states, labels. Use separate owner-triggered subpasses; no backend or feature work.
 
 ### UI polish backlog (check items off as they land)
 1. **Icons** — emoji render per-phone-font and look inconsistent.
@@ -169,7 +169,7 @@ Scope = **visual/interaction only, no new features**: icons, type scale, spacing
 5. **Motion** — pager cards change instantly; consider a subtle enter transition + `AnimatedContent` for the body when a card settles.
 6. **"AI-written, unverified" label** — currently painted in `error` red (reads as a failure). Should be a neutral/amber "unverified" chip (warning, not error).
 7. **Card header chip** — raw enum lowercase `[concept·thermo]` → pretty `CONCEPT · THERMO` with a filled chip (matches `docs/theme-preview.html` card/tag mock).
-8. **Home session block** — now a single 2 px progress bar with “N of M read”, session-scoped. Wireframe §0b still wants weak topics / due counts; needs server data (weak topics) — only if the API can supply it cheaply.
+8. **Home session block** — [x] now a styled session card with the real read count, configured minute limit, and progress bar. Weak topics / due counts from wireframe §0b remain parked until the API can supply them cheaply.
 9. **Saved tab** — tapping a row should open the full card (wireframe §10); today the row is inert. Add a per-type dot colour.
 10. **Audio overlay** — full-screen "Now playing" (wireframe §13): resume position, −10s/+30s, speed, sleep timer. Functionality parked from Phase 6.
 11. **Loading / empty states** — offline banner done Nov 2026: quiet `surfaceContainerHigh` strip, amber status dot, 48 dp Retry, status-bar padded. Still plain text ("Loading saved cards…") → branded state blocks with an icon + one line of guidance (there is `ui/States.kt` to rework).
