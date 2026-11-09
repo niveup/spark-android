@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="190dp"
+    android:viewportWidth="240"
+    android:viewportHeight="190">
+
+    <!-- A loose orbit puts the book in motion without turning it into a logo. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M29,102 C34,53 73,27 121,29 C166,31 204,55 218,91"
+        android:strokeColor="#76C9B1"
+        android:strokeLineCap="round"
+        android:strokeWidth="2" />
+    <path
+        android:fillColor="#254F48"
+        android:pathData="M185,29 C207,29 225,47 225,69 C225,91 207,106 185,106 C163,106 150,90 150,68 C150,46 163,29 185,29 Z" />
+    <path
+        android:fillColor="#F4B84F"
+        android:pathData="M191,24 L197,38 L211,44 L197,49 L191,64 L185,49 L171,44 L185,38 Z" />
+    <path
+        android:fillColor="#E58C68"
+        android:pathData="M52,42 L56,51 L65,54 L56,58 L52,67 L48,58 L39,54 L48,51 Z" />
+    <path
+        android:fillColor="#9ED8C2"
+        android:pathData="M210,79 m-4,0 a4,4 0,1 0,8 0 a4,4 0,1 0,-8 0" />
+
+    <!-- Soft book shadow and a deep green cover. -->
+    <path
+        android:fillColor="#0E2524"
+        android:pathData="M27,108 C55,89 84,91 115,106 C145,91 175,89 204,108 L204,166 C175,151 145,151 115,166 C84,151 55,151 27,166 Z" />
+    <path
+        android:fillColor="#F9F0DC"
+        android:pathData="M33,101 C59,85 85,88 115,103 L115,157 C86,143 59,143 33,158 Z" />
+    <path
+        android:fillColor="#EED7B5"
+        android:pathData="M115,103 C145,88 172,85 198,101 L198,158 C172,143 145,143 115,157 Z" />
+
+    <!-- Page rules and the center fold. -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M47,111 C65,102 84,103 101,111 M47,122 C65,113 84,114 101,122 M47,133 C65,124 84,125 101,133"
+        android:strokeColor="#C9A77C"
+        android:strokeLineCap="round"
+        android:strokeWidth="2" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M129,111 C146,103 166,102 184,111 M129,122 C146,114 166,113 184,122 M129,133 C146,125 166,124 184,133"
+        android:strokeColor="#BD966A"
+        android:strokeLineCap="round"
+        android:strokeWidth="2" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M115,103 L115,157"
+        android:strokeColor="#966D50"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.5" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M35,161 C61,148 88,148 115,162 C144,148 171,148 196,161"
+        android:strokeColor="#89C7B1"
+        android:strokeLineCap="round"
+        android:strokeWidth="2" />
+</vector>

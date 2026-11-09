@@ -18,6 +18,7 @@ import com.spark.app.data.SavedExportFormat
 import com.spark.app.data.remote.StatsData
 import com.spark.app.feed.DoneScreen
 import com.spark.app.feed.FinishReason
+import com.spark.app.home.HomeScreen
 import com.spark.app.home.MeScreen
 import com.spark.app.home.SavedScreen
 import com.spark.app.home.SavedUiState
@@ -178,6 +179,43 @@ class UiSmokeTest {
     }
 
     @Test
+    fun homePeekOpensAndClosesAndPrimaryActionOpensFeed() {
+        val card = Card(
+            id = "home-preview-card",
+            type = CardType.CONCEPT,
+            topic = "habits",
+            title = "A small habit for tomorrow",
+            body = "A small useful thought.",
+            actionLine = "Try this today: prepare one thing before bed.",
+            source = "OpenStax",
+            grounded = true,
+            bookLine = "Building better habits"
+        )
+        var openedFeed = false
+        compose.setContent {
+            SparkTheme {
+                HomeScreen(
+                    seenCount = 2,
+                    savedCount = 1,
+                    cardLimit = 20,
+                    minuteLimit = 15,
+                    deckSize = 20,
+                    nextCard = card,
+                    onOpenReels = { openedFeed = true },
+                    onOpenSaved = {}
+                )
+            }
+        }
+
+        compose.onNodeWithText("Peek inside").assertIsDisplayed().performClick()
+        compose.onNodeWithText("A small useful thought.", substring = true).assertExists()
+        compose.onNodeWithText("Hide peek").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Peek inside").assertIsDisplayed()
+        compose.onNodeWithText("Continue session").performClick()
+        assertTrue(openedFeed)
+    }
+
+    @Test
     fun meScreenShowsStatsAccessibleSteppersAndLogout() {
         var loggedOut = false
         compose.setContent {
@@ -200,6 +238,8 @@ class UiSmokeTest {
                     onRetryStats = {},
                     cachedCount = 7,
                     onClearCache = {},
+                    deckCount = 12,
+                    onRefreshDeck = {},
                     onLogout = { loggedOut = true }
                 )
             }

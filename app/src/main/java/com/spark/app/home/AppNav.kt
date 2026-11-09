@@ -1,5 +1,13 @@
 package com.spark.app.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -235,7 +243,25 @@ fun AppNav(
                 .padding(padding),
             color = MaterialTheme.colorScheme.background
         ) {
-            when (tab) {
+            AnimatedContent(
+                targetState = tab,
+                transitionSpec = {
+                    val direction = if (targetState.ordinal >= initialState.ordinal) 1 else -1
+                    (
+                        slideInHorizontally(
+                            animationSpec = tween(240, easing = FastOutSlowInEasing),
+                            initialOffsetX = { width -> direction * width / 12 }
+                        ) + fadeIn(tween(210))
+                    ) togetherWith (
+                        slideOutHorizontally(
+                            animationSpec = tween(170, easing = FastOutSlowInEasing),
+                            targetOffsetX = { width -> -direction * width / 12 }
+                        ) + fadeOut(tween(170))
+                    )
+                },
+                label = "spark-tab-transition"
+            ) { activeTab ->
+                when (activeTab) {
                 Tab.HOME -> HomeScreen(
                     seenCount = state.seenCount,
                     savedCount = state.saved.size,
@@ -327,6 +353,7 @@ fun AppNav(
                     },
                     onLogout = onLogout
                 )
+                }
             }
         }
     }
