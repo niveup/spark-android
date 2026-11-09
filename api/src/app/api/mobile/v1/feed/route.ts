@@ -36,7 +36,9 @@ export async function GET(req: Request) {
   const states = await db.itemState.findMany({ where: { tokenHash: authed.tokenHash } });
   const statesById = new Map(states.map((s) => [s.itemId, s]));
 
-  let ranked = rankFeed(items, statesById, q.sessionId ?? authed.tokenHash);
+  // excludeSeen=false is refill mode: seen cards are eligible again (saved
+  // first), which is what the app's "Read them again" button asks for.
+  let ranked = rankFeed(items, statesById, q.sessionId ?? authed.tokenHash, !q.excludeSeen);
   if (q.topics) {
     const boost = new Set(q.topics.split(",").map((t) => t.trim()).filter(Boolean));
     if (boost.size > 0) {

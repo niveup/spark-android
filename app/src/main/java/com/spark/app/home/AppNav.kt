@@ -259,7 +259,9 @@ fun AppNav(
                     }
                     is FeedUiState.Empty -> CenteredFullScreen {
                         EmptyState(
-                            "Nothing new right now — you're all caught up."
+                            text = "Nothing new right now — you're all caught up.",
+                            actionLabel = "Read them again",
+                            onAction = { feedVm.load(refill = true) }
                         )
                     }
                     is FeedUiState.Error -> CenteredFullScreen {
@@ -308,6 +310,14 @@ fun AppNav(
                         settings.minuteLimit = next
                     },
                     onRetryStats = { meVm.refresh() },
+                    deckCount = when (currentFeed) {
+                        is FeedUiState.Loading -> null
+                        is FeedUiState.Content -> currentFeed.cards.size
+                        is FeedUiState.Error, is FeedUiState.Empty -> 0
+                    },
+                    // Refill mode: saved cards first, then previously read, so a
+                    // deck that has been fully read still comes back with cards.
+                    onRefreshDeck = { feedVm.load(refill = true) },
                     cachedCount = cachedCount,
                     onClearCache = {
                         scope.launch {

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>SPARK — brand sheet</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:#08080A;color:#F4F4F6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:44px 40px 64px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{font-size:15px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{font-size:13px;color:#8C8C96;margin:0 0 40px}
+
+  h2{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8C8C96;
+     font-weight:600;margin:0 0 16px}
+
+  section{padding:32px 0;border-top:1px solid #1E1E26}
+  section:first-of-type{border-top:0;padding-top:0}
+
+  .row{display:flex;align-items:center;gap:36px;flex-wrap:wrap}
+  .cell{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+  .cap{font-size:11px;color:#71717A;letter-spacing:.02em}
+
+  .plate{
+    background:#0E0E11;border:1px solid #22222C;border-radius:16px;
+    padding:22px 24px;display:flex;align-items:center;gap:16px;
+  }
+  .plate .wm{height:21px;display:block}
+  .plate .date{font-size:12px;color:#8C8C96;margin-left:56px}
+
+  .icon{border-radius:22.5%;overflow:hidden;display:block}
+  .icon img{display:block;width:100%;height:auto}
+
+  .splash{
+    width:270px;height:430px;background:#0E0E11;border:1px solid #22222C;
+    border-radius:20px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:20px;
+  }
+  .splash img{width:56px}
+  .splash span{font-size:11px;color:#5E5E68}
+
+  .mono{filter:grayscale(1) brightness(2)}
+  .tint{filter:none}
+
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;max-width:1000px}
+  .rule{background:#101015;border:1px solid #1C1C24;border-radius:12px;padding:16px 18px}
+  .rule b{display:block;font-size:12.5px;margin-bottom:5px;color:#F4F4F6}
+  .rule p{margin:0;font-size:12.5px;color:#A1A1AA}
+
+  .yes,.no{font-size:12px;color:#8C8C96;margin-top:8px}
+  .no{border-left:2px solid #E5566F;padding-left:8px}
+  .yes{border-left:2px solid #F5A844;padding-left:8px}
+</style>
+</head>
+<body>
+
+<h1>SPARK brand sheet</h1>
+<p class="sub">Two assets and one icon. The wordmark is drawn, not typed — it never changes between the app, the launcher and the splash.</p>
+
+<section>
+  <h2>1 · Wordmark — where the name is read</h2>
+  <div class="row">
+    <div class="cell">
+      <div class="plate">
+        <img class="wm" src="spark-wordmark.svg" alt="SPARK">
+        <span class="date">Sun, 8 Nov</span>
+      </div>
+      <span class="cap">In-app header · 21 dp tall · ink #F4F4F6</span>
+    </div>
+    <div class="cell">
+      <img src="spark-wordmark.svg" style="height:52px" alt="SPARK large">
+      <span class="cap">Minimum height 16 dp · clear space = the height of the S</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>2 · Mark — where there is no room for a word</h2>
+  <div class="row">
+    <div class="cell">
+      <img src="spark-mark.svg" style="height:64px" alt="SPARK mark">
+      <span class="cap">The peak of the A, on its own · amber #F5A844</span>
+    </div>
+    <div class="cell">
+      <img src="spark-mark.svg" style="height:64px;filter:brightness(0) invert(1)" alt="SPARK mark white">
+      <span class="cap">Single colour · for notification and mono printing</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>3 · App icon — the peak on the app ground, at real sizes</h2>
+  <div class="row" style="align-items:flex-end">
+    <div class="cell"><div class="icon" style="width:96px"><img src="spark-icon.svg" alt=""></div><span class="cap">96</span></div>
+    <div class="cell"><div class="icon" style="width:64px"><img src="spark-icon.svg" alt=""></div><span class="cap">64</span></div>
+    <div class="cell"><div class="icon" style="width:48px"><img src="spark-icon.svg" alt=""></div><span class="cap">48</span></div>
+    <div class="cell"><div class="icon" style="width:32px"><img src="spark-icon.svg" alt=""></div><span class="cap">32</span></div>
+    <div class="cell" style="margin-left:12px">
+      <div class="icon" style="width:64px;background:#F5A844;display:grid;place-items:center">
+        <svg viewBox="0 0 48 48" width="38" height="38" fill="none" stroke="#0E0E11" stroke-width="7" stroke-linecap="butt" stroke-linejoin="round"><path d="M9 40 L24 8 L39 40"/></svg>
+      </div>
+      <span class="cap">Inverted · amber ground</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>4 · Splash — the mark alone, while the app loads</h2>
+  <div class="splash">
+    <img src="spark-mark.svg" alt="">
+    <img src="spark-wordmark.svg" alt="SPARK" style="height:15px">
+  </div>
+</section>
+
+<section>
+  <h2>5 · Rules</h2>
+  <div class="rules">
+    <div class="rule"><b>Never retype the wordmark</b><p>It is a drawing. Typing "SPARK" in a font is a different logo — that is exactly what looked generic before.</p></div>
+    <div class="rule"><b>One amber per screen</b><p>The mark is amber on the icon; in the app header the wordmark is ink, so amber stays for the greeting and the card.</p></div>
+    <div class="rule"><b>Don't stretch or re-space</b><p>Scale from the height. The letters are spaced by hand; spacing them further breaks the lockup.</p></div>
+    <div class="rule"><b>Clear space</b><p>Keep the height of the S free on all four sides of the wordmark, and a quarter of the icon on all sides of the mark.</p></div>
+    <div class="rule"><b>Minimum sizes</b><p>Wordmark 16 dp tall · mark 24 dp · icon 32 dp. Below that the peak's cuts disappear.</p></div>
+    <div class="rule"><b>Backgrounds</b><p>Dark ground always. On amber, the mark goes ink; never place either on a photograph.</p></div>
+  </div>
+</section>
+
+</body>
+</html>

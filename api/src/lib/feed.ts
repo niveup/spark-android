@@ -133,6 +133,8 @@ export function rankFeed<T extends RankableItem>(
   items: T[],
   statesById: Map<string, RankableState>,
   seed: string,
+  /** Refill mode (feed?excludeSeen=false): recently seen cards may come back. */
+  includeSeen = false,
 ): T[] {
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
@@ -153,7 +155,9 @@ export function rankFeed<T extends RankableItem>(
       continue;
     }
     const seenRecently = !!st?.seenAt && st.seenAt.getTime() > thirtyDaysAgo;
-    if (seenRecently && !st?.saved) continue; // rule 4
+    // Rule 4 normally drops recently seen cards; refill mode keeps them so the
+    // app can still serve something once every card has been read.
+    if (seenRecently && !st?.saved && !includeSeen) continue;
     if (st?.seenAt) {
       explore.push(item); // seen long ago / saved refill
       continue;

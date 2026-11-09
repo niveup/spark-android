@@ -34,6 +34,8 @@ import androidx.compose.ui.unit.sp
 import com.spark.app.BuildConfig
 import com.spark.app.data.Card
 import com.spark.app.data.SavedExportFormat
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun SavedScreen(
@@ -137,10 +139,13 @@ fun MeScreen(
     cachedCount: Int,
     onClearCache: () -> Unit,
     onLogout: () -> Unit,
+    deckCount: Int?,
+    onRefreshDeck: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
     var cacheCleared by remember { mutableStateOf(false) }
+    var lastRefresh by remember { mutableStateOf<LocalTime?>(null) }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -179,6 +184,37 @@ fun MeScreen(
         StepperRow("Cards per session", cardLimit, onCardLimitDelta)
         StepperRow("Minutes per session", minuteLimit, onMinuteLimitDelta)
         Text("Applies from your next session.", style = MaterialTheme.typography.bodySmall)
+
+        Spacer(modifier = Modifier.height(16.dp))
+        SectionLabel("DECK")
+        Text(
+            when {
+                deckCount == null -> "Fetching today's cards…"
+                deckCount == 0 -> "No cards loaded. Refresh to fetch today's deck."
+                deckCount == 1 -> "1 card ready to read"
+                else -> "$deckCount cards ready to read"
+            }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedButton(
+            onClick = {
+                lastRefresh = LocalTime.now()
+                onRefreshDeck()
+            },
+            enabled = deckCount != null
+        ) {
+            Text("Refresh deck")
+        }
+        Text(
+            "Pulls a fresh deck from the server, so a session never runs dry.",
+            style = MaterialTheme.typography.bodySmall
+        )
+        lastRefresh?.let { time ->
+            Text(
+                "Last refresh ${time.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
         SectionLabel("SYNC")
