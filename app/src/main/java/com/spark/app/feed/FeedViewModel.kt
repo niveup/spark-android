@@ -49,7 +49,12 @@ class FeedViewModel(
     private var openedSessionId: String? = null
     private var sessionClosed = false
 
-    fun load() {
+    /**
+     * [refill] = true re-requests the deck with seen cards included (server
+     * "refill mode": saved first, then previously read). Used by the empty
+     * state's button when the 30-day no-repeat rule has nothing left to serve.
+     */
+    fun load(refill: Boolean = false) {
         _state.value = FeedUiState.Loading
         viewModelScope.launch {
             val token = tokens.getToken()
@@ -66,7 +71,8 @@ class FeedViewModel(
                 val page = api.feed(
                     "Bearer $token",
                     limit = cardLimit,
-                    sessionId = openedSessionId
+                    sessionId = openedSessionId,
+                    excludeSeen = !refill
                 )
                 val cards = feedItemsToCards(page.data)
                 offline.saveFeed(page.data) // Phase 7: refresh the offline copy (server-wins)

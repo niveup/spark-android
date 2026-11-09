@@ -187,7 +187,9 @@ fun AppNav(
                     }
                     is FeedUiState.Empty -> CenteredFullScreen {
                         EmptyState(
-                            "Nothing new right now — you're all caught up."
+                            text = "Nothing new right now — you're all caught up.",
+                            actionLabel = "Read them again",
+                            onAction = { feedVm.load(refill = true) }
                         )
                     }
                     is FeedUiState.Error -> CenteredFullScreen {
