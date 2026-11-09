@@ -20,6 +20,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -56,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -82,6 +85,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import com.spark.app.R
 import com.spark.app.data.Card
@@ -445,7 +449,11 @@ private fun HomeHero(
                         }
                     }
                     Spacer(modifier = Modifier.width(6.dp))
-                    FloatingBookArtwork()
+                    val bookLine = card?.bookLine.orEmpty()
+                    val bookTitle = bookLine.substringBefore('\u2014').trim()
+                        .ifBlank { card?.title ?: "A thought to keep" }
+                    val bookAuthor = bookLine.substringAfter('\u2014', "").trim()
+                    FloatingBookArtwork(title = bookTitle, author = bookAuthor)
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -588,9 +596,9 @@ private fun TopicChip(topic: String, type: String) {
 private fun typeLabel(type: String): String =
     type.replace('_', ' ').uppercase(Locale.ROOT)
 
-/** A scalable Android vector illustration with a slow, quiet floating motion. */
+/** A small, typeset hardcover with visible binding, paper edges, and a quiet floating motion. */
 @Composable
-private fun FloatingBookArtwork() {
+private fun FloatingBookArtwork(title: String, author: String) {
     val motion = rememberInfiniteTransition(label = "home-book-float")
     val verticalDrift by motion.animateFloat(
         initialValue = -4f,
@@ -615,13 +623,135 @@ private fun FloatingBookArtwork() {
         modifier = Modifier
             .size(width = 138.dp, height = 122.dp)
             .graphicsLayer { rotationZ = tilt }
-            .offset(y = verticalDrift.dp)
+            .offset { IntOffset(x = 0, y = verticalDrift.dp.roundToPx()) },
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.spark_home_illustration),
-            contentDescription = "An open book with a spark above the pages",
-            modifier = Modifier.fillMaxSize()
-        )
+        val bookShape = RoundedCornerShape(3.dp)
+        val pageShape = RoundedCornerShape(4.dp)
+
+        // The offset cream block gives the cover a real page edge and a little thickness.
+        Box(
+            modifier = Modifier
+                .offset(x = 5.dp, y = 3.dp)
+                .size(width = 98.dp, height = 108.dp)
+                .clip(pageShape)
+                .background(
+                    Brush.horizontalGradient(
+                        colors = listOf(Color(0xFFD6C7A7), Color(0xFFFFF5DD), Color(0xFFD8C9A8))
+                    )
+                )
+                .border(1.dp, Color(0xFFA99B80), pageShape)
+        ) {
+            Column(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .width(5.dp)
+                    .fillMaxHeight()
+                    .padding(vertical = 5.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                repeat(28) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(0.5.dp)
+                            .background(Color(0x557A6850))
+                    )
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .size(width = 96.dp, height = 106.dp)
+                .shadow(elevation = 8.dp, shape = bookShape)
+                .clip(bookShape)
+                .background(Color(0xFF17352F))
+        ) {
+            // The rounded spine and its fine bands make the object read as a bound volume.
+            Column(
+                modifier = Modifier
+                    .width(13.dp)
+                    .fillMaxHeight()
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color(0xFF102721), Color(0xFF244A40), Color(0xFF18372F))
+                        )
+                    )
+                    .padding(vertical = 7.dp, horizontal = 3.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                repeat(2) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFFB99A60).copy(alpha = 0.7f))
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(Color(0xFF315D50), Color(0xFF244A40), Color(0xFF19372F))
+                        )
+                    )
+                    .border(1.dp, Color(0xFFB99A60).copy(alpha = 0.55f), bookShape)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 9.dp, end = 6.dp, top = 9.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "SPARK  /  READING EDITION",
+                        fontFamily = FontFamily.SansSerif,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 5.5.sp,
+                        letterSpacing = 0.55.sp,
+                        color = Color(0xFFE0C78E),
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip
+                    )
+
+                    Text(
+                        text = title,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 10.sp,
+                        lineHeight = 12.sp,
+                        letterSpacing = (-0.15).sp,
+                        color = Color(0xFFFFF4DC),
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .width(24.dp)
+                                .height(1.dp)
+                                .background(Color(0xFFE0C78E))
+                        )
+                        Text(
+                            text = author.ifBlank { "FIELD NOTES  ·  01" },
+                            fontFamily = FontFamily.SansSerif,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 6.sp,
+                            letterSpacing = 0.35.sp,
+                            color = Color(0xFFE0C78E),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

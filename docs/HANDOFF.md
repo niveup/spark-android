@@ -155,7 +155,7 @@ GitHub runner, and Phase 2 (Gmail → Apps Script trigger). Setup + troubleshoot
 `docs/CONTENT_AUTOMATION.md`.
 
 ## PHASE 8.5 — UI polish pass [IN PROGRESS — Home dashboard visual/motion pass]
-Owner asked for a stronger Home design after rejecting the understated first pass. Direction: bolder color, a custom scalable vector illustration, and visible open/close and screen-transition motion. Keep content grounded in the real feed/session data. Other screens and remaining backlog items stay parked for a later owner-approved pass.
+Owner asked for a stronger Home design after rejecting the understated first pass. Direction: bolder color, a custom scalable illustration, and visible open/close and screen-transition motion. The book should read as a real, professionally typeset hardcover, with the cover title and author drawn from the actual next card. Keep content grounded in the real feed/session data. Other screens and remaining backlog items stay parked for a later owner-approved pass.
 
 Scope = **visual/interaction only, no new features**: icons, type scale, spacing rhythm, motion/haptics, states, labels. Use separate owner-triggered subpasses; no backend or feature work.
 
@@ -170,7 +170,7 @@ Scope = **visual/interaction only, no new features**: icons, type scale, spacing
 6. **"AI-written, unverified" label** — currently painted in `error` red (reads as a failure). Should be a neutral/amber "unverified" chip (warning, not error).
 7. **Card header chip** — raw enum lowercase `[concept·thermo]` → pretty `CONCEPT · THERMO` with a filled chip (matches `docs/theme-preview.html` card/tag mock).
 8. **Home session block** — [x] now a styled session card with the real read count, configured minute limit, and an animated progress ring. Weak topics / due counts from wireframe §0b remain parked until the API can supply them cheaply.
-17. **Home hero** — [x] native vector book illustration with gentle motion; real next-card preview expands/collapses; Home uses distinct forest, amber, and plum surfaces. Tab content uses short directional transitions.
+17. **Home hero** — [x] replaced the generic open-book symbol with a custom Compose hardcover: bound spine, paper edges, restrained foil details, and live title/author typography from the next card. Gentle motion remains; the real next-card preview expands/collapses; Home uses forest, amber, and plum surfaces. Tab content uses short directional transitions.
 9. **Saved tab** — tapping a row should open the full card (wireframe §10); today the row is inert. Add a per-type dot colour.
 10. **Audio overlay** — full-screen "Now playing" (wireframe §13): resume position, −10s/+30s, speed, sleep timer. Functionality parked from Phase 6.
 11. **Loading / empty states** — offline banner done Nov 2026: quiet `surfaceContainerHigh` strip, amber status dot, 48 dp Retry, status-bar padded. Still plain text ("Loading saved cards…") → branded state blocks with an icon + one line of guidance (there is `ui/States.kt` to rework).
