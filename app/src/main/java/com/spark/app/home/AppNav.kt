@@ -19,6 +19,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -79,9 +80,9 @@ import com.spark.app.sync.InteractionSync
 import com.spark.app.ui.EmptyState
 import com.spark.app.ui.ErrorState
 import com.spark.app.ui.LoadingState
+import com.spark.app.ui.OfflineBanner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 private enum class Tab(val label: String) {
     HOME("Home"),
@@ -109,7 +110,9 @@ fun AppNav(
     startOnReels: Boolean,
     onStartOnReelsHandled: () -> Unit,
     onCloseApp: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    online: Boolean? = null,
+    onRetryPing: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val settings = remember { SettingsStore(context.applicationContext) }
@@ -161,6 +164,10 @@ fun AppNav(
             card.grounded &&
             card.id != nextCard?.id
     }
+    val isOffline = (online == false) ||
+        (feed as? FeedUiState.Content)?.offline == true ||
+        (feed is FeedUiState.Error && (feed as FeedUiState.Error).message.contains("PC"))
+
     var tab by remember { mutableStateOf(if (startOnReels) Tab.REELS else Tab.HOME) }
     LaunchedEffect(startOnReels) {
         if (startOnReels) {
@@ -191,17 +198,14 @@ fun AppNav(
     var minuteLimit by remember { mutableStateOf(settings.minuteLimit) }
 
     // Saved tab: load on open + debounced while typing in the search box.
-    // Upload a just-recorded save first, but never block the tab forever on a
-    // dead network: after 2s, show the server/cache result. Keying on
-    // pendingSync refreshes once more when the queued save reaches the server,
-    // so a slow upload cannot leave the just-saved card missing.
+    // Shows cached cards immediately for instant offline navigation, while
+    // triggering a background sync flush and refreshing when pending sync drains.
     var savedQuery by remember { mutableStateOf("") }
     LaunchedEffect(tab, savedQuery, pendingSync) {
         if (tab == Tab.SAVED) {
             if (savedQuery.isNotBlank()) delay(300)
-            withTimeoutOrNull(2_000) { sync.awaitFlush() }
-            if (sync.pending.value > 0) sync.flush()
             savedVm.load(savedQuery)
+            if (sync.pending.value > 0) sync.flush()
         }
     }
     // Offline cache row on the Me tab (+ refreshed after clearing).
@@ -276,39 +280,53 @@ fun AppNav(
                     },
                     nextCard = nextCard,
                     dailyQuote = dailyQuote,
+                    offline = isOffline,
                     onOpenReels = { tab = Tab.REELS },
                     onOpenSaved = { tab = Tab.SAVED }
                 )
-                Tab.REELS -> when (val f = feed) {
-                    is FeedUiState.Loading -> CenteredFullScreen {
-                        LoadingState("Fetching today's cards…")
+                Tab.REELS -> Column(modifier = Modifier.fillMaxSize()) {
+                    if (isOffline) {
+                        OfflineBanner(onRetry = {
+                            onRetryPing()
+                            feedVm.load()
+                        })
                     }
-                    is FeedUiState.Empty -> CenteredFullScreen {
-                        EmptyState(
-                            text = "Nothing new right now — you're all caught up.",
-                            actionLabel = "Read them again",
-                            onAction = { feedVm.load(refill = true) }
-                        )
+                    Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                        when (val f = feed) {
+                            is FeedUiState.Loading -> CenteredFullScreen {
+                                LoadingState("Fetching today's cards…")
+                            }
+                            is FeedUiState.Empty -> CenteredFullScreen {
+                                EmptyState(
+                                    text = "Nothing new right now — you're all caught up.",
+                                    actionLabel = "Read them again",
+                                    onAction = { feedVm.load(refill = true) }
+                                )
+                            }
+                            is FeedUiState.Error -> CenteredFullScreen {
+                                ErrorState(f.message, onRetry = {
+                                    onRetryPing()
+                                    feedVm.load()
+                                })
+                            }
+                            is FeedUiState.Content -> FeedScreen(
+                                state = state,
+                                cards = f.cards,
+                                cardLimit = f.cardLimit,
+                                minuteLimit = f.minuteLimit,
+                                startedAtElapsedMs = f.startedAtElapsedMs,
+                                offline = f.offline,
+                                tts = tts,
+                                sync = sync,
+                                player = player,
+                                onSessionFinished = { reason ->
+                                    feedVm.closeSession(reason, state.seenCount)
+                                    sync.flush()
+                                },
+                                onCloseApp = onCloseApp
+                            )
+                        }
                     }
-                    is FeedUiState.Error -> CenteredFullScreen {
-                        ErrorState(f.message, onRetry = { feedVm.load() })
-                    }
-                    is FeedUiState.Content -> FeedScreen(
-                        state = state,
-                        cards = f.cards,
-                        cardLimit = f.cardLimit,
-                        minuteLimit = f.minuteLimit,
-                        startedAtElapsedMs = f.startedAtElapsedMs,
-                        offline = f.offline,
-                        tts = tts,
-                        sync = sync,
-                        player = player,
-                        onSessionFinished = { reason ->
-                            feedVm.closeSession(reason, state.seenCount)
-                            sync.flush()
-                        },
-                        onCloseApp = onCloseApp
-                    )
                 }
                 Tab.SAVED -> SavedScreen(
                     state = saved,
@@ -351,7 +369,8 @@ fun AppNav(
                             cachedCount = 0
                         }
                     },
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    offline = isOffline
                 )
                 }
             }

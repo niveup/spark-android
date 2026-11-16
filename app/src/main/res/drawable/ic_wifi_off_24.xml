@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  wifi_off (24dp).
+  Path data from Google Material Icons (Apache License 2.0):
+  https://github.com/google/material-design-icons
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M23.64,7c-0.45,-0.34 -4.93,-4 -11.64,-4 -1.5,0 -2.8,0.19 -3.94,0.5L9.84,5.28C10.52,5.1 11.24,5 12,5c5.34,0 9.22,2.77 9.69,3.13l-4.48,5.59 2.01,2.01L23.64,7zM3.41,1.31L1.99,2.72l2.55,2.55C3.21,6.07 1.5,7.5 0.36,8.44l11.63,14.49 0.01,0.01 0.01,-0.01 3.9,-4.86 4.32,4.32 1.41,-1.41L3.41,1.31zM12,19.24L3.63,8.81C4.41,8.19 6.27,6.86 8.76,6.35l3.24,3.24L12,9.6l3.52,3.52 -3.52,6.12z"/>
+</vector>

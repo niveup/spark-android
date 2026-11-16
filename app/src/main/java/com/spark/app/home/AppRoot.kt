@@ -22,7 +22,6 @@ import com.spark.app.auth.AuthViewModel
 import com.spark.app.auth.LoginScreen
 import com.spark.app.data.TokenStore
 import com.spark.app.data.remote.SparkApi
-import com.spark.app.ui.OfflineBanner
 import kotlinx.coroutines.launch
 
 private object Routes {
@@ -71,9 +70,6 @@ fun AppRoot(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        if (auth.status == AuthStatus.LOGGED_IN && online == false) {
-            OfflineBanner(onRetry = { scope.launch { online = ping() } })
-        }
         NavHost(navController = nav, startDestination = Routes.LOGIN) {
             composable(Routes.LOGIN) {
                 LoginScreen(state = auth, onLogin = vm::login)
@@ -85,7 +81,9 @@ fun AppRoot(
                     startOnReels = startOnReels,
                     onStartOnReelsHandled = onStartOnReelsHandled,
                     onCloseApp = onCloseApp,
-                    onLogout = { vm.logout() }
+                    onLogout = { vm.logout() },
+                    online = online,
+                    onRetryPing = { scope.launch { online = ping() } }
                 )
             }
         }

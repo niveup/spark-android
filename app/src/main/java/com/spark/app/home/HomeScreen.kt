@@ -195,6 +195,7 @@ fun HomeScreen(
     deckSize: Int? = null,
     nextCard: Card? = null,
     dailyQuote: Card? = null,
+    offline: Boolean = false,
     onOpenReels: () -> Unit,
     onOpenSaved: () -> Unit
 ) {
@@ -248,7 +249,7 @@ fun HomeScreen(
     ) {
         Spacer(modifier = Modifier.height(22.dp))
 
-        DatelineHeader(dayName = dayName, dateLabel = dateLabel)
+        DatelineHeader(dayName = dayName, dateLabel = dateLabel, offline = offline)
 
         Spacer(modifier = Modifier.height(26.dp))
 
@@ -284,17 +285,28 @@ fun HomeScreen(
 
 /** Wordmark on the left, a two-line dateline on the right, both on one baseline. */
 @Composable
-private fun DatelineHeader(dayName: String, dateLabel: String) {
+private fun DatelineHeader(dayName: String, dateLabel: String, offline: Boolean = false) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Bottom
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_spark_wordmark),
-            contentDescription = "SPARK",
-            modifier = Modifier.height(21.dp)
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_spark_wordmark),
+                contentDescription = "SPARK",
+                modifier = Modifier.height(21.dp)
+            )
+            if (offline) {
+                Spacer(modifier = Modifier.width(10.dp))
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_wifi_off_24),
+                    contentDescription = "Offline",
+                    tint = Color(0xFFE57373),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
 
         Column(horizontalAlignment = Alignment.End) {
             Text(text = dayName, style = DatelineDayStyle, color = TextTertiary)

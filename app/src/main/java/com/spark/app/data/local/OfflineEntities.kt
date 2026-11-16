@@ -70,6 +70,9 @@ interface CachedItemDao {
     @Query("SELECT * FROM cached_items WHERE saved = 1 ORDER BY cachedAtMs DESC")
     suspend fun saved(): List<CachedItemEntity>
 
+    @Query("UPDATE cached_items SET saved = :saved, cachedAtMs = :now WHERE id = :id")
+    suspend fun updateSaved(id: String, saved: Boolean, now: Long)
+
     @Query("SELECT COUNT(*) FROM cached_items")
     suspend fun count(): Int
 

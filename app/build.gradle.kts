@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.util.concurrent.TimeUnit
 import org.gradle.api.DefaultTask
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
@@ -43,8 +44,13 @@ abstract class SparkAdbReverseTask : DefaultTask() {
             val proc = ProcessBuilder(path, "reverse", "tcp:3000", "tcp:3000")
                 .redirectErrorStream(true)
                 .start()
+            val finished = proc.waitFor(3, TimeUnit.SECONDS)
+            if (!finished) {
+                proc.destroyForcibly()
+                logger.lifecycle("SPARK dev: adb reverse timed out (skipped)")
+                return
+            }
             val output = proc.inputStream.bufferedReader().readText().trim()
-            proc.waitFor()
             logger.lifecycle(
                 if (output.isBlank()) "SPARK dev: USB tunnel active (adb reverse tcp:3000)"
                 else "SPARK dev: adb reverse: $output"

@@ -6,7 +6,15 @@ import com.spark.app.sync.PendingEventStore
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
 import java.util.concurrent.atomic.AtomicLong
+
+/** Cache interface for saved cards (Phase 7). Test seam for SavedViewModel. */
+interface SavedCardsCache {
+    suspend fun saveFeed(items: List<FeedItemDto>)
+    suspend fun savedDtos(): List<FeedItemDto>
+}
 
 /**
  * Phase 7 offline facade over Room:
@@ -17,11 +25,11 @@ import java.util.concurrent.atomic.AtomicLong
  *  - PendingEventStore impl: persists queued interaction events across app
  *    restarts until the server accepts them (idempotent via clientEventId).
  */
-class OfflineCache(context: Context) : PendingEventStore {
+class OfflineCache(context: Context) : SavedCardsCache, PendingEventStore {
 
     private val db = OfflineDatabase.build(context)
 
-    suspend fun saveFeed(items: List<FeedItemDto>) {
+    override suspend fun saveFeed(items: List<FeedItemDto>) {
         if (items.isEmpty()) return
         val entities = items.toCachedEntities(batchMs())
         db.cachedItemDao().upsertAll(entities)
@@ -35,7 +43,11 @@ class OfflineCache(context: Context) : PendingEventStore {
     suspend fun feedDtos(): List<FeedItemDto> = db.cachedItemDao().all().map { it.toFeedItemDto() }
 
     /** Saved cards only (however they got flagged — feed or the saved list). */
-    suspend fun savedDtos(): List<FeedItemDto> = db.cachedItemDao().saved().map { it.toFeedItemDto() }
+    override suspend fun savedDtos(): List<FeedItemDto> = db.cachedItemDao().saved().map { it.toFeedItemDto() }
+
+    suspend fun updateSaved(itemId: String, saved: Boolean, now: Long = System.currentTimeMillis()) {
+        db.cachedItemDao().updateSaved(itemId, saved, now)
+    }
 
     suspend fun cachedCount(): Int = db.cachedItemDao().count()
 
@@ -57,6 +69,13 @@ class OfflineCache(context: Context) : PendingEventStore {
             )
         }
         db.pendingEventDao().upsertAll(rows)
+        for (event in events) {
+            val itemId = (event["itemId"] as? JsonPrimitive)?.contentOrNull
+            val saved = (event["saved"] as? JsonPrimitive)?.booleanOrNull
+            if (itemId != null && saved != null) {
+                db.cachedItemDao().updateSaved(itemId, saved, now)
+            }
+        }
     }
 
     override suspend fun all(): List<JsonObject> =

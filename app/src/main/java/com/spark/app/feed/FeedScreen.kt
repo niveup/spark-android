@@ -117,22 +117,6 @@ fun FeedScreen(
                 )
             }
         }
-        if (offline) {
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 8.dp),
-                shape = RoundedCornerShape(50),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                shadowElevation = 2.dp
-            ) {
-                Text(
-                    text = "Offline library",
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
-        }
     }
 }
 

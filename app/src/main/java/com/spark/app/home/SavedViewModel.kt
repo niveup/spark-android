@@ -3,10 +3,11 @@ package com.spark.app.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spark.app.data.Card
-import com.spark.app.data.TokenStore
-import com.spark.app.data.local.OfflineCache
+import com.spark.app.data.local.SavedCardsCache
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.feed.feedItemsToCards
+import com.spark.app.sync.TokenReader
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,46 +29,73 @@ sealed interface SavedUiState {
 /** Saved tab: server list with substring search (GET /items/saved). */
 class SavedViewModel(
     private val api: SparkApi,
-    private val tokens: TokenStore,
-    private val offline: OfflineCache
+    private val tokens: TokenReader,
+    private val offline: SavedCardsCache
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<SavedUiState>(SavedUiState.Loading)
     val state: StateFlow<SavedUiState> = _state.asStateFlow()
 
     private var latestQuery = ""
+    private var loadJob: Job? = null
+
+    init {
+        // Pre-populate with cached saved cards on startup so opening the
+        // Saved tab is instant with zero lag, even when offline.
+        viewModelScope.launch {
+            val cached = feedItemsToCards(offline.savedDtos())
+            if (cached.isNotEmpty() && _state.value is SavedUiState.Loading) {
+                _state.value = SavedUiState.Content(cached, query = "", offline = true)
+            }
+        }
+    }
 
     fun load(query: String) {
         latestQuery = query
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             val token = tokens.getToken()
             if (token == null) {
                 _state.value = SavedUiState.Error("Not logged in — log in again.")
                 return@launch
             }
-            val result = try {
+
+            // Immediately load and show cached cards if available, avoiding offline / network delay
+            val cachedCards = feedItemsToCards(offline.savedDtos())
+            val filteredCached = if (query.isBlank()) cachedCards else cachedCards.filterByQuery(query)
+            if (cachedCards.isNotEmpty()) {
+                if (query == latestQuery) {
+                    _state.value = SavedUiState.Content(filteredCached, query, offline = true)
+                }
+            } else if (_state.value !is SavedUiState.Content) {
+                _state.value = SavedUiState.Loading
+            }
+
+            try {
                 val page = api.savedItems("Bearer $token", limit = 50, q = query.ifBlank { null })
                 offline.saveFeed(page.data) // cached rows keep `saved = true` for offline reads
-                SavedUiState.Content(feedItemsToCards(page.data), query)
+                if (query == latestQuery) {
+                    _state.value = SavedUiState.Content(feedItemsToCards(page.data), query, offline = false)
+                }
             } catch (e: HttpException) {
-                SavedUiState.Error(
-                    if (e.code() == 401) "Session expired — log out from Me and log back in."
-                    else "Server error (${e.code()})."
-                )
-            } catch (_: IOException) {
-                // Phase 7: offline — show the cached saved cards, filtered here
-                // (the local search mirrors the server's substring match).
-                val cards = feedItemsToCards(offline.savedDtos())
-                if (cards.isEmpty()) {
-                    SavedUiState.Error(
-                        "Can't reach your PC. Check the USB cable and that the API server is running."
+                if (query == latestQuery) {
+                    _state.value = SavedUiState.Error(
+                        if (e.code() == 401) "Session expired — log out from Me and log back in."
+                        else "Server error (${e.code()})."
                     )
-                } else {
-                    val filtered = if (query.isBlank()) cards else cards.filterByQuery(query)
-                    SavedUiState.Content(filtered, query, offline = true)
+                }
+            } catch (_: IOException) {
+                // Offline — keep the cached cards if available; only show error if cache is empty.
+                if (query == latestQuery) {
+                    if (cachedCards.isEmpty()) {
+                        _state.value = SavedUiState.Error(
+                            "Can't reach your PC. Check the USB cable and that the API server is running."
+                        )
+                    } else {
+                        _state.value = SavedUiState.Content(filteredCached, query, offline = true)
+                    }
                 }
             }
-            if (query == latestQuery) _state.value = result // ignore stale responses
         }
     }
 }
