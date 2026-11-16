@@ -74,6 +74,8 @@ fun FeedScreen(
     onCloseApp: () -> Unit,
     /** Phase 7: deck came from the Room cache (server unreachable). */
     offline: Boolean = false,
+    /** Short notice shown while a saved card is opened in this deck. */
+    openingLabel: String? = null,
     /** Re-fetch from the server after an offline deck (tap on the pill). */
     onRetry: (() -> Unit)? = null,
     deckRefreshState: DeckRefreshState = DeckRefreshState.Idle,
@@ -226,6 +228,7 @@ fun FeedScreen(
                                 )
                             },
                             offline = offline,
+                            openingLabel = openingLabel,
                             onRetryOffline = onRetry
                         )
                     }

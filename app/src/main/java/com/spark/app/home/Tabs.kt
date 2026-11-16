@@ -714,11 +714,23 @@ private fun SavedCard(
                     modifier = Modifier.weight(1f, fill = false)
                 )
                 if (opening) {
-                    Text(
-                        text = "Opening…",
-                        style = Meta,
-                        color = Ember
-                    )
+                    // Same footprint as the Preview button: the row must not
+                    // change size while the card is being opened.
+                    Box(
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .padding(horizontal = 10.dp)
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "Opening this card in Reels"
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Opening…",
+                            style = Meta,
+                            color = Ember
+                        )
+                    }
                 } else {
                     Box(
                         modifier = Modifier

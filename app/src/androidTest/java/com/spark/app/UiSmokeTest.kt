@@ -1,7 +1,11 @@
 package com.spark.app
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -29,6 +33,7 @@ import com.spark.app.home.SavedUiState
 import com.spark.app.home.StatsUiState
 import com.spark.app.ui.theme.SparkTheme
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -231,6 +236,46 @@ class UiSmokeTest {
         compose.onNodeWithContentDescription("Preview this card here").performClick()
         compose.onNodeWithText("Make the habit obvious.", substring = true).assertIsDisplayed()
         assertEquals("card-1", opened?.id)
+    }
+
+    @Test
+    fun savedRowKeepsItsSizeWhileTheCardIsOpening() {
+        val card = Card(
+            id = "card-1",
+            type = CardType.CONCEPT,
+            topic = "habits",
+            title = "Start small",
+            body = "Make the habit obvious.",
+            actionLine = "Do two minutes today.",
+            source = "Test source",
+            grounded = true
+        )
+        var openingId by mutableStateOf<String?>(null)
+        compose.setContent {
+            SparkTheme {
+                SavedScreen(
+                    state = SavedUiState.Content(listOf(card), ""),
+                    query = "",
+                    onQueryChange = {},
+                    onRetry = {},
+                    onExport = {},
+                    openingItemId = openingId
+                )
+            }
+        }
+
+        val before = compose.onNodeWithContentDescription("Open in Reels: Start small")
+            .getUnclippedBoundsInRoot().height
+
+        openingId = "card-1"
+        compose.waitForIdle()
+
+        compose.onNodeWithText("Opening…").assertIsDisplayed()
+        val after = compose.onNodeWithContentDescription("Open in Reels: Start small")
+            .getUnclippedBoundsInRoot().height
+
+        // The row must not shrink while the card is being opened.
+        assertEquals(before.value, after.value, 1f)
     }
 
     @Test

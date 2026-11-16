@@ -11,6 +11,7 @@ import com.spark.app.data.remote.SessionRequest
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.sync.TokenReader
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -91,6 +92,12 @@ class FeedViewModel(
     val itemOpenState: StateFlow<ItemOpenState> = _itemOpenState.asStateFlow()
 
     private var openJob: Job? = null
+    private var noticeJob: Job? = null
+
+    /** The card the reader opened, waiting for a deck to put it on top of. */
+    private var pinnedCard: Card? = null
+    private var pinnedItemId: String? = null
+    private var pinnedFromCache: Boolean = false
 
     /**
      * Opens a saved card in the Reels deck (the Saved → Reels flow).
@@ -107,43 +114,93 @@ class FeedViewModel(
         onDeckReplaced: () -> Unit = {}
     ) {
         openJob?.cancel()
+        noticeJob?.cancel()
+        // A deck that is still on its way must not land on top of the card
+        // the reader just opened.
+        loadJob?.cancel()
         openJob = viewModelScope.launch {
             _itemOpenState.value = ItemOpenState.Opening(itemId)
             when (val result = opener.open(itemId, offlineOnly)) {
-                is SavedItemResult.Found -> {
-                    val current = (_state.value as? FeedUiState.Content)?.cards.orEmpty()
-                    // The opened card leads the deck; the rest of the session
-                    // follows it, so the reader can keep swiping.
-                    val deck = listOf(result.card) + current.filter { it.id != result.card.id }
-                    onDeckReplaced()
-                    _state.value = FeedUiState.Content(
-                        cards = deck,
-                        cardLimit = settings.cardLimit,
-                        minuteLimit = settings.minuteLimit,
-                        startedAtElapsedMs = SystemClock.elapsedRealtime(),
-                        offline = result.fromCache,
-                        deckGeneration = ++deckGeneration
-                    )
-                    _itemOpenState.value = ItemOpenState.Opened(itemId, result.fromCache)
-                }
-
-                SavedItemResult.Unavailable -> {
-                    _itemOpenState.value = ItemOpenState.Unavailable(itemId)
-                    // Nothing to open: show what this device has instead.
-                    loadInternal(
-                        refill = false,
-                        isDeckRefresh = false,
-                        onDeckReplaced = onDeckReplaced,
-                        offlineOnly = true
-                    )
-                }
+                is SavedItemResult.Found -> openCard(result.card, itemId, result.fromCache, onDeckReplaced)
+                SavedItemResult.Unavailable -> showOfflineDeck(itemId, onDeckReplaced)
             }
         }
     }
 
-    /** Resets the open state once the screen reacted to it. */
-    fun clearItemOpen() {
-        _itemOpenState.value = ItemOpenState.Idle
+    /**
+     * Puts the opened card in front of the deck and restarts the session on
+     * it. When there is no deck to continue with yet, the deck is fetched and
+     * the opened card is pinned to the top of it.
+     */
+    private suspend fun openCard(
+        card: Card,
+        itemId: String,
+        fromCache: Boolean,
+        onDeckReplaced: () -> Unit
+    ) {
+        val base = deckToContinueWith()
+        if (base.isEmpty()) {
+            pinnedCard = card
+            pinnedItemId = itemId
+            pinnedFromCache = fromCache
+            loadInternal(refill = false, isDeckRefresh = false, onDeckReplaced = onDeckReplaced)
+            return
+        }
+        onDeckReplaced()
+        _state.value = FeedUiState.Content(
+            cards = listOf(card) + base.filter { it.id != card.id },
+            cardLimit = settings.cardLimit,
+            minuteLimit = settings.minuteLimit,
+            startedAtElapsedMs = SystemClock.elapsedRealtime(),
+            offline = fromCache,
+            deckGeneration = ++deckGeneration
+        )
+        _itemOpenState.value = ItemOpenState.Opened(itemId, fromCache)
+    }
+
+    /**
+     * The card is neither on the server nor on this device: the reader gets
+     * the offline deck instead, with a short notice.
+     */
+    private fun showOfflineDeck(itemId: String, onDeckReplaced: () -> Unit) {
+        _itemOpenState.value = ItemOpenState.Unavailable(itemId)
+        val hasDeck = (_state.value as? FeedUiState.Content)?.cards?.isNotEmpty() == true
+        if (!hasDeck) {
+            loadInternal(
+                refill = false,
+                isDeckRefresh = false,
+                onDeckReplaced = onDeckReplaced,
+                offlineOnly = true
+            )
+        }
+        // The notice clears itself; the next open replaces it anyway.
+        noticeJob = viewModelScope.launch {
+            delay(NOTICE_MS)
+            if (_itemOpenState.value is ItemOpenState.Unavailable) {
+                _itemOpenState.value = ItemOpenState.Idle
+            }
+        }
+    }
+
+    /**
+     * The deck the opened card leads into: the one on screen, or the one
+     * stored on this device when no deck has arrived yet.
+     */
+    private suspend fun deckToContinueWith(): List<Card> {
+        val current = (_state.value as? FeedUiState.Content)?.cards.orEmpty()
+        if (current.isNotEmpty()) return current
+        return feedItemsToCards(offline.feedDtos())
+    }
+
+    /** Puts the card the reader opened at the top of a deck that just arrived. */
+    private fun withPinnedCard(cards: List<Card>): List<Card> {
+        val pinned = pinnedCard ?: return cards
+        pinnedCard = null
+        val itemId = pinnedItemId
+        pinnedItemId = null
+        val fromCache = pinnedFromCache
+        _itemOpenState.value = ItemOpenState.Opened(itemId ?: pinned.id, fromCache)
+        return listOf(pinned) + cards.filter { it.id != pinned.id }
     }
 
     /**
@@ -213,7 +270,7 @@ class FeedViewModel(
                 onDeckReplaced()
                 val newDeckGeneration = ++deckGeneration
                 _state.value = FeedUiState.Content(
-                    cards = restartCards,
+                    cards = withPinnedCard(restartCards),
                     cardLimit = cardLimit,
                     minuteLimit = minuteLimit,
                     startedAtElapsedMs = startedAt,
@@ -281,7 +338,7 @@ class FeedViewModel(
                     FeedUiState.Empty
                 } else {
                     FeedUiState.Content(
-                        cards = cards,
+                        cards = withPinnedCard(cards),
                         cardLimit = cardLimit,
                         minuteLimit = minuteLimit,
                         startedAtElapsedMs = startedAt,
@@ -349,7 +406,13 @@ class FeedViewModel(
                             "Couldn't connect to SPARK. Check your internet connection and try again."
                         )
                     } else {
-                        FeedUiState.Content(cards, cardLimit, minuteLimit, startedAt, offline = true)
+                        FeedUiState.Content(
+                            withPinnedCard(cards),
+                            cardLimit,
+                            minuteLimit,
+                            startedAt,
+                            offline = true
+                        )
                     }
                 }
             }
@@ -388,4 +451,9 @@ class FeedViewModel(
         } catch (_: IOException) {
             null
         }
+
+    private companion object {
+        /** How long the "offline deck instead" notice stays on screen. */
+        const val NOTICE_MS = 5_000L
+    }
 }

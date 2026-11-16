@@ -234,16 +234,12 @@ fun AppNav(
         }
     }
     // A saved card opened from the Saved tab becomes the first card of the
-    // Reels deck. The deck is ready before the state flips, so the switch
-    // lands straight on the card.
-    LaunchedEffect(itemOpen) {
-        when (itemOpen) {
-            is ItemOpenState.Opened, is ItemOpenState.Unavailable -> {
-                tab = Tab.REELS
-                feedVm.clearItemOpen()
-            }
-            is ItemOpenState.Opening, ItemOpenState.Idle -> Unit
-        }
+    // Reels deck. The reader is taken there at once; the card itself arrives
+    // a moment later, and the reel header says so while it does.
+    val openingLabel = when (itemOpen) {
+        is ItemOpenState.Opening -> "Opening…"
+        is ItemOpenState.Unavailable -> "Not on this phone"
+        else -> null
     }
     val tts = remember { TtsHelper(context.applicationContext) }
     DisposableEffect(Unit) {
@@ -387,6 +383,7 @@ fun AppNav(
                                     minuteLimit = f.minuteLimit,
                                     startedAtElapsedMs = f.startedAtElapsedMs,
                                     offline = f.offline || isOffline,
+                                    openingLabel = openingLabel,
                                     deckRefreshState = deckRefresh,
                                     onReadDeckAgain = {
                                         feedVm.refreshDeck(
@@ -426,8 +423,11 @@ fun AppNav(
                             onOpenReels = { tab = Tab.REELS },
                             // Saved cards open in Reels: the id is mapped back
                             // to the card (server first, this device's cache
-                            // when offline) and the deck restarts on it.
+                            // when offline) and the deck restarts on it. The
+                            // app answers the tap at once — Reels opens while
+                            // the card is being resolved.
                             onOpenCard = { card ->
+                                tab = Tab.REELS
                                 feedVm.openSavedItem(
                                     itemId = card.id,
                                     offlineOnly = isOffline,

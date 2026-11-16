@@ -122,6 +122,8 @@ fun CardView(
     onFinish: () -> Unit,
     offline: Boolean = false,
     onRetryOffline: (() -> Unit)? = null,
+    /** Short notice shown while a saved card is opened in this deck. */
+    openingLabel: String? = null,
     modifier: Modifier = Modifier
 ) {
     var showWhy by remember { mutableStateOf(false) }
@@ -211,6 +213,11 @@ fun CardView(
                                     description = "Offline library. Tap to retry the deck."
                                 )
                                 Spacer(Modifier.width(4.dp))
+                            }
+
+                            if (openingLabel != null) {
+                                OpeningPill(openingLabel)
+                                Spacer(Modifier.width(8.dp))
                             }
 
                             Text(
@@ -552,6 +559,50 @@ private fun AudioPulseIndicator(active: Boolean) {
                 .height(6.dp + 12.dp * b3)
                 .clip(RoundedCornerShape(50))
                 .background(Ember)
+        )
+    }
+}
+
+/**
+ * Small header pill with a pulsing dot: a saved card is being opened in this
+ * deck (or could not be found and the offline deck took its place).
+ */
+@Composable
+private fun OpeningPill(label: String) {
+    val transition = rememberInfiniteTransition(label = "openingPulse")
+    val dotAlpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "openingDotPulse"
+    )
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(Ember.copy(alpha = 0.16f))
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .semantics { contentDescription = label }
+    ) {
+        Box(
+            modifier = Modifier
+                .size(4.dp)
+                .graphicsLayer { alpha = dotAlpha }
+                .clip(CircleShape)
+                .background(Ember)
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            letterSpacing = 0.4.sp,
+            fontWeight = FontWeight.Bold,
+            color = Ember,
+            lineHeight = 14.sp
         )
     }
 }
