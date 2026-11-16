@@ -3,610 +3,649 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
-<title>SPARK · Home screen</title>
+<title>Spark — the whole app</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* ------------------------------------------------------------------
-     SPARK Home: screen spec (390 × 844, Android, Material 3)
-
-     Tokens are the ones the app already ships in
-     app/.../home/HomeScreen.kt. One accent (amber) on data and on the
-     one filled action; everything else is a warm-neutral step.
-
-     Amended in this pass:
-       ink-3  #8C8C96  (was #71717A, 3.9:1 on the ground, below 4.5:1)
-     ------------------------------------------------------------------ */
   :root{
-    --stage:#08080A;
-    --app-bg:#0E0E11;
-    --surface:#16161B;
-    --raised:#1F1F26;
-    --border:#282832;
-    --gold:#F5A844;
-    --gold-dim:#382612;
-    --ink:#F4F4F6;
-    --ink-2:#A1A1AA;
-    --ink-3:#8C8C96;
-    --tick-off:#4A4A56;
-
-    --r-card:18px;
-    --r-phone:40px;
-    --gutter:20px;
-    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --paper:#f4efe5; --paper-deep:#ebe3d4; --card:#fbf8f1;
+    --ink:#16241d; --ink-soft:#66705f; --line:#e2d9c7;
+    --ember:#e2603a; --ember-soft:#f2d8c9;
+    --forest:#17362a; --forest-deep:#12211a;
+    --sage:#aebba1; --sage-soft:#dfe5d5;
+    --display:"Fraunces",Georgia,serif;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
   }
-
   *{box-sizing:border-box}
-  html,body{height:100%}
   body{
-    margin:0;
-    background:var(--stage);
-    color:var(--ink);
-    font-family:var(--font);
-    -webkit-font-smoothing:antialiased;
+    margin:0;padding:44px 24px 64px;
+    background:radial-gradient(120% 90% at 18% 0%, #2a2f24 0%, var(--forest-deep) 55%, #0c1611 100%);
+    font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;
+    display:flex;flex-direction:column;align-items:center;gap:34px;
   }
+  .stage-head{text-align:center;max-width:720px}
+  .stage-head h1{margin:0;font-family:var(--display);font-weight:500;font-size:26px;letter-spacing:-.03em;color:var(--paper)}
+  .stage-head p{margin:8px 0 0;font-size:12.5px;line-height:1.5;color:rgba(244,239,229,.6)}
 
-  .stage{
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:36px;
-    padding:40px 20px 48px;
-  }
+  .gallery{display:flex;flex-wrap:wrap;gap:34px 30px;justify-content:center;align-items:flex-start}
+  .frame{display:flex;flex-direction:column;gap:10px}
+  .frame-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,229,.5);padding-left:4px}
 
-  .stage-head{max-width:760px;text-align:center}
-  .stage-head h1{
-    margin:0;
-    font-size:20px;
-    line-height:1.3;
-    font-weight:600;
-    letter-spacing:-.01em;
-    color:var(--ink);
-  }
-  .stage-head p{
-    margin:8px 0 0;
-    font-size:13.5px;
-    line-height:1.5;
-    color:var(--ink-2);
-  }
-
-  .screens{
-    display:flex;
-    flex-wrap:wrap;
-    gap:40px;
-    justify-content:center;
-    align-items:flex-start;
-    width:100%;
-  }
-
-  .frame{display:flex;flex-direction:column;gap:12px}
-  .frame-label{
-    font-size:12px;
-    line-height:1.4;
-    color:var(--ink-3);
-    padding-left:2px;
-  }
-  .frame-label b{color:var(--ink-2);font-weight:600}
-
-  /* ---- the phone ---------------------------------------------------- */
   .phone{
-    width:390px;
-    max-width:100%;
-    height:844px;
-    border-radius:var(--r-phone);
-    border:1px solid #202029;
-    background:var(--app-bg);
-    overflow:hidden;
-    display:flex;
-    flex-direction:column;
-    position:relative;
+    width:390px;height:844px;background:var(--paper);
+    border-radius:44px;border:1px solid rgba(226,217,199,.55);
+    box-shadow:0 50px 90px -30px rgba(0,0,0,.65), 0 30px 60px -40px rgba(0,0,0,.5);
+    overflow:hidden;position:relative;
   }
-
-  .screen{
-    flex:1;
-    min-height:0;
-    overflow-y:auto;
-    padding:26px var(--gutter) 8px;
-    scrollbar-width:none;
-    display:flex;
-    flex-direction:column;
-  }
+  .screen{position:absolute;inset:0;overflow-y:auto;padding:18px 20px 108px;scrollbar-width:none;}
   .screen::-webkit-scrollbar{display:none}
 
-  /* ---- header ------------------------------------------------------- */
-  .top{
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-  }
-  .brand{display:flex;align-items:center}
-  .wordmark{
-    display:block;
-    height:21px;
-    width:auto;
-    color:var(--ink);
-  }
-  .date{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-end;
-    gap:3px;
-    text-align:right;
-  }
-  .date .dow{
-    font-size:11.5px;
-    line-height:1;
-    letter-spacing:0;
-    font-weight:500;
-    color:var(--ink-3);
-  }
-  .date .dmy{
-    font-size:14px;
-    line-height:1;
-    font-weight:600;
-    letter-spacing:-.012em;
-    color:var(--ink);
-    font-variant-numeric:tabular-nums;
+  .grain{position:relative;isolation:isolate}
+  .grain::after{
+    content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.22;
+    mix-blend-mode:soft-light;border-radius:inherit;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
   }
 
-  .greeting{
-    margin:30px 0 0;
-    font-size:18px;
-    line-height:1.45;
-    font-weight:500;
-    letter-spacing:-.006em;
-    color:var(--ink-2);
-  }
-  .greeting .name{color:var(--gold);font-weight:600}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .wordmark{display:inline-flex;align-items:center;gap:8px;color:var(--ink)}
+  .wordmark svg{display:block;color:var(--ember)}
+  .wordmark span{font-family:var(--display);font-weight:600;font-size:21px;letter-spacing:-.035em}
+  .actions{display:flex;align-items:center;gap:8px}
+  .icon-btn{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:rgba(251,248,241,.7);color:var(--ink-soft);display:grid;place-items:center;cursor:pointer}
+  .avatar{position:relative;width:36px;height:36px;border-radius:50%;background:var(--forest);color:var(--paper);font-family:var(--display);font-weight:600;font-size:12px;display:grid;place-items:center;border:0;cursor:pointer}
+  .avatar .dot{position:absolute;right:-2px;top:-2px;width:10px;height:10px;border-radius:50%;background:var(--ember);border:2px solid var(--paper)}
 
-  /* ---- the next card (the screen's one block) ----------------------- */
-  .card{
-    display:block;
-    width:100%;
-    margin-top:26px;
-    padding:22px;
-    text-align:left;
-    font:inherit;
-    color:inherit;
-    background:#191921;
-    border:1px solid #2C2C38;
-    border-radius:var(--r-card);
-    text-decoration:none;
-    cursor:pointer;
-    transition:background .16s ease,border-color .16s ease;
-  }
-  .card:hover{background:#1D1D26;border-color:#37374A}
-  .card:active{background:#1B1B23}
-  .card:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+  .kicker{margin:0;font-size:9px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft)}
+  .row{display:flex;align-items:center;justify-content:space-between}
+  .ghost-link{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--ink-soft);text-decoration:none}
+  section{margin-top:20px}
 
-  /* the card speaks in two voices: the book's, quoted and carrying the
-     accent rule; and the owner's, a plain instruction. */
-  .meta{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:12px;
-    font-size:11.5px;
-    line-height:1.2;
-    color:var(--ink-3);
-  }
-  .meta b{font-weight:600;color:var(--ink-2);letter-spacing:.005em}
+  /* Home lede */
+  .lede{margin-top:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .lede h1{margin:6px 0 0;font-family:var(--display);font-weight:500;font-size:30px;line-height:1.02;letter-spacing:-.035em;color:var(--ink)}
+  .lede h1 em{font-style:italic;color:var(--ember)}
+  .streak{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:rgba(251,248,241,.8);border-radius:100px;padding:6px 10px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap}
+  .streak svg{color:var(--ember)}
 
-  .quote{
-    margin:12px 0 0;
-    padding-left:14px;
-    border-left:2px solid var(--gold);
-    font-size:18px;
-    line-height:1.55;
-    letter-spacing:-.008em;
-    color:var(--ink);
-  }
+  /* covers */
+  .cover{position:relative;width:76px;height:110px;flex:none;border-radius:5px;overflow:hidden;background:#193529;box-shadow:0 8px 18px -8px rgba(22,36,29,.65);outline:1px solid rgba(0,0,0,.1)}
+  .shelf-item .cover{width:62px;height:90px}
+  .shelf-item .cover .print{padding:7px}
+  .shelf-item .cover .title{font-size:7px;line-height:1.02}
+  .shelf-item .cover .author{display:none}
+  .shelf-grid .cover{width:100%;height:auto;aspect-ratio:2/2.9}
+  .shelf-grid .cover .print{padding:8px}
+  .shelf-grid .cover .title{font-size:8px}
+  .shelf-grid .cover .author{font-size:4.5px;letter-spacing:.1em}
+  .current-card .cover{width:44px;height:64px}
+  .current-card .cover .print{padding:5px}
+  .current-card .cover .print-top svg{display:none}
+  .current-card .cover .title,
+  .current-card .cover .author{display:none}
+  .reel-book .cover{width:22px;height:32px}
+  .reel-book .cover .print{padding:3px}
+  .reel-book .cover .print-top svg{display:none}
+  .reel-book .cover .title,
+  .reel-book .cover .author{display:none}
+  .read-next .cover{width:13px;height:19px}
+  .cover .sun{position:absolute;right:-22%;top:8%;width:92%;height:62%;border-radius:50%;background:var(--ember)}
+  .cover .ring-1{position:absolute;right:-34%;top:22%;width:74%;height:42%;border-radius:50%;border:1px solid rgba(244,239,229,.5)}
+  .cover .ring-2{position:absolute;right:-42%;top:36%;width:58%;height:24%;border-radius:50%;border:1px solid rgba(244,239,229,.3)}
+  .cover .band{position:absolute;left:0;right:0;bottom:0;height:34%;background:#12251d}
+  .cover .sheen{position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,0) 42%),linear-gradient(to right,rgba(0,0,0,.24) 0%,rgba(0,0,0,0) 9%)}
+  .cover .print{position:relative;z-index:3;height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:10px}
+  .cover .print-top{display:flex;align-items:center;justify-content:space-between;color:rgba(244,239,229,.8)}
+  .cover .pin{width:3px;height:3px;border-radius:50%;background:rgba(244,239,229,.6)}
+  .cover .author{margin:0 0 4px;font-size:6.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,239,229,.7)}
+  .cover .title{margin:0;font-family:var(--display);font-weight:500;font-size:12px;line-height:0.94;letter-spacing:-.02em;color:#f7f2e8}
+  .cover.habits{background:#ead9bd}
+  .cover.habits .author{color:#6d4a2c}
+  .cover.habits .title{color:#3d2a18}
+  .cover.artist{background:#22405c}
+  .cover.bird{background:#bd6242}
 
-  .action{
-    margin:14px 0 0;
-    font-size:13.5px;
-    line-height:1.5;
-    color:var(--ink-2);
-  }
-  .action b{font-weight:600;color:var(--ink)}
+  /* Home book card */
+  .book-card{margin-top:10px;display:flex;align-items:stretch;gap:14px;width:100%;padding:12px;border:1px solid rgba(226,217,199,.9);border-radius:20px;background:var(--card);box-shadow:0 10px 30px -22px rgba(22,36,29,.5);text-align:left;cursor:pointer;font-family:inherit}
+  .book-meta{flex:1;min-width:0;display:flex;flex-direction:column;padding:2px 0}
+  .book-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .chip{border-radius:100px;background:var(--sage-soft);color:var(--forest);padding:2px 8px;font-size:8.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+  .rating{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:500;color:var(--ink-soft)}
+  .rating svg{color:var(--ember)}
+  .book-meta h2{margin:6px 0 0;font-family:var(--display);font-weight:500;font-size:20px;line-height:1.05;letter-spacing:-.025em;color:var(--ink)}
+  .byline{margin:2px 0 0;font-size:10.5px;color:var(--ink-soft)}
+  .byline .sep{color:rgba(102,112,95,.5)}
+  .progress-block{margin-top:auto;padding-top:8px}
+  .progress-meta{display:flex;align-items:center;justify-content:space-between;font-size:9px;font-weight:500;color:var(--ink-soft)}
+  .track{margin-top:4px;height:3px;border-radius:100px;background:var(--paper-deep);overflow:hidden}
+  .track span{display:block;height:100%;border-radius:100px;background:var(--ember)}
+  .continue{margin-top:8px;display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--forest)}
 
-  .foot{
-    margin-top:18px;
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:14px;
-  }
-  .src{font-size:11.5px;line-height:1.3;color:var(--ink-3)}
-  .open{
-    display:inline-flex;
-    align-items:center;
-    gap:5px;
-    font-size:13px;
-    font-weight:600;
-    color:var(--ink);
-    white-space:nowrap;
-  }
-  .open svg{color:var(--gold)}
+  /* saved review (home) */
+  .review-label{display:inline-flex;align-items:center;gap:6px}
+  .review-label svg{color:var(--ember)}
+  .pager{display:inline-flex;align-items:center;gap:6px}
+  .pager .count{font-size:9.5px;font-weight:500;color:rgba(102,112,95,.8);margin-right:2px}
+  .pager button{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);display:grid;place-items:center;cursor:pointer}
+  .quote-card{position:relative;margin:10px 0 0;border-radius:22px;background:var(--forest);color:var(--paper);padding:16px;overflow:hidden;box-shadow:0 18px 36px -22px rgba(23,54,42,.9)}
+  .quote-card .halo{position:absolute;border:1px solid rgba(244,239,229,.1);border-radius:50%;pointer-events:none}
+  .quote-card .halo-1{right:-40px;top:-56px;width:144px;height:144px}
+  .quote-card .halo-2{right:-16px;top:-32px;width:96px;height:96px}
+  .quote-inner{position:relative;z-index:2}
+  .quote-head{display:flex;align-items:center;justify-content:space-between}
+  .topic{display:inline-flex;align-items:center;gap:6px;font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,239,229,.55)}
+  .topic i{width:4px;height:4px;border-radius:50%;background:var(--ember);display:block}
+  .save-btn{width:28px;height:28px;border-radius:50%;border:0;cursor:pointer;background:rgba(244,239,229,.1);color:var(--paper);display:grid;place-items:center}
+  blockquote{margin:12px 0 0}
+  blockquote p{margin:0;font-family:var(--display);font-weight:400;font-size:18.5px;line-height:1.32;letter-spacing:-.012em;color:#f7f1e5}
+  blockquote .q{color:var(--ember)}
+  .quote-foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(244,239,229,.12);display:flex;align-items:flex-end;justify-content:space-between}
+  .who{display:flex;align-items:center;gap:8px;min-width:0}
+  .who .initials{width:28px;height:28px;border-radius:50%;flex:none;background:var(--ember);color:var(--forest-deep);font-family:var(--display);font-weight:600;font-size:9px;display:grid;place-items:center}
+  .who .name{margin:0;font-size:11px;font-weight:600;line-height:1.15;color:var(--paper)}
+  .who .source{margin:0;font-size:9px;line-height:1.15;color:rgba(244,239,229,.5)}
+  .like{display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:rgba(244,239,229,.55);font-size:9px;font-weight:500;padding:4px 8px;border-radius:100px;cursor:pointer}
 
-  /* ---- session bar --------------------------------------------------- */
-  .session{margin-top:36px}
-  .bar{
-    height:2px;
-    border-radius:1px;
-    background:var(--tick-off);
-    overflow:hidden;
-  }
-  .bar span{
-    display:block;
-    height:100%;
-    border-radius:1px;
-    background:var(--gold);
-  }
+  /* shelf */
+  .shelf-head{display:flex;align-items:center;justify-content:space-between}
+  .shelf-head h3{margin:0;font-family:var(--display);font-weight:500;font-size:17px;letter-spacing:-.02em;color:var(--ink)}
+  .shelf-row{margin:10px -20px 0;padding:0 20px 4px;display:flex;gap:14px;overflow-x:auto;scrollbar-width:none}
+  .shelf-row::-webkit-scrollbar{display:none}
+  .shelf-item{width:62px;flex:none;text-align:left;border:0;background:none;padding:0;cursor:pointer;font-family:inherit}
+  .shelf-item .cover{width:62px}
+  .shelf-item .t{margin:6px 0 0;font-size:9.5px;font-weight:500;line-height:1.15;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .shelf-item .p{margin:2px 0 0;font-size:8px;color:var(--ink-soft)}
 
-  .session-row{
-    margin-top:10px;
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    gap:12px;
-    font-size:12.5px;
-  }
-  .session-row .count{color:var(--ink-2)}
-  .session-row .left{color:var(--ink-3)}
-  .session-row .done{color:var(--gold)}
-
-  /* ---- saved shortcut ------------------------------------------------ */
-  .saved-row{
-    display:flex;
-    align-items:center;
-    gap:7px;
-    min-height:48px;
-    margin-top:18px;
-    text-decoration:none;
-    color:var(--ink-2);
-    font-size:13.5px;
-    border-radius:10px;
-    transition:color .16s ease;
-  }
-  .saved-row:hover{color:var(--ink)}
-  .saved-row:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-  .saved-row .n{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
-  .saved-row .chev{margin-left:auto;color:var(--ink-3)}
-
-  /* ---- today's line ------------------------------------------------- */
-  .line{margin-top:46px}
-  .line h3{
-    margin:0 0 8px;
-    font-size:12px;
-    font-weight:600;
-    color:var(--ink-3);
-    letter-spacing:.01em;
-  }
-  .line blockquote{
-    margin:0;
-    font-size:17px;
-    line-height:1.5;
-    letter-spacing:-.008em;
-    color:var(--ink);
-    text-wrap:pretty;
-  }
-  .line cite{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    margin-top:10px;
-    font-style:normal;
-    font-size:12px;
-    color:var(--ink-3);
-  }
-  .line cite::before{
-    content:"";
-    width:12px;
-    height:2px;
-    background:var(--gold);
-    border-radius:1px;
-  }
-
-  /* ---- finished state ----------------------------------------------- */
-  .done{margin-top:28px}
-  .done h2{
-    margin:0;
-    font-size:21px;
-    line-height:1.28;
-    font-weight:600;
-    letter-spacing:-.014em;
-    color:var(--ink);
-  }
-  .done p{
-    margin:8px 0 0;
-    font-size:14px;
-    line-height:1.55;
-    color:var(--ink-2);
-  }
-
-  .primary{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    width:100%;
-    height:50px;
-    margin-top:16px;
-    border:0;
-    border-radius:100px;
-    background:var(--ink);
-    color:#0E0E11;
-    font-family:inherit;
-    font-size:14px;
-    font-weight:600;
-    cursor:pointer;
-    transition:background .16s ease;
-  }
-  .primary:hover{background:#fff}
-  .primary:active{background:#E4E4EA}
-  .primary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-  .primary svg{display:block}
-
-  .quiet{
-    display:block;
-    width:100%;
-    height:44px;
-    margin-top:4px;
-    border:0;
-    background:none;
-    color:var(--ink-3);
-    font-family:inherit;
-    font-size:13px;
-    font-weight:500;
-    cursor:pointer;
-    border-radius:10px;
-  }
-  .quiet:hover{color:var(--ink-2)}
-  .quiet:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-
-  /* ---- bottom nav --------------------------------------------------- */
+  /* Apple-style floating frosted glass navigation bar */
   .nav{
-    flex:none;
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    align-items:center;
-    justify-items:center;
-    height:66px;
-    padding-bottom:8px;
-    border-top:1px solid var(--border);
-    background:var(--app-bg);
+    position:absolute;bottom:16px;left:16px;right:16px;z-index:90;height:64px;
+    border-radius:32px;
+    background:linear-gradient(180deg, rgba(22,56,43,0.82) 0%, rgba(14,38,29,0.92) 100%);
+    backdrop-filter:blur(24px) saturate(180%);
+    -webkit-backdrop-filter:blur(24px) saturate(180%);
+    border:1px solid rgba(255,255,255,0.42);
+    box-shadow:0 20px 45px -10px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.22);
+    display:grid;grid-template-columns:repeat(4,1fr);padding:5px;
+    box-sizing:border-box;
   }
   .nav a{
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    gap:5px;
-    min-width:64px;
-    padding:8px 0 0;
-    text-decoration:none;
-    color:#7C7C86;
-    font-size:11px;
-    font-weight:500;
-    letter-spacing:.01em;
-    border-radius:12px;
+    position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:1.5px;border-radius:26px;text-decoration:none;color:rgba(244,239,229,0.75);
+    font-size:10px;font-weight:600;letter-spacing:.01em;transition:all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
-  .nav a svg{display:block}
-  .nav a[aria-current="page"]{color:var(--ink)}
-  .nav a:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+  .nav a svg{width:21px;height:21px}
+  .nav a:active{transform:scale(0.92);}
+  .nav a[aria-current="page"]{
+    background:linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(245,239,230,0.93) 100%);
+    color:#133224;font-weight:700;
+    box-shadow:0 4px 12px rgba(0,0,0,0.22), inset 0 1px 0 #fff;
+    border:1px solid rgba(255,255,255,0.7);
+  }
+  .nav a[aria-current="page"] svg{color:#133224}
 
-  .stage-foot{
-    max-width:620px;
-    text-align:center;
-    font-size:12px;
-    line-height:1.6;
-    color:var(--ink-3);
-  }
+  /* ---------- Reels ---------- */
+  .reels-head{display:flex;align-items:center;justify-content:space-between;padding:2px 0 12px}
+  .reels-head h1{margin:4px 0 0;font-family:var(--display);font-weight:500;font-size:26px;line-height:1;letter-spacing:-.035em}
+  .filter-pill{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--card);border-radius:100px;padding:6px 10px;font-size:10px;font-weight:500;color:var(--ink)}
+  .reel{position:relative;margin-bottom:14px;min-height:488px;overflow:hidden;border-radius:26px;padding:20px;color:var(--paper);background:linear-gradient(135deg,#1c4534,#163528 45%,#0d2118);box-shadow:0 16px 34px -22px rgba(13,33,24,.9);display:flex;flex-direction:column}
+  .reel.b2{background:linear-gradient(135deg,#a95036,#8a3d29 45%,#3d2119)}
+  .reel .halo{position:absolute;border:1px solid rgba(244,239,229,.1);border-radius:50%;pointer-events:none}
+  .reel .h1{right:-64px;top:-64px;width:208px;height:208px}
+  .reel .h2{right:-24px;top:-24px;width:128px;height:128px}
+  .reel .h3{bottom:64px;left:-80px;width:176px;height:176px;background:rgba(244,239,229,.04);border:0}
+  .reel-inner{position:relative;z-index:2;display:flex;flex-direction:column;height:100%;min-height:448px}
+  .reel-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .reel-book{display:flex;align-items:center;gap:8px;border-radius:100px;background:rgba(0,0,0,.2);padding:4px 10px 4px 4px;outline:1px solid rgba(244,239,229,.1)}
+  .reel-book .cover{width:22px;border-radius:3px}
+  .reel-book .bt{margin:0;font-size:9px;font-weight:600;line-height:1.15;color:var(--paper);max-width:132px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .reel-book .ba{margin:0;font-size:7.5px;line-height:1.15;color:rgba(244,239,229,.55)}
+  .reel-min{display:inline-flex;align-items:center;gap:4px;border-radius:100px;background:rgba(0,0,0,.2);padding:4px 8px;font-size:8.5px;font-weight:500;color:rgba(244,239,229,.7);outline:1px solid rgba(244,239,229,.1)}
+  .reel-quote{flex:1;display:flex;align-items:center;position:relative}
+  .reel-quote .mark{position:absolute;left:-4px;top:-10%;font-family:var(--display);font-size:92px;line-height:1;color:rgba(244,239,229,.1)}
+  .reel-quote blockquote{margin:0;position:relative;padding-right:12px}
+  .reel-quote p{margin:0;font-family:var(--display);font-size:24px;line-height:1.22;letter-spacing:-.02em;color:#faf5ea}
+  .reel-by{display:flex;align-items:center;gap:8px;margin-top:14px}
+  .reel-by i{width:20px;height:1px;background:var(--ember);display:block}
+  .reel-by span{font-size:10px;font-weight:500;color:rgba(244,239,229,.75)}
+  .reel-by em{font-style:normal;color:rgba(244,239,229,.45);margin-left:4px}
+  .reel-actions{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:8px}
+  .save-pill{display:inline-flex;align-items:center;gap:6px;border-radius:100px;padding:8px 12px;font-size:9.5px;font-weight:600;background:rgba(244,239,229,.1);color:var(--paper);outline:1px solid rgba(244,239,229,.2);border:0;cursor:pointer}
+  .reel-side{display:flex;align-items:center;gap:10px}
+  .reel-side button{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:rgba(244,239,229,.75);font-size:7.5px;font-weight:500;cursor:pointer;font-family:inherit}
+  .reel-side .circle{width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,.2);outline:1px solid rgba(244,239,229,.15);display:grid;place-items:center}
+  .reel-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+  .reel-foot .label{font-size:8px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,229,.35)}
+  .dots{display:flex;gap:4px}
+  .dots i{height:3px;border-radius:100px;background:rgba(244,239,229,.25);width:6px;display:block}
+  .dots i.on{width:16px;background:rgba(244,239,229,.8)}
+  .caught{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:240px;padding:0 24px}
+  .caught .badge{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ember);display:grid;place-items:center}
+  .caught h3{margin:12px 0 0;font-family:var(--display);font-weight:500;font-size:19px;color:var(--ink)}
+  .caught p{margin:4px 0 0;font-size:10.5px;line-height:1.6;color:var(--ink-soft);max-width:220px}
+  .caught button{margin-top:16px;border:0;border-radius:100px;background:var(--forest);color:var(--paper);padding:8px 16px;font-size:10.5px;font-weight:600;cursor:pointer;font-family:inherit}
 
-  @media (max-width:520px){
-    .stage{padding:0}
-    .stage-head,.frame-label,.stage-foot{display:none}
-    .screens{gap:0}
-    .phone{
-      width:100vw;
-      height:100vh;
-      height:100dvh;
-      border:0;
-      border-radius:0;
-    }
-  }
+  /* ---------- Saved ---------- */
+  .lib-head{display:flex;align-items:flex-start;justify-content:space-between}
+  .lib-head h1{margin:6px 0 0;font-family:var(--display);font-weight:500;font-size:28px;line-height:1;letter-spacing:-.035em}
+  .count-pill{margin-top:4px;border-radius:100px;border:1px solid var(--line);background:var(--card);padding:6px 10px;font-size:9.5px;font-weight:500;color:var(--ink-soft)}
+  .segmented{margin-top:16px;display:flex;gap:4px;border-radius:100px;border:1px solid rgba(226,217,199,.8);background:rgba(235,227,212,.6);padding:4px}
+  .segmented button{flex:1;border:0;border-radius:100px;padding:6px 0;font-size:10.5px;font-weight:600;color:var(--ink-soft);background:none;cursor:pointer;font-family:inherit}
+  .segmented button.on{background:var(--forest);color:var(--paper);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+  .saved-card{margin-top:10px;border-radius:18px;border:1px solid rgba(226,217,199,.9);background:var(--card);padding:14px;box-shadow:0 6px 18px -16px rgba(22,36,29,.5)}
+  .saved-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .saved-who{display:flex;align-items:center;gap:8px;min-width:0}
+  .saved-who .initials{width:24px;height:24px;border-radius:50%;flex:none;background:var(--forest);color:var(--paper);font-family:var(--display);font-weight:600;font-size:8px;display:grid;place-items:center}
+  .saved-who .n{margin:0;font-size:10px;font-weight:600;line-height:1.15;color:var(--ink)}
+  .saved-who .s{margin:0;font-size:8.5px;line-height:1.15;color:var(--ink-soft)}
+  .un-save{width:24px;height:24px;border-radius:50%;border:0;background:var(--paper-deep);color:var(--forest);display:grid;place-items:center;cursor:pointer;flex:none}
+  .saved-quote{margin:8px 0 0;font-family:var(--display);font-size:13.5px;line-height:1.42;letter-spacing:-.005em;color:var(--ink)}
+  .saved-foot{margin-top:10px;padding-top:8px;border-top:1px solid rgba(226,217,199,.6);display:flex;align-items:center;justify-content:space-between}
+  .read-next{display:flex;align-items:center;gap:6px;border:0;background:none;font-size:9px;font-weight:500;color:var(--ink-soft);cursor:pointer;font-family:inherit;padding:0}
+  .read-next .cover{width:13px;border-radius:2px}
+  .like-btn{display:flex;align-items:center;gap:4px;border:0;background:none;font-size:9px;font-weight:500;color:rgba(102,112,95,.7);cursor:pointer;font-family:inherit}
+  .shelf-grid{margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .shelf-grid .item{min-width:0}
+  .shelf-grid .cover{width:100%}
+  .shelf-grid .t{margin:6px 0 0;font-size:9.5px;font-weight:600;line-height:1.15;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .shelf-grid .p{margin:2px 0 0;font-size:8px;color:var(--ink-soft)}
+  .shelf-grid .rm{margin-top:4px;border:0;background:none;padding:0;font-size:8px;font-weight:500;color:rgba(102,112,95,.6);text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer;font-family:inherit}
+  .footnote{margin:24px 0 0;text-align:center;font-size:8.5px;letter-spacing:.16em;text-transform:uppercase;color:rgba(102,112,95,.5)}
 
-  @media (prefers-reduced-motion:reduce){
-    *{transition:none!important;animation:none!important}
-  }
+  /* ---------- Me ---------- */
+  .me-head{display:flex;align-items:flex-start;justify-content:space-between}
+  .me-head h1{margin:6px 0 0;font-family:var(--display);font-weight:500;font-size:28px;line-height:1;letter-spacing:-.035em}
+  .me-badge{margin-top:4px;display:inline-flex;align-items:center;gap:4px;border-radius:100px;border:1px solid var(--line);background:var(--card);padding:6px 10px;font-size:9px;font-weight:500;color:var(--ink-soft)}
+  .me-badge svg{color:var(--ember)}
+  .profile{margin-top:16px;border-radius:20px;border:1px solid rgba(226,217,199,.9);background:var(--card);padding:16px;box-shadow:0 10px 30px -22px rgba(22,36,29,.5)}
+  .profile-top{display:flex;align-items:flex-start;gap:12px}
+  .profile-avatar{position:relative;flex:none;width:52px;height:52px;border-radius:50%;background:var(--forest);color:var(--paper);font-family:var(--display);font-weight:600;font-size:17px;display:grid;place-items:center;box-shadow:0 0 0 2px rgba(244,239,229,1),0 0 0 4px rgba(226,96,58,.5)}
+  .profile-avatar .spark{position:absolute;right:-2px;bottom:-2px;width:16px;height:16px;border-radius:50%;background:var(--ember);border:2px solid var(--card);display:grid;place-items:center;color:var(--forest-deep)}
+  .profile-name{margin:0;font-family:var(--display);font-size:19px;letter-spacing:-.02em;color:var(--ink);display:flex;align-items:center;gap:6px}
+  .edit-btn{width:20px;height:20px;border-radius:50%;border:0;background:none;color:var(--ink-soft);display:grid;place-items:center;cursor:pointer}
+  .reader-since{margin:2px 0 0;font-size:9.5px;color:var(--ink-soft)}
+  .bio{margin:6px 0 0;font-size:9.5px;font-style:italic;color:rgba(102,112,95,.8)}
+  .stats{margin-top:14px;padding-top:12px;border-top:1px solid rgba(226,217,199,.7);display:grid;grid-template-columns:repeat(3,1fr)}
+  .stats div{text-align:center;border-right:1px solid rgba(226,217,199,.8)}
+  .stats div:last-child{border-right:0}
+  .stats .v{margin:0;font-family:var(--display);font-size:18px;line-height:1;color:var(--ink)}
+  .stats .l{margin:4px 0 0;font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+
+  .goal{margin-top:14px;border-radius:20px;background:var(--forest);color:var(--paper);padding:16px;position:relative;overflow:hidden}
+  .goal .halo{position:absolute;right:-32px;top:-40px;width:112px;height:112px;border-radius:50%;border:1px solid rgba(244,239,229,.1)}
+  .goal-inner{position:relative;z-index:2;display:flex;align-items:center;gap:16px}
+  .ring{position:relative;width:62px;height:62px;flex:none}
+  .ring svg{transform:rotate(-90deg)}
+  .ring .pct{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .ring .pct b{font-family:var(--display);font-size:15px;line-height:1}
+  .ring .pct span{margin-top:2px;font-size:6.5px;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,239,229,.5)}
+  .goal-label{margin:0;font-size:8px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,239,229,.5)}
+  .goal-value{margin:4px 0 0;font-family:var(--display);font-size:17px;line-height:1.2}
+  .goal-value span{color:rgba(244,239,229,.4)}
+  .goal-note{margin:4px 0 0;font-size:9px;line-height:1.6;color:rgba(244,239,229,.55)}
+
+  .week-card{margin-top:14px;border-radius:20px;border:1px solid rgba(226,217,199,.9);background:var(--card);padding:14px}
+  .week-head{display:flex;align-items:center;justify-content:space-between}
+  .week-title{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;color:var(--ink)}
+  .week-title svg{color:var(--ember)}
+  .week-best{font-size:8.5px;color:var(--ink-soft)}
+  .week-days{margin-top:12px;display:flex;align-items:center;justify-content:space-between}
+  .day{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .day .d{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:8px;font-weight:600;border:1px dashed var(--line);color:rgba(102,112,95,.5)}
+  .day .d.done{background:var(--forest);color:var(--paper);border:0}
+  .day .d.today{background:var(--ember);color:var(--forest-deep);border:0;box-shadow:0 0 0 2px rgba(226,96,58,.25)}
+  .day .n{font-size:7.5px;letter-spacing:.08em;text-transform:uppercase;color:rgba(102,112,95,.7)}
+
+  .current{margin-top:16px}
+  .current-card{margin-top:8px;display:flex;align-items:center;gap:12px;width:100%;border-radius:18px;border:1px solid rgba(226,217,199,.9);background:var(--card);padding:10px;text-align:left;cursor:pointer;font-family:inherit}
+  .current-card .cover{width:44px}
+  .current-card .title{margin:0;font-family:var(--display);font-size:14px;line-height:1.2;color:var(--ink)}
+  .current-card .author{margin:0;font-size:9px;color:var(--ink-soft)}
+  .current-card .bar{margin-top:6px;display:flex;align-items:center;gap:8px}
+  .current-card .bar .t{flex:1;height:3px;border-radius:100px;background:var(--paper-deep);overflow:hidden}
+  .current-card .bar .t span{display:block;height:100%;background:var(--ember);border-radius:100px}
+  .current-card .bar em{font-style:normal;font-size:8px;font-weight:500;color:var(--ink-soft)}
+
+  .prefs{margin-top:16px}
+  .pref-list{margin-top:8px;border-radius:18px;border:1px solid rgba(226,217,199,.9);background:var(--card);overflow:hidden}
+  .pref{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid rgba(226,217,199,.7)}
+  .pref:first-child{border-top:0}
+  .pref .ic{color:var(--ink-soft);flex:none}
+  .pref .txt{flex:1;min-width:0}
+  .pref .t{margin:0;font-size:10.5px;font-weight:500;color:var(--ink)}
+  .pref .s{margin:0;font-size:8.5px;color:var(--ink-soft)}
+  .switch{position:relative;width:33px;height:19px;border-radius:100px;background:#ddd4c3;border:0;cursor:pointer;flex:none}
+  .switch.on{background:var(--forest)}
+  .switch i{position:absolute;top:2.5px;left:2.5px;width:14px;height:14px;border-radius:50%;background:var(--card);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .switch.on i{left:16px}
+  .link-row{margin-top:12px;display:flex;align-items:center;gap:10px;width:100%;border-radius:16px;border:1px solid rgba(226,217,199,.9);background:var(--card);padding:12px 14px;text-align:left;cursor:pointer;font-family:inherit}
+  .link-row .ic{color:var(--ember)}
+  .link-row .lbl{flex:1;font-size:10.5px;font-weight:500;color:var(--ink)}
+  .link-row .lbl em{font-style:normal;color:var(--ink-soft);margin-left:6px}
+  .version{margin:20px 0 0;text-align:center;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:rgba(102,112,95,.45)}
 </style>
 </head>
 <body>
 
-<div class="stage">
+<header class="stage-head">
+  <h1>Spark — the whole app</h1>
+  <p>Four screens, same components and tokens as the design source: paper, forest, ember, Fraunces.</p>
+</header>
 
-  <header class="stage-head">
-    <h1>SPARK · Home screen</h1>
-    <p>Two states of the same screen: a session in progress, and the end of one.</p>
-  </header>
+<div class="gallery">
 
-  <div class="screens">
-
-    <!-- ============================ A ============================ -->
-    <section class="frame">
-      <div class="frame-label"><b>A</b> · Session in progress</div>
-
-      <div class="phone">
-        <div class="screen">
-
-          <div class="top">
-            <div class="brand">
-              <svg class="wordmark" viewBox="0 0 100 28" role="img" aria-label="SPARK" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="round">
-              <path stroke-width="4.2" d="M15.8 8.4 C14.6 5.4 10.4 3.8 6.6 4.4 C3.6 4.9 2.4 7.6 3.2 9.8 C4.2 12.4 9.6 12.9 12.6 14.2 C15.4 15.4 16.2 18.6 14.2 21 C11.8 23.9 6 23.6 3.2 21"/>
-              <path stroke-width="4.6" d="M22.2 4.6 V23.6"/>
-              <path stroke-width="4" d="M22.2 5.6 H27.6 C33.4 5.6 33.4 14.6 27.6 14.6 H22.2"/>
-              <path stroke-width="4.2" d="M39 23.6 L47.2 3.4 L55.2 23.6"/>
-              <path stroke-width="4.6" d="M61 4.6 V23.6"/>
-              <path stroke-width="4" d="M61 5.6 H66.4 C72 5.6 72 13.8 66.4 13.8 H61"/>
-              <path stroke-width="3.6" d="M67 13.8 L74.4 23.6"/>
-              <path stroke-width="4.6" d="M79 4.6 V23.6"/>
-              <path stroke-width="3.6" d="M79 14.2 L94 4.6"/>
-              <path stroke-width="3.6" d="M84 11.2 L94.6 23.8"/>
-            </svg>
-            </div>
-            <time class="date" datetime="2026-11-08">
-              <span class="dow">Sunday</span>
-              <span class="dmy">8 November</span>
-            </time>
-          </div>
-
-          <p class="greeting"><span class="hi">Good evening,</span> <span class="name">Satyam</span></p>
-
-          <a class="card" href="#reels" aria-label="Read the opening of As a Man Thinketh">
-            <span class="meta">
-              <b>From the book</b>
-            </span>
-
-            <blockquote class="quote">“The aphorism, ‘As a man thinketh in his heart so is he,’ not only embraces the whole of a man’s being, but is so comprehensive as to reach out to every condition and circumstance of his life.”</blockquote>
-
-            <p class="action"><b>Try this today:</b> pick the one thought you will refuse to repeat this week.</p>
-
-            <span class="foot">
-              <span class="src">As a Man Thinketh · James Allen</span>
-              <span class="open">Read it
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-              </span>
-            </span>
-          </a>
-
-          <div class="session">
-            <div class="bar" aria-hidden="true"><span style="width:35%"></span></div>
-            <div class="session-row">
-              <span class="count">7 of 20 read</span>
-            </div>
-          </div>
-
-          <a class="saved-row" href="#saved">
-            Saved
-            <span class="n">3</span>
-            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-          </a>
-
-          <div class="line">
-            <h3>Today’s line</h3>
-            <blockquote>“The happiness of your life depends upon the quality of your thoughts.”</blockquote>
-            <cite>Marcus Aurelius · Meditations</cite>
-          </div>
-
+<!-- ============================= HOME ============================= -->
+<section class="frame">
+  <div class="frame-label">Home</div>
+  <div class="phone">
+    <div class="screen">
+      <header class="top">
+        <div class="wordmark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 0.9c.72 5.98 5.22 10.48 11.2 11.2-5.98.72-10.48 5.22-11.2 11.2C11.28 17.32 6.78 12.82.8 12.1 6.78 11.38 11.28 6.88 12 .9Z" fill="currentColor"/><circle cx="19.6" cy="4.4" r="1.7" fill="currentColor" opacity=".55"/></svg><span>Spark</span></div>
+        <div class="actions">
+          <button class="icon-btn" aria-label="Search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg></button>
+          <button class="avatar" aria-label="Profile">MC<span class="dot"></span></button>
         </div>
+      </header>
 
-        <nav class="nav" aria-label="Main">
-          <a href="#home" aria-current="page">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6L12 3.8l8.5 6.8V20a.9.9 0 0 1-.9.9h-4.4v-6h-6.4v6H4.4a.9.9 0 0 1-.9-.9z"/></svg>
-            Home
-          </a>
-          <a href="#reels">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="3"/><path d="M10.4 9.2l4.6 2.8-4.6 2.8z"/></svg>
-            Reels
-          </a>
-          <a href="#saved">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.4 3.9h11.2a1 1 0 0 1 1 1v15.4l-6.6-4-6.6 4V4.9a1 1 0 0 1 1-1z"/></svg>
-            Saved
-          </a>
-          <a href="#me">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7"/><path d="M5 20.2c.6-3.4 3.5-5.5 7-5.5s6.4 2.1 7 5.5"/></svg>
-            Me
-          </a>
-        </nav>
-      </div>
-    </section>
-
-    <!-- ============================ B ============================ -->
-    <section class="frame">
-      <div class="frame-label"><b>B</b> · Session complete</div>
-
-      <div class="phone">
-        <div class="screen">
-
-          <div class="top">
-            <div class="brand">
-              <svg class="wordmark" viewBox="0 0 100 28" role="img" aria-label="SPARK" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="round">
-              <path stroke-width="4.2" d="M15.8 8.4 C14.6 5.4 10.4 3.8 6.6 4.4 C3.6 4.9 2.4 7.6 3.2 9.8 C4.2 12.4 9.6 12.9 12.6 14.2 C15.4 15.4 16.2 18.6 14.2 21 C11.8 23.9 6 23.6 3.2 21"/>
-              <path stroke-width="4.6" d="M22.2 4.6 V23.6"/>
-              <path stroke-width="4" d="M22.2 5.6 H27.6 C33.4 5.6 33.4 14.6 27.6 14.6 H22.2"/>
-              <path stroke-width="4.2" d="M39 23.6 L47.2 3.4 L55.2 23.6"/>
-              <path stroke-width="4.6" d="M61 4.6 V23.6"/>
-              <path stroke-width="4" d="M61 5.6 H66.4 C72 5.6 72 13.8 66.4 13.8 H61"/>
-              <path stroke-width="3.6" d="M67 13.8 L74.4 23.6"/>
-              <path stroke-width="4.6" d="M79 4.6 V23.6"/>
-              <path stroke-width="3.6" d="M79 14.2 L94 4.6"/>
-              <path stroke-width="3.6" d="M84 11.2 L94.6 23.8"/>
-            </svg>
-            </div>
-            <time class="date" datetime="2026-11-08">
-              <span class="dow">Sunday</span>
-              <span class="dmy">8 November</span>
-            </time>
-          </div>
-
-          <p class="greeting"><span class="hi">Good evening,</span> <span class="name">Satyam</span></p>
-
-          <div class="done">
-            <h2>That’s today’s 20.</h2>
-            <p>Nothing left to scroll. That’s the point. Your three saved cards are waiting, and tomorrow’s session starts fresh.</p>
-
-            <button class="primary" type="button">
-              Review saved cards
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M12.5 5.5L19 12l-6.5 6.5"/></svg>
-            </button>
-            <button class="quiet" type="button">Close app</button>
-          </div>
-
-          <div class="session">
-            <div class="bar" aria-hidden="true"><span style="width:100%"></span></div>
-            <div class="session-row">
-              <span class="count">20 of 20 read</span>
-              <span class="left done">Session complete</span>
-            </div>
-          </div>
-
-          <div class="line">
-            <h3>Today’s line</h3>
-            <blockquote>“The happiness of your life depends upon the quality of your thoughts.”</blockquote>
-            <cite>Marcus Aurelius · Meditations</cite>
-          </div>
-
+      <div class="lede">
+        <div>
+          <p class="kicker">Tuesday, November 10</p>
+          <h1>A little spark,<br><em>every day.</em></h1>
         </div>
-
-        <nav class="nav" aria-label="Main">
-          <a href="#home" aria-current="page">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10.6L12 3.8l8.5 6.8V20a.9.9 0 0 1-.9.9h-4.4v-6h-6.4v6H4.4a.9.9 0 0 1-.9-.9z"/></svg>
-            Home
-          </a>
-          <a href="#reels">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="3"/><path d="M10.4 9.2l4.6 2.8-4.6 2.8z"/></svg>
-            Reels
-          </a>
-          <a href="#saved">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.4 3.9h11.2a1 1 0 0 1 1 1v15.4l-6.6-4-6.6 4V4.9a1 1 0 0 1 1-1z"/></svg>
-            Saved
-          </a>
-          <a href="#me">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.2" r="3.7"/><path d="M5 20.2c.6-3.4 3.5-5.5 7-5.5s6.4 2.1 7 5.5"/></svg>
-            Me
-          </a>
-        </nav>
+        <div class="streak"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-3 2-5 5-9z"/></svg>12 days</div>
       </div>
-    </section>
 
+      <section>
+        <div class="row"><p class="kicker">Today’s pick</p>
+          <a class="ghost-link" href="#">Your shelf <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+        </div>
+        <button class="book-card" type="button">
+          <div class="cover"><div class="sun"></div><div class="ring-1"></div><div class="ring-2"></div><div class="band"></div><div class="sheen"></div>
+            <svg class="star" style="position:absolute;right:10%;top:10%;z-index:3;color:var(--paper)" width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg>
+            <div class="print"><div class="print-top"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg><span class="pin"></span></div><div><p class="author">Rick Rubin</p><p class="title">The Creative Act</p></div></div>
+          </div>
+          <div class="book-meta">
+            <div class="book-top"><span class="chip">Creativity</span><span class="rating"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.2 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z"/></svg>4.8</span></div>
+            <h2>The Creative Act</h2>
+            <p class="byline">Rick Rubin <span class="sep">·</span> 2023</p>
+            <div class="progress-block">
+              <div class="progress-meta"><span>68% read</span><span>432 pages</span></div>
+              <span class="continue">Continue reading <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12.5 6l6 6-6 6"/></svg></span>
+            </div>
+          </div>
+        </button>
+      </section>
+
+      <section>
+        <div class="row">
+          <div class="review-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg><p class="kicker">Saved review</p></div>
+          <div class="pager"><span class="count">01 / 05</span><button aria-label="Previous"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><button aria-label="Next"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></button></div>
+        </div>
+        <article class="quote-card grain">
+          <div class="halo halo-1"></div><div class="halo halo-2"></div>
+          <div class="quote-inner">
+            <div class="quote-head"><span class="topic"><i></i>On making · Creativity</span><button class="save-btn" aria-label="Save"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button></div>
+            <blockquote><p><span class="q">“</span>The object isn’t to make art, it’s to be in that wonderful state which makes art inevitable.<span class="q">”</span></p></blockquote>
+            <div class="quote-foot">
+              <div class="who"><span class="initials">RR</span><div><p class="name">Rick Rubin</p><p class="source">The Creative Act</p></div></div>
+              <button class="like" aria-label="Like"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9z"/></svg>1.3k</button>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section>
+        <div class="shelf-head"><h3>Your shelf</h3><a class="ghost-link" href="#">See all</a></div>
+        <div class="shelf-row">
+          <button class="shelf-item"><div class="cover"><div class="sun"></div><div class="ring-1"></div><div class="band"></div><div class="sheen"></div><div class="print"><div class="print-top"><svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg><span class="pin"></span></div><div><p class="author">Rick Rubin</p><p class="title">The Creative Act</p></div></div></div><p class="t">The Creative Act</p><p class="p">68% read</p></button>
+          <button class="shelf-item"><div class="cover habits"><div class="sheen"></div><div class="print"><div class="print-top"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" style="color:#9c4224"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg><span class="pin" style="background:#9c4224"></span></div><div><p class="author">James Clear</p><p class="title">Atomic Habits</p></div></div></div><p class="t">Atomic Habits</p><p class="p">24% read</p></button>
+          <button class="shelf-item"><div class="cover artist"><div class="sheen"></div><div class="print"><div class="print-top"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" style="color:#e8dfcb"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg><span class="pin" style="background:rgba(232,223,203,.6)"></span></div><div><p class="author">Julia Cameron</p><p class="title">The Artist’s Way</p></div></div></div><p class="t">The Artist’s Way</p><p class="p">Not started</p></button>
+          <button class="shelf-item"><div class="cover bird"><div class="sheen"></div><div class="print"><div class="print-top"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" style="color:#f4eadb"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg><span class="pin" style="background:rgba(244,234,219,.6)"></span></div><div><p class="author">Anne Lamott</p><p class="title">Bird by Bird</p></div></div></div><p class="t">Bird by Bird</p><p class="p">12% read</p></button>
+        </div>
+      </section>
+
+      <div style="height:12px"></div>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <a href="#home" aria-current="page"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
+      <a href="#reels"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M10.5 9.2l4.5 2.8-4.5 2.8z"/></svg>Reels</a>
+      <a href="#saved"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</a>
+      <a href="#me"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.6-3.3 3.4-5.4 7-5.4s6.4 2.1 7 5.4"/></svg>Me</a>
+    </nav>
   </div>
+</section>
 
-  <p class="stage-foot">
-    390 × 844 · Material 3 · Card content from the live deck (Gutenberg #4507, public domain;
-    action line from the growth config). Android draws the real status bar, so none is drawn here.
-  </p>
+<!-- ============================= REELS ============================= -->
+<section class="frame">
+  <div class="frame-label">Reels</div>
+  <div class="phone">
+    <div class="screen" style="padding:18px 16px 0">
+      <div class="reels-head">
+        <div><p class="kicker">Sparks in motion</p><h1>Reels</h1></div>
+        <button class="filter-pill">For you <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft)"><path d="M6 9l6 6 6-6"/></svg></button>
+      </div>
+
+      <article class="reel grain">
+        <div class="halo h1"></div><div class="halo h2"></div><div class="halo h3"></div>
+        <div class="reel-inner">
+          <div class="reel-top">
+            <div class="reel-book"><div class="cover" style="width:22px"><div class="sun"></div><div class="band"></div></div><div><p class="bt">The Creative Act</p><p class="ba">Rick Rubin</p></div></div>
+            <span class="reel-min"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l11 7-11 7z"/></svg>1 min spark</span>
+          </div>
+          <div class="reel-quote">
+            <span class="mark">“</span>
+            <blockquote><p>The object isn’t to make art, it’s to be in that wonderful state which makes art inevitable.</p>
+              <div class="reel-by"><i></i><span>Rick Rubin <em>· The Creative Act</em></span></div>
+            </blockquote>
+          </div>
+          <div class="reel-actions">
+            <button class="save-pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Save this spark</button>
+            <div class="reel-side">
+              <button><span class="circle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9z"/></svg></span>1.3k</button>
+              <button><span class="circle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5"/></svg></span>Share</button>
+            </div>
+          </div>
+          <div class="reel-foot"><span class="label">Spark reel · 01</span><div class="dots"><i class="on"></i><i></i><i></i><i></i></div></div>
+        </div>
+      </article>
+
+      <article class="reel grain b2" style="min-height:340px">
+        <div class="halo h1"></div><div class="halo h2"></div>
+        <div class="reel-inner" style="min-height:300px">
+          <div class="reel-top">
+            <div class="reel-book"><div class="cover habits" style="width:22px"></div><div><p class="bt">Atomic Habits</p><p class="ba">James Clear</p></div></div>
+            <span class="reel-min"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5l11 7-11 7z"/></svg>2 min spark</span>
+          </div>
+          <div class="reel-quote">
+            <span class="mark">“</span>
+            <blockquote><p>You do not rise to the level of your goals. You fall to the level of your systems.</p>
+              <div class="reel-by"><i></i><span>James Clear <em>· Atomic Habits</em></span></div>
+            </blockquote>
+          </div>
+          <div class="reel-foot"><span class="label">Spark reel · 02</span><div class="dots"><i></i><i class="on"></i><i></i><i></i></div></div>
+        </div>
+      </article>
+
+      <div class="caught">
+        <span class="badge"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
+        <h3>A quiet moment, well spent.</h3>
+        <p>You’re all caught up. Your saved sparks are always waiting in your library.</p>
+        <button>Open saved reviews</button>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <a href="#home"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
+      <a href="#reels" aria-current="page"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M10.5 9.2l4.5 2.8-4.5 2.8z"/></svg>Reels</a>
+      <a href="#saved"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</a>
+      <a href="#me"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.6-3.3 3.4-5.4 7-5.4s6.4 2.1 7 5.4"/></svg>Me</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============================= SAVED ============================= -->
+<section class="frame">
+  <div class="frame-label">Saved</div>
+  <div class="phone">
+    <div class="screen">
+      <header class="lib-head">
+        <div><p class="kicker">Kept close</p><h1>Your library</h1></div>
+        <span class="count-pill">7 saved</span>
+      </header>
+
+      <div class="segmented"><button class="on">All</button><button>Reviews</button><button>Books</button></div>
+
+      <section>
+        <div class="row">
+          <div class="review-label"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg><h2 class="kicker" style="margin:0">Saved reviews</h2></div>
+          <span style="font-size:9.5px;color:rgba(102,112,95,.7)">3</span>
+        </div>
+
+        <article class="saved-card">
+          <div class="saved-top">
+            <div class="saved-who"><span class="initials">RR</span><div><p class="n">Rick Rubin</p><p class="s">The Creative Act</p></div></div>
+            <button class="un-save" aria-label="Remove"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+          </div>
+          <p class="saved-quote">“The object isn’t to make art, it’s to be in that wonderful state which makes art inevitable.”</p>
+          <div class="saved-foot">
+            <button class="read-next"><div class="cover" style="width:13px"><div class="sun"></div></div>Read next · The Creative Act <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12.5 6l6 6-6 6"/></svg></button>
+            <button class="like-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9z"/></svg>Like</button>
+          </div>
+        </article>
+
+        <article class="saved-card">
+          <div class="saved-top">
+            <div class="saved-who"><span class="initials">MA</span><div><p class="n">Maya Angelou</p><p class="s">I Know Why the Caged Bird Sings</p></div></div>
+            <button class="un-save" aria-label="Remove"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
+          </div>
+          <p class="saved-quote">“There is no greater agony than bearing an untold story inside you.”</p>
+          <div class="saved-foot">
+            <button class="read-next"><div class="cover bird" style="width:13px"></div>Read next · Bird by Bird <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12.5 6l6 6-6 6"/></svg></button>
+            <button class="like-btn"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9z"/></svg>Like</button>
+          </div>
+        </article>
+      </section>
+
+      <section>
+        <div class="row"><h2 class="kicker" style="margin:0">On your shelf</h2><span style="font-size:9.5px;color:var(--ink-soft)">+ Add a book</span></div>
+        <div class="shelf-grid">
+          <div class="item"><div class="cover"><div class="sun"></div><div class="ring-1"></div><div class="band"></div><div class="sheen"></div><div class="print"><div class="print-top"><svg width="8" height="8" viewBox="0 0 24 24" fill="none"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg><span class="pin"></span></div><div><p class="author">Rick Rubin</p><p class="title">The Creative Act</p></div></div></div><p class="t">The Creative Act</p><p class="p">68% read</p><button class="rm">Remove</button></div>
+          <div class="item"><div class="cover habits"><div class="sheen"></div><div class="print"><div class="print-top"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" style="color:#9c4224"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg><span class="pin" style="background:#9c4224"></span></div><div><p class="author">James Clear</p><p class="title">Atomic Habits</p></div></div></div><p class="t">Atomic Habits</p><p class="p">24% read</p><button class="rm">Remove</button></div>
+          <div class="item"><div class="cover bird"><div class="sheen"></div><div class="print"><div class="print-top"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" style="color:#f4eadb"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z" fill="currentColor"/></svg><span class="pin" style="background:rgba(244,234,219,.6)"></span></div><div><p class="author">Anne Lamott</p><p class="title">Bird by Bird</p></div></div></div><p class="t">Bird by Bird</p><p class="p">12% read</p><button class="rm">Remove</button></div>
+        </div>
+      </section>
+
+      <p class="footnote">Saved with care</p>
+      <div style="height:12px"></div>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <a href="#home"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
+      <a href="#reels"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M10.5 9.2l4.5 2.8-4.5 2.8z"/></svg>Reels</a>
+      <a href="#saved" aria-current="page"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</a>
+      <a href="#me"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.6-3.3 3.4-5.4 7-5.4s6.4 2.1 7 5.4"/></svg>Me</a>
+    </nav>
+  </div>
+</section>
+
+<!-- ============================= ME ============================= -->
+<section class="frame">
+  <div class="frame-label">Me</div>
+  <div class="phone">
+    <div class="screen">
+      <header class="me-head">
+        <div><p class="kicker">Your space</p><h1>Me</h1></div>
+        <span class="me-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z"/></svg>Curious reader</span>
+      </header>
+
+      <section class="profile">
+        <div class="profile-top">
+          <div class="profile-avatar">MC<span class="spark"><svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1c.66 5.5 4.84 9.68 10.34 10.34C16.84 12 12.66 16.18 12 21.68 11.34 16.18 7.16 12 1.66 11.34 7.16 10.68 11.34 6.5 12 1Z"/></svg></span></div>
+          <div style="min-width:0;flex:1">
+            <h2 class="profile-name">Maya Chen <button class="edit-btn" aria-label="Edit name"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16z"/></svg></button></h2>
+            <p class="reader-since">Reader since March 2024</p>
+            <p class="bio">“Collecting ideas, one page at a time.”</p>
+          </div>
+        </div>
+        <div class="stats">
+          <div><p class="v">14</p><p class="l">Books read</p></div>
+          <div><p class="v">12</p><p class="l">Day streak</p></div>
+          <div><p class="v">3</p><p class="l">Saved</p></div>
+        </div>
+      </section>
+
+      <section class="goal grain">
+        <div class="halo"></div>
+        <div class="goal-inner">
+          <div class="ring">
+            <svg width="62" height="62" viewBox="0 0 64 64">
+              <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(244,239,229,.16)" stroke-width="5"/>
+              <circle cx="32" cy="32" r="26" fill="none" stroke="#e2603a" stroke-width="5" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="106.2"/>
+            </svg>
+            <div class="pct"><b>65%</b><span>of goal</span></div>
+          </div>
+          <div style="min-width:0;flex:1">
+            <p class="goal-label">2025 reading goal</p>
+            <p class="goal-value">13 <span>of</span> 20 books</p>
+            <p class="goal-note">Seven to go — you’re ahead of schedule.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="week-card">
+        <div class="week-head">
+          <span class="week-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-3 2-5 5-9z"/></svg>12 day reading streak</span>
+          <span class="week-best">Personal best: 21</span>
+        </div>
+        <div class="week-days">
+          <div class="day"><span class="d done"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4 10-10"/></svg></span><span class="n">M</span></div>
+          <div class="day"><span class="d today">T</span><span class="n">T</span></div>
+          <div class="day"><span class="d">W</span><span class="n">W</span></div>
+          <div class="day"><span class="d">T</span><span class="n">T</span></div>
+          <div class="day"><span class="d">F</span><span class="n">F</span></div>
+          <div class="day"><span class="d">S</span><span class="n">S</span></div>
+          <div class="day"><span class="d">S</span><span class="n">S</span></div>
+        </div>
+      </section>
+
+      <section class="current">
+        <div class="row"><h2 class="kicker" style="margin:0">Currently reading</h2><span style="font-size:9px;color:var(--ink-soft)">Your shelf</span></div>
+        <button class="current-card">
+          <div class="cover habits"><div class="sheen"></div><div class="print"><div class="print-top"><span class="pin" style="background:#9c4224"></span></div><div><p class="author">James Clear</p><p class="title">Atomic Habits</p></div></div></div>
+          <div style="min-width:0;flex:1">
+            <p class="title">Atomic Habits</p>
+            <p class="author">James Clear</p>
+            <div class="bar"><div class="t"><span style="width:24%"></span></div><em>24%</em></div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft);flex:none"><path d="M5 12h13M12.5 6l6 6-6 6"/></svg>
+        </button>
+      </section>
+
+      <section class="prefs">
+        <h2 class="kicker" style="margin:0">Preferences</h2>
+        <div class="pref-list">
+          <div class="pref"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><div class="txt"><p class="t">Daily spark</p><p class="s">A gentle quote at 8:00 AM</p></div><button class="switch on" aria-label="Daily spark"><i></i></button></div>
+          <div class="pref"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-4 0-7 6-7 6s3 6 7 6 7-6 7-6-3-6-7-6z"/><circle cx="12" cy="12" r="2"/></svg><div class="txt"><p class="t">Weekly recap</p><p class="s">Sundays · what you’ve read</p></div><button class="switch" aria-label="Weekly recap"><i></i></button></div>
+          <div class="pref"><svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg><div class="txt"><p class="t">Quiet mode</p><p class="s">No badges while you read</p></div><button class="switch on" aria-label="Quiet mode"><i></i></button></div>
+        </div>
+      </section>
+
+      <button class="link-row">
+        <svg class="ic" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+        <span class="lbl">Saved reviews <em>(3)</em></span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-soft)"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <p class="version">Spark · Version 1.0 · Made for readers</p>
+      <div style="height:12px"></div>
+    </div>
+    <nav class="nav" aria-label="Main">
+      <a href="#home"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></svg>Home</a>
+      <a href="#reels"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="3"/><path d="M10.5 9.2l4.5 2.8-4.5 2.8z"/></svg>Reels</a>
+      <a href="#saved"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg>Saved</a>
+      <a href="#me" aria-current="page"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.6-3.3 3.4-5.4 7-5.4s6.4 2.1 7 5.4"/></svg>Me</a>
+    </nav>
+  </div>
+</section>
 
 </div>
-
 </body>
 </html>

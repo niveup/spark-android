@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 
 /**
  * One cached feed/saved card (Phase 7). Columns mirror every field the UI
@@ -72,6 +73,12 @@ interface CachedItemDao {
 
     @Query("SELECT COUNT(*) FROM cached_items")
     suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM cached_items")
+    fun observeCount(): Flow<Int>
+
+    @Query("UPDATE cached_items SET saved = :saved WHERE id = :itemId")
+    suspend fun setSaved(itemId: String, saved: Boolean)
 
     @Query("DELETE FROM cached_items WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)

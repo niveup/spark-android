@@ -35,6 +35,12 @@ class FeedState {
         if (finishReason == null) finishReason = reason
     }
 
+    /** Resets the session state so a new deck or restart can be played. */
+    fun resetSession() {
+        maxReached = -1
+        finishReason = null
+    }
+
     fun toggleSave(id: String) {
         if (_saved.contains(id)) _saved.remove(id) else _saved.add(id)
     }

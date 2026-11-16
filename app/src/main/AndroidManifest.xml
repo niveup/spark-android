@@ -2,8 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Phase 4: API client needs network. No other permissions. -->
+    <!-- Phase 4: API client needs network. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Observe default-network changes so the compact offline action stays current. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Phase 6: audiobook stream playback keeps running with the screen off.
          The app streams by URL — nothing audio-shaped is stored on the device. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />

@@ -10,12 +10,22 @@ import com.spark.app.data.local.OfflineCache
 import com.spark.app.data.remote.SessionCloseRequest
 import com.spark.app.data.remote.SessionRequest
 import com.spark.app.data.remote.SparkApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.io.IOException
+
+sealed interface DeckRefreshState {
+    data object Idle : DeckRefreshState
+    data object Refreshing : DeckRefreshState
+    data class Refreshed(val cardsReady: Int, val attemptId: Long = 0L) : DeckRefreshState
+    data class RestartedOffline(val cardsReady: Int, val attemptId: Long = 0L) : DeckRefreshState
+    data class NoCards(val attemptId: Long = 0L) : DeckRefreshState
+    data class Failed(val message: String, val attemptId: Long = 0L) : DeckRefreshState
+}
 
 sealed interface FeedUiState {
     data object Loading : FeedUiState
@@ -27,7 +37,9 @@ sealed interface FeedUiState {
         val minuteLimit: Int,
         val startedAtElapsedMs: Long,
         /** True when the deck came from the Room cache (server unreachable). */
-        val offline: Boolean = false
+        val offline: Boolean = false,
+        /** Changes only when a new server deck replaces the current one. */
+        val deckGeneration: Long = 0L
     ) : FeedUiState
 }
 
@@ -47,26 +59,134 @@ class FeedViewModel(
     val state: StateFlow<FeedUiState> = _state.asStateFlow()
 
     private var openedSessionId: String? = null
+    private var sessionJob: Job? = null
+    private var loadJob: Job? = null
     private var sessionClosed = false
+    private var deckGeneration = 0L
+    private var refreshAttemptId = 0L
+
+    private val _deckRefreshState = MutableStateFlow<DeckRefreshState>(DeckRefreshState.Idle)
+    val deckRefreshState: StateFlow<DeckRefreshState> = _deckRefreshState.asStateFlow()
 
     /**
      * [refill] = true re-requests the deck with seen cards included (server
      * "refill mode": saved first, then previously read). Used by the empty
      * state's button when the 30-day no-repeat rule has nothing left to serve.
      */
-    fun load(refill: Boolean = false) {
-        _state.value = FeedUiState.Loading
-        viewModelScope.launch {
-            val token = tokens.getToken()
-            if (token == null) {
-                _state.value = FeedUiState.Error("Not logged in — log in again.")
-                return@launch
-            }
+    fun load(refill: Boolean = false, onDeckReplaced: () -> Unit = {}) {
+        loadInternal(
+            refill = refill,
+            isDeckRefresh = false,
+            onDeckReplaced = onDeckReplaced
+        )
+    }
+
+    /** Re-request the deck with seen cards eligible, then start the session from its first card. */
+    fun refreshDeck(
+        onDeckReplaced: () -> Unit = {},
+        offlineOnly: Boolean = false
+    ) {
+        loadInternal(
+            refill = true,
+            isDeckRefresh = true,
+            onDeckReplaced = onDeckReplaced,
+            offlineOnly = offlineOnly
+        )
+    }
+
+    private fun loadInternal(
+        refill: Boolean,
+        isDeckRefresh: Boolean,
+        onDeckReplaced: () -> Unit,
+        offlineOnly: Boolean = false
+    ) {
+        loadJob?.cancel()
+        val attemptId = if (isDeckRefresh) ++refreshAttemptId else 0L
+        _deckRefreshState.value = if (isDeckRefresh) {
+            DeckRefreshState.Refreshing
+        } else {
+            DeckRefreshState.Idle
+        }
+        loadJob = viewModelScope.launch {
             val cardLimit = settings.cardLimit
             val minuteLimit = settings.minuteLimit
             val startedAt = SystemClock.elapsedRealtime()
-            openedSessionId = openSession(token, cardLimit, minuteLimit)
+
+            if (offlineOnly) {
+                // An explicit offline refresh should use Room immediately instead
+                // of waiting for the network connect timeout before falling back.
+                val cachedCards = feedItemsToCards(offline.feedDtos())
+                val currentCards = (_state.value as? FeedUiState.Content)?.cards.orEmpty()
+                val restartCards = cachedCards.ifEmpty { currentCards }
+                if (restartCards.isEmpty()) {
+                    val message = "Couldn't connect, and there isn't a saved deck to restart yet."
+                    if (_state.value !is FeedUiState.Content) {
+                        _state.value = FeedUiState.Error(message)
+                    }
+                    if (isDeckRefresh) {
+                        _deckRefreshState.value = DeckRefreshState.Failed(message, attemptId)
+                    }
+                    return@launch
+                }
+
+                sessionJob?.cancel()
+                openedSessionId = null
+                sessionClosed = false
+                onDeckReplaced()
+                val newDeckGeneration = ++deckGeneration
+                _state.value = FeedUiState.Content(
+                    cards = restartCards,
+                    cardLimit = cardLimit,
+                    minuteLimit = minuteLimit,
+                    startedAtElapsedMs = startedAt,
+                    offline = true,
+                    deckGeneration = newDeckGeneration
+                )
+                if (isDeckRefresh) {
+                    _deckRefreshState.value = DeckRefreshState.RestartedOffline(
+                        minOf(restartCards.size, cardLimit),
+                        attemptId
+                    )
+                }
+                return@launch
+            }
+
+            val token = tokens.getToken()
+            if (token == null) {
+                val message = "Not logged in — log in again."
+                _state.value = FeedUiState.Error(message)
+                if (isDeckRefresh) _deckRefreshState.value = DeckRefreshState.Failed(message, attemptId)
+                return@launch
+            }
+            // 1. Fast cache-first (stale-while-revalidate): If we have cached cards in Room
+            // and we're not forcing a refill, immediately show the cached cards so the UI renders
+            // instantaneously (<10ms) without blocking on network.
+            if (!refill && _state.value !is FeedUiState.Content) {
+                val cached = offline.feedDtos()
+                val cachedCards = feedItemsToCards(cached)
+                if (cachedCards.isNotEmpty()) {
+                    _state.value = FeedUiState.Content(
+                        cards = cachedCards,
+                        cardLimit = cardLimit,
+                        minuteLimit = minuteLimit,
+                        startedAtElapsedMs = startedAt,
+                        offline = true
+                    )
+                } else {
+                    _state.value = FeedUiState.Loading
+                }
+            } else if (refill && _state.value !is FeedUiState.Content) {
+                _state.value = FeedUiState.Loading
+            }
+
+            // 2. Open the server session concurrently. Feed fetching never waits for this.
+            openedSessionId = null
             sessionClosed = false
+            sessionJob = launch {
+                openedSessionId = openSession(token, cardLimit, minuteLimit)
+            }
+
+            // 3. Fetch the fresh ranked deck from the API.
             try {
                 val page = api.feed(
                     "Bearer $token",
@@ -75,42 +195,97 @@ class FeedViewModel(
                     excludeSeen = !refill
                 )
                 val cards = feedItemsToCards(page.data)
-                offline.saveFeed(page.data) // Phase 7: refresh the offline copy (server-wins)
+                onDeckReplaced()
+                val newDeckGeneration = ++deckGeneration
+
+                // 4. Update the UI state immediately.
                 _state.value = if (cards.isEmpty()) {
                     FeedUiState.Empty
                 } else {
-                    FeedUiState.Content(cards, cardLimit, minuteLimit, startedAt)
+                    FeedUiState.Content(
+                        cards = cards,
+                        cardLimit = cardLimit,
+                        minuteLimit = minuteLimit,
+                        startedAtElapsedMs = startedAt,
+                        offline = false,
+                        deckGeneration = newDeckGeneration
+                    )
+                }
+                if (isDeckRefresh) {
+                    _deckRefreshState.value = if (cards.isEmpty()) {
+                        DeckRefreshState.NoCards(attemptId)
+                    } else {
+                        DeckRefreshState.Refreshed(cards.size, attemptId)
+                    }
+                }
+
+                // 5. Asynchronously refresh the Room offline cache without delaying the UI.
+                launch {
+                    offline.saveFeed(page.data)
                 }
             } catch (e: HttpException) {
-                _state.value = FeedUiState.Error(
-                    if (e.code() == 401) "Session expired — log out from Me and log back in."
-                    else "Server error (${e.code()})."
-                )
+                val message = if (e.code() == 401) {
+                    "Session expired — log out from Me and log back in."
+                } else {
+                    "Server error (${e.code()})."
+                }
+                if (_state.value !is FeedUiState.Content) {
+                    _state.value = FeedUiState.Error(message)
+                }
+                if (isDeckRefresh) _deckRefreshState.value = DeckRefreshState.Failed(message, attemptId)
             } catch (_: IOException) {
-                // Phase 7: fall back to the cached deck when the server is
-                // unreachable. Seen/dwell events keep queueing locally and
-                // upload on the next successful connection.
-                val cached = offline.feedDtos()
-                val cards = feedItemsToCards(cached)
-                _state.value =
-                    if (cards.isEmpty()) {
+                if (isDeckRefresh) {
+                    // An offline refresh can still restart the last local deck.
+                    // Prefer Room's snapshot, then the deck already visible in memory.
+                    val cachedCards = feedItemsToCards(offline.feedDtos())
+                    val currentCards = (_state.value as? FeedUiState.Content)?.cards.orEmpty()
+                    val restartCards = cachedCards.ifEmpty { currentCards }
+                    if (restartCards.isNotEmpty()) {
+                        val newDeckGeneration = ++deckGeneration
+                        onDeckReplaced()
+                        _state.value = FeedUiState.Content(
+                            cards = restartCards,
+                            cardLimit = cardLimit,
+                            minuteLimit = minuteLimit,
+                            startedAtElapsedMs = startedAt,
+                            offline = true,
+                            deckGeneration = newDeckGeneration
+                        )
+                        _deckRefreshState.value = DeckRefreshState.RestartedOffline(
+                            minOf(restartCards.size, cardLimit),
+                            attemptId
+                        )
+                    } else {
+                        val message = "Couldn't connect, and there isn't a saved deck to restart yet."
+                        if (_state.value !is FeedUiState.Content) {
+                            _state.value = FeedUiState.Error(message)
+                        }
+                        _deckRefreshState.value = DeckRefreshState.Failed(message, attemptId)
+                    }
+                } else if (_state.value !is FeedUiState.Content) {
+                    // If the server is unreachable before any content appears, fall back to Room.
+                    val cached = offline.feedDtos()
+                    val cards = feedItemsToCards(cached)
+                    _state.value = if (cards.isEmpty()) {
                         FeedUiState.Error(
-                            "Can't reach your PC. Check the USB cable and that the API server is running."
+                            "Couldn't connect to SPARK. Check your internet connection and try again."
                         )
                     } else {
                         FeedUiState.Content(cards, cardLimit, minuteLimit, startedAt, offline = true)
                     }
+                }
             }
         }
     }
 
     /** Close the server session once (best-effort — the phone may be offline). */
     fun closeSession(reason: FinishReason, itemsSeen: Int) {
-        val sessionId = openedSessionId ?: return
         if (sessionClosed) return
         sessionClosed = true
         viewModelScope.launch {
             val token = tokens.getToken() ?: return@launch
+            sessionJob?.join()
+            val sessionId = openedSessionId ?: return@launch
             try {
                 api.closeSession(
                     "Bearer $token",

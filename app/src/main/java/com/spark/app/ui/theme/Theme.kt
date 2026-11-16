@@ -4,57 +4,46 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
-/*
- * SPARK dark theme — complete Material 3 token set.
- *
- * Design rules used here (keep them when adding colors later):
- *  1. One accent only: amber ("spark"). Everything else is neutral.
- *  2. Neutrals are WARM (slightly brown) so they sit next to amber without clashing.
- *  3. Elevation is expressed with surface*Container tones, never with shadows.
- *     Low = closer to background, Highest = a card popping above the page.
- *  4. Text: onSurface for body, onSurfaceVariant for supporting text,
- *     primary for a few short labels only (never for paragraphs).
- *  5. Contrast floor: body text is ~13:1 on background, secondary ~7:1.
- */
-
-// ---- Accent: amber ------------------------------------------------------
-private val Amber = Color(0xFFFFB454)          // primary text/button accent
-private val OnAmber = Color(0xFF3A2100)        // text on top of amber
-private val AmberContainer = Color(0xFF5A3200) // filled chip / selected state
+// SPARK opens in its quiet, warm dark theme. Amber carries the main actions;
+// forest and teal support the reading surfaces and positive feedback.
+private val Amber = Color(0xFFFFB454)
+private val OnAmber = Color(0xFF3A2100)
+private val AmberContainer = Color(0xFF5A3200)
 private val OnAmberContainer = Color(0xFFFFDDB8)
-private val AmberDim = Color(0xFF8F5B00)       // inversePrimary (snackbars)
+private val AmberDim = Color(0xFF8F5B00)
 
-// ---- Accent 2: sand -----------------------------------------------------
 private val Sand = Color(0xFFDCC7AE)
 private val OnSand = Color(0xFF3A2E22)
 private val SandContainer = Color(0xFF524437)
 private val OnSandContainer = Color(0xFFFFDDBF)
 
-// ---- Accent 3: teal (secondary feedback, e.g. correct answers) ----------
 private val Teal = Color(0xFFA6D8C4)
 private val OnTeal = Color(0xFF00382C)
 private val TealContainer = Color(0xFF1E4F42)
 private val OnTealContainer = Color(0xFFC6F3DF)
 
-// ---- Warm neutrals ------------------------------------------------------
-private val Ink = Color(0xFF0E0D0C)            // window background
-private val Page = Color(0xFF121110)           // background / surface
-private val Raise1 = Color(0xFF1A1817)         // surfaceContainerLow
-private val Raise2 = Color(0xFF1E1C1B)         // surfaceContainer
-private val Raise3 = Color(0xFF242220)         // surfaceContainerHigh
-private val Raise4 = Color(0xFF2F2C2A)         // surfaceContainerHighest
-private val OnPage = Color(0xFFECE6E0)         // primary text
-private val OnPageDim = Color(0xFFCFC7BE)      // secondary text
-private val Variant = Color(0xFF49433C)        // surfaceVariant
+private val Ink = Color(0xFF0E0D0C)
+private val Page = Color(0xFF121110)
+private val Raise1 = Color(0xFF1A1817)
+private val Raise2 = Color(0xFF1E1C1B)
+private val Raise3 = Color(0xFF242220)
+private val Raise4 = Color(0xFF2F2C2A)
+private val OnPage = Color(0xFFECE6E0)
+private val OnPageDim = Color(0xFFCFC7BE)
+private val Variant = Color(0xFF49433C)
 private val Outline = Color(0xFF998F86)
-private val OutlineFaint = Color(0xFF49433D)   // outlineVariant (dividers)
+private val OutlineFaint = Color(0xFF49433D)
 
-// ---- Error --------------------------------------------------------------
-private val Err = Color(0xFFFFB4AB)
-private val OnErr = Color(0xFF690005)
-private val ErrContainer = Color(0xFF93000A)
-private val OnErrContainer = Color(0xFFFFDAD6)
+private val Error = Color(0xFFFFB4AB)
+private val OnError = Color(0xFF690005)
+private val ErrorContainer = Color(0xFF93000A)
+private val OnErrorContainer = Color(0xFFFFDAD6)
 
 private val SparkColors = darkColorScheme(
     primary = Amber,
@@ -75,7 +64,6 @@ private val SparkColors = darkColorScheme(
 
     background = Page,
     onBackground = OnPage,
-
     surface = Page,
     onSurface = OnPage,
     surfaceVariant = Variant,
@@ -92,12 +80,9 @@ private val SparkColors = darkColorScheme(
 
     outline = Outline,
     outlineVariant = OutlineFaint,
-
     inverseSurface = OnPage,
     inverseOnSurface = Ink,
 
-    // Fixed tones (never change between light/dark) — kept in the amber family
-    // so no default Material purple can leak into a component.
     primaryFixed = OnAmberContainer,
     primaryFixedDim = Amber,
     onPrimaryFixed = OnAmber,
@@ -111,13 +96,92 @@ private val SparkColors = darkColorScheme(
     onTertiaryFixed = OnTeal,
     onTertiaryFixedVariant = TealContainer,
 
-    error = Err,
-    onError = OnErr,
-    errorContainer = ErrContainer,
-    onErrorContainer = OnErrContainer,
-
+    error = Error,
+    onError = OnError,
+    errorContainer = ErrorContainer,
+    onErrorContainer = OnErrorContainer,
     scrim = Color.Black,
 )
+
+/** Shared page rhythm for Home, Saved, and Me. */
+object SparkSpacing {
+    val pageGutter = 20.dp
+    val screenTop = 8.dp
+    val sectionGap = 16.dp
+    val cardInset = 16.dp
+    val contentGap = 8.dp
+    val rowGap = 12.dp
+    val labelGap = 4.dp
+}
+
+/** Shared editorial type styles used by the dashboard and library screens. */
+object SparkType {
+    val kicker = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 11.sp,
+        lineHeight = 15.sp,
+        letterSpacing = 1.1.sp
+    )
+    val pageTitle = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 28.sp,
+        lineHeight = 30.sp,
+        letterSpacing = (-1).sp
+    )
+    val homeHeadline = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 30.sp,
+        lineHeight = 31.sp,
+        letterSpacing = (-1.05).sp
+    )
+    val displaySmall = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 15.sp,
+        lineHeight = 21.sp
+    )
+    val cardTitle = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 20.sp,
+        lineHeight = 22.sp,
+        letterSpacing = (-0.5).sp
+    )
+    val quote = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 18.5.sp,
+        lineHeight = 24.5.sp,
+        letterSpacing = (-0.2).sp
+    )
+    val quoteSmall = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 19.sp
+    )
+    val body = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+        lineHeight = 21.sp
+    )
+    val meta = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+        lineHeight = 16.sp
+    )
+    val compactMeta = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 11.sp,
+        lineHeight = 15.sp
+    )
+}
 
 @Composable
 fun SparkTheme(content: @Composable () -> Unit) {

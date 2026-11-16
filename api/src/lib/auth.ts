@@ -32,11 +32,16 @@ export async function requireAuth(req: Request): Promise<Authed | null> {
   const tokenHash = hashToken(match[1]);
   const row = await db.deviceToken.findUnique({ where: { tokenHash } });
   if (!row || row.revokedAt) return null;
-  if (row.expiresAt.getTime() < Date.now()) return null;
-  await db.deviceToken.update({
-    where: { id: row.id },
-    data: { lastUsedAt: new Date() },
-  });
+  const now = Date.now();
+  if (row.expiresAt.getTime() < now) return null;
+  if (!row.lastUsedAt || now - row.lastUsedAt.getTime() > 5 * 60 * 1000) {
+    db.deviceToken
+      .update({
+        where: { id: row.id },
+        data: { lastUsedAt: new Date(now) },
+      })
+      .catch(() => {});
+  }
   return { tokenId: row.id, tokenHash };
 }
 
@@ -57,6 +62,11 @@ export function rateLimited(key: string, maxPerMinute: number): boolean {
   }
   list.push(now);
   hits.set(key, list);
+  if (hits.size > 200) {
+    for (const [k, v] of hits) {
+      if (v.every((t) => t <= windowStart)) hits.delete(k);
+    }
+  }
   return false;
 }
 

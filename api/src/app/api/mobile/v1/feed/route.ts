@@ -28,12 +28,14 @@ export async function GET(req: Request) {
   if (!parsed.success) return fail("VALIDATION", "Bad query params.");
   const q = parsed.data;
 
-  const items = await db.feedItem.findMany({
-    where: { status: "published" },
-    include: { book: true },
-    orderBy: { publishedAt: "asc" },
-  });
-  const states = await db.itemState.findMany({ where: { tokenHash: authed.tokenHash } });
+  const [items, states] = await Promise.all([
+    db.feedItem.findMany({
+      where: { status: "published" },
+      include: { book: true },
+      orderBy: { publishedAt: "asc" },
+    }),
+    db.itemState.findMany({ where: { tokenHash: authed.tokenHash } }),
+  ]);
   const statesById = new Map(states.map((s) => [s.itemId, s]));
 
   // excludeSeen=false is refill mode: seen cards are eligible again (saved

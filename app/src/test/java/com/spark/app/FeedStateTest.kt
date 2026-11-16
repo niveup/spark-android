@@ -38,6 +38,19 @@ class FeedStateTest {
     }
 
     @Test
+    fun `resetSession makes a completed deck readable again`() {
+        val state = FeedState()
+        state.onPageSettled(19)
+        state.finish(FinishReason.CARD_LIMIT)
+
+        state.resetSession()
+
+        assertFalse(state.done)
+        assertEquals(0, state.seenCount)
+        assertNull(state.finishReason)
+    }
+
+    @Test
     fun `save toggles on and off`() {
         val state = FeedState()
         state.toggleSave("cuid_3")

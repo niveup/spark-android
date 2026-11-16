@@ -17,8 +17,8 @@ val sparkJson: Json = Json {
 fun buildSparkApi(baseUrl: String = BuildConfig.API_BASE_URL): SparkApi {
     val url = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
     val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(3, TimeUnit.SECONDS)
+        .readTimeout(8, TimeUnit.SECONDS)
         .build()
     return Retrofit.Builder()
         .baseUrl(url)

@@ -1,56 +1,56 @@
 package com.spark.app.home
 
-import android.app.Activity
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -58,132 +58,130 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
-import com.spark.app.R
 import com.spark.app.data.Card
+import com.spark.app.ui.OfflineConnectivityButton
 import com.spark.app.data.CardType
+import com.spark.app.R
+import com.spark.app.ui.theme.SparkSpacing
+import com.spark.app.ui.theme.SparkType
 import com.spark.app.ui.theme.SparkTheme
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /*
- * SPARK Home.
+ * Home uses the shared charcoal surfaces, warm paper text, forest reading card,
+ * and amber action color. Display text uses Android's platform serif.
  *
- * Home is a reading dashboard: a real next card, a finite-session snapshot,
- * and shortcuts to content the reader has already saved.
- *
- * Feed/session facts come from local state. The hero illustration is a native
- * Android vector drawable, so it stays crisp at every screen density.
+ * Interactions use short, quiet press feedback. The tab transition owns screen
+ * movement; the Home content itself stays still so it is ready when selected.
  */
 
+private val Page = Color(0xFF121110)
+private val Paper = Color(0xFFECE6E0)
+private val PaperDeep = Color(0xFF242220)
+private val CardBg = Color(0xFF1A1817)
+private val Ink = Color(0xFFECE6E0)
+private val InkSoft = Color(0xFFCFC7BE)
+private val Line = Color(0xFF49433D)
+private val Ember = Color(0xFFFFB454)
+private val Forest = Color(0xFF214A36)
+private val ForestDeep = Color(0xFF0E0D0C)
+private val SageSoft = Color(0xFF1E4F42)
+private val SageAccent = Color(0xFFA6D8C4)
 
-private val SparkGold = Color(0xFFF5A844)
+private val Display = FontFamily.Serif
+private val Sans = FontFamily.SansSerif
 
-private val TextPrimary = Color(0xFFECE6E0)
-private val TextSecondary = Color(0xFFC3BBB1)
-private val TextTertiary = Color(0xFF9C9289)
+private val Gutter = SparkSpacing.pageGutter
 
-private val Gutter = 20.dp
+private val KickerStyle = SparkType.kicker
+private val HeadlineStyle = SparkType.homeHeadline
+private val CardTitleStyle = SparkType.cardTitle
+private val QuoteStyle = SparkType.quote
+private val QuoteSmallStyle = SparkType.quoteSmall
+private val BodyStyle = SparkType.body
+private val TinyStyle = SparkType.compactMeta
 
-/** The one person this app is for. */
-private const val OWNER_NAME = "Satyam"
+/**
+ * A small, quiet press response for Home actions. The spring settles without
+ * overshoot so a fast sequence of taps stays calm and predictable.
+ */
+@Composable
+private fun Modifier.pressFeedback(
+    scaleDown: Float = 0.98f,
+    enabled: Boolean = true,
+    role: Role = Role.Button,
+    contentDescription: String? = null,
+    onClick: () -> Unit
+): Modifier {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val haptics = LocalHapticFeedback.current
+    val scale by animateFloatAsState(
+        targetValue = if (pressed && enabled) scaleDown else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "homePressScale"
+    )
 
-private val LabelStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
-    fontWeight = FontWeight.Medium,
-    fontSize = 11.5.sp,
-    lineHeight = 15.sp,
-    letterSpacing = 0.1.sp
-)
-
-private val QuoteStyle = TextStyle(
-    fontFamily = FontFamily.Serif,
-    fontWeight = FontWeight.Normal,
-    fontSize = 17.5.sp,
-    lineHeight = 26.sp,
-    letterSpacing = (-0.1).sp
-)
-
-private val ActionStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
-    fontWeight = FontWeight.Normal,
-    fontSize = 13.5.sp,
-    lineHeight = 20.sp
-)
-
-private val CaptionStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
-    fontWeight = FontWeight.Normal,
-    fontSize = 12.5.sp,
-    lineHeight = 18.sp
-)
-
-private val DailyQuoteStyle = TextStyle(
-    fontFamily = FontFamily.Serif,
-    fontWeight = FontWeight.Normal,
-    fontSize = 17.sp,
-    lineHeight = 26.sp,
-    letterSpacing = (-0.1).sp
-)
-
-private val CiteStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
-    fontWeight = FontWeight.Normal,
-    fontSize = 12.sp,
-    lineHeight = 16.sp
-)
-
-private val BodyStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
-    fontWeight = FontWeight.Normal,
-    fontSize = 14.sp,
-    lineHeight = 22.sp
-)
-
-private val DatelineDayStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
-    fontWeight = FontWeight.Medium,
-    fontSize = 11.5.sp,
-    lineHeight = 14.sp
-)
-
-private val DatelineDateStyle = TextStyle(
-    fontFamily = FontFamily.SansSerif,
-    fontWeight = FontWeight.SemiBold,
-    fontSize = 14.sp,
-    lineHeight = 18.sp,
-    letterSpacing = (-0.1).sp
-)
+    return this
+        .graphicsLayer {
+            scaleX = scale
+            scaleY = scale
+        }
+        .clickable(
+            interactionSource = interaction,
+            indication = null,
+            enabled = enabled,
+            role = role,
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                onClick()
+            }
+        )
+        .then(
+            if (contentDescription != null) {
+                Modifier.semantics(mergeDescendants = true) {
+                    this.contentDescription = contentDescription
+                    this.role = role
+                }
+            } else Modifier
+        )
+}
 
 @Composable
 fun HomeScreen(
@@ -192,815 +190,554 @@ fun HomeScreen(
     cardLimit: Int,
     minuteLimit: Int,
     modifier: Modifier = Modifier,
+    offline: Boolean = false,
+    onRetryConnection: () -> Unit = {},
     deckSize: Int? = null,
+    deckErrorMessage: String? = null,
+    onRetryDeck: (() -> Unit)? = null,
     nextCard: Card? = null,
     dailyQuote: Card? = null,
+    bottomClearance: Dp = 100.dp,
     onOpenReels: () -> Unit,
-    onOpenSaved: () -> Unit
+    onOpenSaved: () -> Unit,
+    onOpenMe: () -> Unit = {}
 ) {
-    val greeting = remember {
-        when (LocalTime.now().hour) {
-            in 5..11 -> "Good morning"
-            in 12..16 -> "Good afternoon"
-            in 17..21 -> "Good evening"
-            else -> "Late night"
-        }
+    val locale = LocalLocale.current.platformLocale
+    val today = remember(locale) { LocalDate.now() }
+    val dateLabel = remember(today, locale) {
+        today.format(DateTimeFormatter.ofPattern("EEEE, MMMM d", locale))
     }
-    val today = remember { LocalDate.now() }
-    val dayName = remember {
-        today.format(DateTimeFormatter.ofPattern("EEEE", Locale.getDefault()))
-    }
-    val dateLabel = remember {
-        today.format(DateTimeFormatter.ofPattern("d MMMM", Locale.getDefault()))
-    }
-
     val sessionTotal = when {
-        deckSize == null -> cardLimit
-        deckSize <= 0 -> 0
+        deckSize == null || deckSize <= 0 -> 0
         else -> deckSize.coerceAtMost(cardLimit)
     }
-    val hasCards = sessionTotal > 0
-    val complete = hasCards && seenCount >= sessionTotal
+    val fraction = if (sessionTotal <= 0) 0f else (seenCount.toFloat() / sessionTotal).coerceIn(0f, 1f)
 
-    val ctaLabel = when {
-        !hasCards -> "Open feed"
-        complete && savedCount > 0 -> "Review saved cards"
-        complete -> "Open feed"
-        seenCount > 0 -> "Continue session"
-        else -> "Start today's session"
-    }
-    val ctaAction = if (complete && savedCount > 0) onOpenSaved else onOpenReels
+    // The session bar fills with a soft spring, so starting the day has a
+    // little give instead of jumping straight to its width.
+    val animatedFraction by animateFloatAsState(
+        targetValue = fraction,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "sessionProgress"
+    )
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF101614),
-                        Color(0xFF12151A),
-                        Color(0xFF171513)
-                    )
-                )
-            )
+            .background(Page)
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = Gutter)
     ) {
-        Spacer(modifier = Modifier.height(22.dp))
+        Column(modifier = Modifier.padding(horizontal = Gutter)) {
+            // Lifted a few pixels higher for a tighter, cleaner top header anchor
+            Spacer(Modifier.height(6.dp))
 
-        DatelineHeader(dayName = dayName, dateLabel = dateLabel)
+            HomeHeader(
+                savedCount = savedCount,
+                offline = offline,
+                onRetryConnection = onRetryConnection,
+                onOpenMe = onOpenMe,
+                onOpenSaved = onOpenSaved
+            )
 
-        Spacer(modifier = Modifier.height(26.dp))
+            Spacer(Modifier.height(20.dp))
 
-        Greeting(greeting = greeting)
-        Spacer(modifier = Modifier.height(18.dp))
+            Lede(dateLabel = dateLabel)
 
-        HomeHero(
-            card = nextCard,
-            seenCount = seenCount,
-            total = sessionTotal,
-            minuteLimit = minuteLimit,
-            complete = complete,
-            hasCards = hasCards,
-            ctaLabel = ctaLabel,
-            onCta = ctaAction
-        )
+            Spacer(Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
+            if (deckSize == null) {
+                HomeStateBlock(
+                    title = "Loading your deck",
+                    message = "Your reading deck will appear here as soon as it’s ready.",
+                    loading = true
+                )
+            } else if (deckErrorMessage != null) {
+                HomeStateBlock(
+                    title = "Your deck couldn’t load",
+                    message = deckErrorMessage,
+                    actionLabel = if (onRetryDeck != null) "Try again" else null,
+                    onAction = onRetryDeck
+                )
+            } else if (deckSize == 0) {
+                HomeStateBlock(
+                    title = "No cards in the deck",
+                    message = "Refresh your deck from Me when you’re ready.",
+                    actionLabel = "Open Me",
+                    onAction = onOpenMe
+                )
+            } else if (nextCard != null) {
+                SectionHead(
+                    title = "Today’s pick",
+                    action = "Your shelf",
+                    onAction = onOpenSaved
+                )
+                Spacer(Modifier.height(SparkSpacing.rowGap))
+                PickCard(
+                    card = nextCard,
+                    fraction = animatedFraction,
+                    seenCount = seenCount,
+                    total = sessionTotal,
+                    minuteLimit = minuteLimit,
+                    onClick = onOpenReels
+                )
+            } else {
+                HomeStateBlock(
+                    title = "You’re done for now",
+                    message = "Your session limit is reached. Save an idea to revisit, or come back later.",
+                    actionLabel = "Review saved ideas",
+                    onAction = onOpenSaved
+                )
+            }
 
-        SessionBar(seenCount = seenCount, total = sessionTotal, minuteLimit = minuteLimit)
+            if (dailyQuote != null && deckSize != null && deckErrorMessage == null) {
+                Spacer(Modifier.height(SparkSpacing.sectionGap))
+                SectionHead(title = "Saved review", action = "01 / 01", onAction = null)
+                Spacer(Modifier.height(SparkSpacing.rowGap))
+                QuoteCard(card = dailyQuote)
+            }
 
-        Spacer(modifier = Modifier.height(12.dp))
-        SavedRow(count = savedCount, onClick = onOpenSaved)
-
-        if (dailyQuote != null) {
-            Spacer(modifier = Modifier.height(12.dp))
-            TodayLine(card = dailyQuote)
+            // Bottom clearance so content scrolls comfortably above the floating glass nav bar
+            Spacer(Modifier.height(bottomClearance))
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 
-/** Wordmark on the left, a two-line dateline on the right, both on one baseline. */
 @Composable
-private fun DatelineHeader(dayName: String, dateLabel: String) {
+private fun HomeHeader(
+    savedCount: Int,
+    offline: Boolean,
+    onRetryConnection: () -> Unit,
+    onOpenMe: () -> Unit = {},
+    onOpenSaved: () -> Unit = {}
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Bottom
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Image(
-            painter = painterResource(id = R.drawable.ic_spark_wordmark),
+            painter = painterResource(R.drawable.ic_spark_wordmark),
             contentDescription = "SPARK",
+            colorFilter = ColorFilter.tint(Ink),
             modifier = Modifier.height(21.dp)
         )
 
-        Column(horizontalAlignment = Alignment.End) {
-            Text(text = dayName, style = DatelineDayStyle, color = TextTertiary)
-            Spacer(modifier = Modifier.height(3.dp))
-            Text(text = dateLabel, style = DatelineDateStyle, color = TextPrimary)
-        }
-    }
-}
-
-/** A short welcome plus a clear statement of what this screen is for. */
-@Composable
-private fun Greeting(greeting: String) {
-    Column {
-        Text(
-            text = buildAnnotatedString {
-                withStyle(SpanStyle(color = TextSecondary, fontWeight = FontWeight.Medium)) {
-                    append("$greeting, ")
-                }
-                withStyle(SpanStyle(color = SparkGold, fontWeight = FontWeight.SemiBold)) {
-                    append(OWNER_NAME)
-                }
-            },
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
-            letterSpacing = 0.sp
-        )
-        Spacer(modifier = Modifier.height(5.dp))
-        Text(
-            text = "Your reading space is ready.",
-            fontSize = 15.sp,
-            lineHeight = 21.sp,
-            color = TextTertiary
-        )
-    }
-}
-
-/** A vivid lead panel, with a real deck item and an expandable reading peek. */
-@Composable
-private fun HomeHero(
-    card: Card?,
-    seenCount: Int,
-    total: Int,
-    minuteLimit: Int,
-    complete: Boolean,
-    hasCards: Boolean,
-    ctaLabel: String,
-    onCta: () -> Unit
-) {
-    val context = LocalContext.current
-    val haptics = LocalHapticFeedback.current
-    var expanded by rememberSaveable(card?.id) { mutableStateOf(false) }
-    val shape = RoundedCornerShape(26.dp)
-
-    Surface(
-        shape = shape,
-        color = Color.Transparent,
-        border = BorderStroke(1.dp, Color(0x4D9BC6B4)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Box(
-            modifier = Modifier
-                .clip(shape)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFF183A34),
-                            Color(0xFF244C45),
-                            Color(0xFF3E4537)
-                        )
-                    )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (offline) {
+                OfflineConnectivityButton(
+                    onRetry = onRetryConnection,
+                    modifier = Modifier.size(48.dp),
+                    description = "Offline. Tap to retry Home and check the connection."
                 )
-        ) {
+                Spacer(Modifier.width(4.dp))
+            }
+
+            // The shortcut opens the saved library, where search lives.
             Box(
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 16.dp, end = 24.dp)
-                    .size(152.dp)
-                    .background(Color(0x1EF4B84F), CircleShape)
-            )
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 92.dp, bottom = 42.dp)
-                    .size(100.dp)
-                    .background(Color(0x1477C6AF), CircleShape)
-            )
-
-            Column(
-                modifier = Modifier
-                    .animateContentSize(
-                        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing)
-                    )
-                    .padding(18.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .background(SparkGold, CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (card == null) "YOUR DAILY SPARK" else "UP NEXT",
-                        style = LabelStyle.copy(letterSpacing = 1.sp),
-                        color = Color(0xFFFFD99B)
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    Text(
-                        text = if (total > 0) "$seenCount / $total · $minuteLimit MIN" else "READY WHEN YOU ARE",
-                        style = LabelStyle.copy(fontSize = 10.sp),
-                        color = Color(0xFFC8DDD0)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = card?.title ?: when {
-                                complete -> "You did enough for today."
-                                !hasCards -> "A new idea is on its way."
-                                else -> "Your next idea is waiting."
-                            },
-                            fontSize = 23.sp,
-                            lineHeight = 28.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = (-0.45).sp,
-                            color = Color(0xFFFFF5E8),
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.semantics { heading() }
-                        )
-                        Spacer(modifier = Modifier.height(9.dp))
-                        if (card != null) {
-                            TopicChip(topic = card.topic, type = card.type.name)
-                        } else {
-                            Text(
-                                text = if (complete) {
-                                    "Your finite session is complete. Come back fresh tomorrow."
-                                } else {
-                                    "Open your feed for a short idea and one useful next step."
-                                },
-                                style = BodyStyle.copy(fontSize = 13.sp, lineHeight = 19.sp),
-                                color = Color(0xFFD1E0D7),
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.width(6.dp))
-                    val bookLine = card?.bookLine.orEmpty()
-                    val bookTitle = bookLine.substringBefore('\u2014').trim()
-                        .ifBlank { card?.title ?: "A thought to keep" }
-                    val bookAuthor = bookLine.substringAfter('\u2014', "").trim()
-                    FloatingBookArtwork(title = bookTitle, author = bookAuthor)
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Button(
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onCta()
-                        },
-                        modifier = Modifier.weight(1f).heightIn(min = 52.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = SparkGold,
-                            contentColor = Color(0xFF241B0C)
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(
-                            defaultElevation = 0.dp,
-                            pressedElevation = 0.dp
-                        )
-                    ) {
-                        Text(
-                            text = ctaLabel,
-                            style = TextStyle(
-                                fontFamily = FontFamily.SansSerif,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.5.sp
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Spacer(modifier = Modifier.width(7.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = null,
-                            modifier = Modifier.size(15.dp)
-                        )
-                    }
-
-                    if (card != null) {
-                        TextButton(
-                            onClick = { expanded = !expanded },
-                            modifier = Modifier.heightIn(min = 48.dp)
-                        ) {
-                            Text(
-                                text = if (expanded) "Hide peek" else "Peek inside",
-                                style = LabelStyle.copy(fontSize = 11.sp),
-                                color = Color(0xFFFFF5E8),
-                                maxLines = 1
-                            )
-                        }
-                    }
-                }
-
-                AnimatedVisibility(
-                    visible = expanded && card != null,
-                    enter = fadeIn(tween(180)) +
-                        slideInVertically(
-                            animationSpec = tween(240, easing = FastOutSlowInEasing),
-                            initialOffsetY = { height -> height / 10 }
-                        ) + expandVertically(tween(240, easing = FastOutSlowInEasing)),
-                    exit = fadeOut(tween(140)) +
-                        slideOutVertically(
-                            animationSpec = tween(170, easing = FastOutSlowInEasing),
-                            targetOffsetY = { height -> height / 12 }
-                        ) + shrinkVertically(tween(170, easing = FastOutSlowInEasing))
-                ) {
-                    card?.let { preview ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 12.dp)
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(Color(0x33243C35))
-                                .padding(14.dp)
-                        ) {
-                            Text(
-                                text = preview.body.displayBody().asQuote(),
-                                style = QuoteStyle.copy(fontSize = 16.sp, lineHeight = 23.sp),
-                                color = Color(0xFFFFF5E8),
-                                maxLines = 4,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            if (preview.actionLine.isNotBlank()) {
-                                Spacer(modifier = Modifier.height(9.dp))
-                                Text(
-                                    text = actionText(preview.actionLine),
-                                    style = ActionStyle.copy(fontSize = 12.5.sp),
-                                    color = Color(0xFFD1E0D7),
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = preview.bookLine ?: preview.source,
-                                style = LabelStyle.copy(fontSize = 10.5.sp),
-                                color = Color(0xFFFFD99B),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-
-                if (complete || !hasCards) {
-                    TextButton(
-                        onClick = { (context as? Activity)?.finishAffinity() },
-                        modifier = Modifier.fillMaxWidth().heightIn(min = 44.dp)
-                    ) {
-                        Text(
-                            text = "Close app",
-                            style = CiteStyle.copy(fontSize = 13.sp),
-                            color = Color(0xFFC8DDD0)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun TopicChip(topic: String, type: String) {
-    Surface(
-        color = SparkGold.copy(alpha = 0.12f),
-        shape = RoundedCornerShape(50.dp)
-    ) {
-        Text(
-            text = "${topic.uppercase(Locale.ROOT)}  ·  ${typeLabel(type)}",
-            style = LabelStyle.copy(fontSize = 9.5.sp, letterSpacing = 0.65.sp),
-            color = SparkGold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-        )
-    }
-}
-
-private fun typeLabel(type: String): String =
-    type.replace('_', ' ').uppercase(Locale.ROOT)
-
-/** A small, typeset hardcover with visible binding, paper edges, and a quiet floating motion. */
-@Composable
-private fun FloatingBookArtwork(title: String, author: String) {
-    val motion = rememberInfiniteTransition(label = "home-book-float")
-    val verticalDrift by motion.animateFloat(
-        initialValue = -4f,
-        targetValue = 4f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2800, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "book-vertical-drift"
-    )
-    val tilt by motion.animateFloat(
-        initialValue = -1.2f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 3600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "book-tilt"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(width = 138.dp, height = 122.dp)
-            .graphicsLayer { rotationZ = tilt }
-            .offset { IntOffset(x = 0, y = verticalDrift.dp.roundToPx()) },
-        contentAlignment = Alignment.Center
-    ) {
-        val bookShape = RoundedCornerShape(3.dp)
-        val pageShape = RoundedCornerShape(4.dp)
-
-        // The offset cream block gives the cover a real page edge and a little thickness.
-        Box(
-            modifier = Modifier
-                .offset(x = 5.dp, y = 3.dp)
-                .size(width = 98.dp, height = 108.dp)
-                .clip(pageShape)
-                .background(
-                    Brush.horizontalGradient(
-                        colors = listOf(Color(0xFFD6C7A7), Color(0xFFFFF5DD), Color(0xFFD8C9A8))
-                    )
-                )
-                .border(1.dp, Color(0xFFA99B80), pageShape)
-        ) {
-            Column(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .width(5.dp)
-                    .fillMaxHeight()
-                    .padding(vertical = 5.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                repeat(28) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(0.5.dp)
-                            .background(Color(0x557A6850))
-                    )
-                }
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .size(width = 96.dp, height = 106.dp)
-                .shadow(elevation = 8.dp, shape = bookShape)
-                .clip(bookShape)
-                .background(Color(0xFF17352F))
-        ) {
-            // The rounded spine and its fine bands make the object read as a bound volume.
-            Column(
-                modifier = Modifier
-                    .width(13.dp)
-                    .fillMaxHeight()
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(Color(0xFF102721), Color(0xFF244A40), Color(0xFF18372F))
-                        )
-                    )
-                    .padding(vertical = 7.dp, horizontal = 3.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                repeat(2) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(1.dp)
-                            .background(Color(0xFFB99A60).copy(alpha = 0.7f))
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(Color(0xFF315D50), Color(0xFF244A40), Color(0xFF19372F))
-                        )
-                    )
-                    .border(1.dp, Color(0xFFB99A60).copy(alpha = 0.55f), bookShape)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = 9.dp, end = 6.dp, top = 9.dp, bottom = 8.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "SPARK  /  READING EDITION",
-                        fontFamily = FontFamily.SansSerif,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 5.5.sp,
-                        letterSpacing = 0.55.sp,
-                        color = Color(0xFFE0C78E),
-                        maxLines = 1,
-                        overflow = TextOverflow.Clip
-                    )
-
-                    Text(
-                        text = title,
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 10.sp,
-                        lineHeight = 12.sp,
-                        letterSpacing = (-0.15).sp,
-                        color = Color(0xFFFFF4DC),
-                        maxLines = 4,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Box(
-                            modifier = Modifier
-                                .width(24.dp)
-                                .height(1.dp)
-                                .background(Color(0xFFE0C78E))
-                        )
-                        Text(
-                            text = author.ifBlank { "FIELD NOTES  ·  01" },
-                            fontFamily = FontFamily.SansSerif,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 6.sp,
-                            letterSpacing = 0.35.sp,
-                            color = Color(0xFFE0C78E),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-/** A compact dashboard card for the session limit and actual reading progress. */
-@Composable
-private fun SessionBar(seenCount: Int, total: Int, minuteLimit: Int) {
-    val isComplete = total > 0 && seenCount >= total
-    val isCaughtUp = total <= 0
-    val fraction = when {
-        isComplete -> 1f
-        isCaughtUp -> 0f
-        else -> (seenCount.toFloat() / total).coerceIn(0f, 1f)
-    }
-
-    Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = Color(0xFF202C2A),
-        border = BorderStroke(1.dp, Color(0xFF344A42))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ProgressRing(
-                progress = fraction,
-                value = seenCount,
-                description = "$seenCount of $total cards read"
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Today's rhythm",
-                    fontSize = 16.sp,
-                    lineHeight = 20.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (total > 0) "$seenCount of $total cards" else "All caught up",
-                    style = CaptionStyle,
-                    color = Color(0xFFC7D8D0)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = when {
-                        isComplete -> "Session complete · $minuteLimit min goal"
-                        isCaughtUp -> "Take a breather. Your deck is clear."
-                        else -> "${(total - seenCount).coerceAtLeast(0)} left · $minuteLimit min goal"
-                    },
-                    style = CaptionStyle.copy(fontSize = 11.5.sp),
-                    color = if (isComplete) SparkGold else Color(0xFF9CB8AA),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                shape = RoundedCornerShape(15.dp),
-                color = Color(0xFF394739)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 9.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "$minuteLimit",
-                        fontSize = 18.sp,
-                        lineHeight = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFFD99B)
-                    )
-                    Text(
-                        text = "MIN",
-                        style = LabelStyle.copy(fontSize = 8.5.sp, letterSpacing = 0.8.sp),
-                        color = Color(0xFFC7D8D0)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProgressRing(progress: Float, value: Int, description: String) {
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = 650, easing = FastOutSlowInEasing),
-        label = "home-session-progress"
-    )
-    val track = Color(0xFF52665D)
-
-    Box(
-        modifier = Modifier
-            .size(76.dp)
-            .semantics {
-                contentDescription = description
-                progressBarRangeInfo = ProgressBarRangeInfo(animatedProgress, 0f..1f)
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val stroke = 7.dp.toPx()
-            val inset = stroke / 2f
-            val arcSize = Size(size.width - stroke, size.height - stroke)
-            drawArc(
-                color = track,
-                startAngle = -90f,
-                sweepAngle = 360f,
-                useCenter = false,
-                topLeft = Offset(inset, inset),
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Round)
-            )
-            drawArc(
-                color = SparkGold,
-                startAngle = -90f,
-                sweepAngle = 360f * animatedProgress,
-                useCenter = false,
-                topLeft = Offset(inset, inset),
-                size = arcSize,
-                style = Stroke(width = stroke, cap = StrokeCap.Round)
-            )
-        }
-        Text(
-            text = value.toString(),
-            fontSize = 17.sp,
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = TextPrimary
-        )
-    }
-}
-
-/** A tappable preview of the real saved-card list. */
-@Composable
-private fun SavedRow(count: Int, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(18.dp)
-    Surface(
-        shape = shape,
-        color = Color(0xFF2A2531),
-        border = BorderStroke(1.dp, Color(0xFF493C54)),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .clickable(role = Role.Button, onClick = onClick)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 72.dp)
-                .padding(horizontal = 15.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(42.dp)
-                    .background(Color(0xFF45394F), CircleShape),
+                    .heightIn(min = 48.dp)
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, Line, CircleShape)
+                    .background(CardBg.copy(alpha = 0.7f))
+                    .pressFeedback(
+                        scaleDown = 0.96f,
+                        contentDescription = "Open saved library",
+                        onClick = onOpenSaved
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.FavoriteBorder,
                     contentDescription = null,
-                    tint = SparkGold,
+                    tint = InkSoft,
                     modifier = Modifier.size(19.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Your saved shelf",
-                    style = BodyStyle.copy(fontWeight = FontWeight.SemiBold),
-                    color = TextPrimary
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = if (count == 0) "Keep the ideas you want to revisit" else "$count ${if (count == 1) "idea" else "ideas"} to revisit",
-                    style = CaptionStyle,
-                    color = TextTertiary
-                )
-            }
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                shape = RoundedCornerShape(50.dp),
-                color = Color(0xFF45394F)
+
+            Spacer(Modifier.width(8.dp))
+
+            // Avatar button with saved-count badge & bouncy press
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Forest)
+                    .pressFeedback(
+                        scaleDown = 0.96f,
+                        contentDescription = if (savedCount > 0) {
+                            "Open profile, $savedCount saved items"
+                        } else {
+                            "Open profile"
+                        },
+                        onClick = onOpenMe
+                    ),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = count.toString(),
-                    style = BodyStyle.copy(fontWeight = FontWeight.SemiBold),
-                    color = SparkGold,
-                    modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp)
+                    text = "S",
+                    style = TextStyle(
+                        fontFamily = Display,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
+                    ),
+                    color = Paper
                 )
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = TextTertiary,
-                modifier = Modifier.size(14.dp)
-            )
         }
     }
 }
 
-/** A highlighted quote from the real deck, with its source kept in view. */
 @Composable
-private fun TodayLine(card: Card) {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF242033),
-        border = BorderStroke(1.dp, Color(0xFF453A58))
+private fun Lede(dateLabel: String) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = dateLabel,
+            style = KickerStyle,
+            color = InkSoft
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = Ink)) { append("Read one thing.\n") }
+                withStyle(SpanStyle(color = Ember, fontStyle = FontStyle.Italic)) {
+                    append("Try it today.")
+                }
+            },
+            style = HeadlineStyle,
+            modifier = Modifier.semantics { heading() }
+        )
+    }
+}
+
+@Composable
+private fun SectionHead(title: String, action: String?, onAction: (() -> Unit)?) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box {
-            Text(
-                text = "“",
-                fontFamily = FontFamily.Serif,
-                fontSize = 76.sp,
-                lineHeight = 76.sp,
-                color = Color(0xFFD8B8F0).copy(alpha = 0.15f),
-                modifier = Modifier.align(Alignment.TopEnd).padding(end = 12.dp)
-            )
-            Column(modifier = Modifier.padding(18.dp)) {
-                Text(text = "A THOUGHT TO KEEP", style = LabelStyle, color = Color(0xFFD8B8F0))
-                Spacer(modifier = Modifier.height(10.dp))
+        Text(
+        text = title.uppercase(Locale.ROOT),
+            style = KickerStyle,
+            color = InkSoft,
+            modifier = Modifier.semantics { heading() }
+        )
+        if (action != null) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .then(
+                        if (onAction != null) {
+                            Modifier.pressFeedback(
+                                scaleDown = 0.92f,
+                                contentDescription = action,
+                                onClick = onAction
+                            )
+                        } else Modifier
+                    )
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+            ) {
                 Text(
-                    text = card.body.displayBody().asQuote(),
-                    style = DailyQuoteStyle,
-                    color = TextPrimary,
-                    maxLines = 4,
-                    overflow = TextOverflow.Ellipsis
+                    text = action,
+                    style = TinyStyle.copy(fontWeight = FontWeight.Medium),
+                    color = if (onAction != null) Ember else InkSoft
                 )
-                val attribution = card.bookLine
-                if (!attribution.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+            }
+        }
+    }
+}
+
+/** The day's card: a drawn cover, the type chip, peek preview, and forward navigation. */
+@Composable
+private fun PickCard(
+    card: Card,
+    fraction: Float,
+    seenCount: Int,
+    total: Int,
+    minuteLimit: Int,
+    onClick: () -> Unit
+) {
+    var isPeekExpanded by rememberSaveable(card.id) { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+    val largeTextLayout = LocalDensity.current.fontScale >= 1.5f
+    val cardInteraction = remember { MutableInteractionSource() }
+    val isPressed by cardInteraction.collectIsPressedAsState()
+
+    val cardScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "pickCardScale"
+    )
+
+    val arrowOffset by animateDpAsState(
+        targetValue = if (isPressed) 4.dp else 0.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "arrowOffset"
+    )
+
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = CardBg,
+        border = BorderStroke(
+            1.dp,
+            if (isPressed) Line.copy(alpha = 1f) else Line.copy(alpha = 0.9f)
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer {
+                scaleX = cardScale
+                scaleY = cardScale
+            }
+            .clickable(
+                interactionSource = cardInteraction,
+                indication = null,
+                role = Role.Button,
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    onClick()
+                }
+            )
+            .semantics(mergeDescendants = true) {
+                contentDescription = buildString {
+                    append("Today's pick: ${card.title}.")
+                    if (!card.grounded) append(" AI-written, unverified.")
+                    append(" Tap to read.")
+                }
+            }
+    ) {
+        Column(modifier = Modifier.padding(SparkSpacing.cardInset)) {
+            Row {
+                if (!largeTextLayout) {
+                    PickArtwork(
+                        card = card,
+                        isPressed = isPressed,
+                        modifier = Modifier.width(84.dp)
+                    )
+                    Spacer(Modifier.width(SparkSpacing.rowGap))
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    if (largeTextLayout) {
+                        Column(verticalArrangement = Arrangement.spacedBy(SparkSpacing.labelGap)) {
+                            Text(
+                                text = card.type.label().uppercase(Locale.ROOT),
+                                style = TinyStyle.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 1.1.sp,
+                                    fontSize = 11.sp
+                                ),
+                                color = SageAccent,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(SageSoft)
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                            if (card.topic.isNotBlank()) {
+                                Text(
+                                    text = card.topic,
+                                    style = TinyStyle,
+                                    color = InkSoft,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = card.type.label().uppercase(Locale.ROOT),
+                                style = TinyStyle.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 1.1.sp,
+                                    fontSize = 11.sp
+                                ),
+                                color = SageAccent,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(100.dp))
+                                    .background(SageSoft)
+                                    .padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                            if (card.topic.isNotBlank()) {
+                                Text(text = card.topic, style = TinyStyle, color = InkSoft)
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(SparkSpacing.contentGap))
+
+                    Text(
+                        text = card.title,
+                        style = CardTitleStyle,
+                        color = Ink,
+                        maxLines = if (largeTextLayout) Int.MAX_VALUE else 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(Modifier.height(SparkSpacing.labelGap))
+
+                    Text(
+                        text = if (!card.grounded) {
+                            "AI-written, unverified"
+                        } else {
+                            card.bookLine?.let { bookTitle(it) } ?: cleanSource(card.source)
+                        },
+                        style = BodyStyle,
+                        color = InkSoft,
+                        maxLines = if (largeTextLayout) 3 else 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Spacer(Modifier.height(SparkSpacing.rowGap))
+
+                    if (largeTextLayout) {
+                        Column(verticalArrangement = Arrangement.spacedBy(SparkSpacing.labelGap)) {
+                            Text("$seenCount of $total read", style = TinyStyle, color = InkSoft)
+                            Text("$minuteLimit min limit", style = TinyStyle, color = InkSoft)
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("$seenCount of $total read", style = TinyStyle, color = InkSoft)
+                            Text("$minuteLimit min limit", style = TinyStyle, color = InkSoft)
+                        }
+                    }
+
+                    Spacer(Modifier.height(SparkSpacing.contentGap))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(PaperDeep)
+                            .semantics {
+                                contentDescription = "Reading session progress"
+                                stateDescription = "$seenCount of $total cards read"
+                                progressBarRangeInfo = ProgressBarRangeInfo(
+                                    current = fraction.coerceIn(0f, 1f),
+                                    range = 0f..1f
+                                )
+                            }
+                    ) {
                         Box(
                             modifier = Modifier
-                                .width(12.dp)
-                                .height(2.dp)
-                                .background(SparkGold)
+                                .fillMaxWidth(fraction.coerceIn(0f, 1f))
+                                .fillMaxSize()
+                                .clip(RoundedCornerShape(100.dp))
+                                .background(Ember)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+
+                    Spacer(Modifier.height(SparkSpacing.rowGap))
+
+                    // Action row: Primary forward navigation + Peek inside toggle
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .heightIn(min = 48.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .pressFeedback(onClick = onClick)
+                                .padding(vertical = 4.dp, horizontal = 2.dp)
+                        ) {
+                            Text(
+                                text = if (seenCount > 0) "Continue session" else "Read it",
+                                style = BodyStyle.copy(fontWeight = FontWeight.SemiBold),
+                                color = Ember
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = Ember,
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .graphicsLayer { translationX = arrowOffset.toPx() }
+                            )
+                        }
+
+                        // Peek inside / Hide peek toggle
                         Text(
-                            text = attribution,
-                            style = CiteStyle,
-                            color = TextTertiary,
-                            maxLines = 1,
+                            text = if (isPeekExpanded) "Hide peek" else "Peek inside",
+                            style = TinyStyle.copy(fontWeight = FontWeight.Medium),
+                            color = InkSoft,
+                            modifier = Modifier
+                                .heightIn(min = 48.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .pressFeedback(
+                                    scaleDown = 0.92f,
+                                    contentDescription = if (isPeekExpanded) "Hide peek" else "Peek inside",
+                                    onClick = { isPeekExpanded = !isPeekExpanded }
+                                )
+                                .padding(horizontal = 6.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // Expandable peek inside: smooth spring entrance & collapse
+            AnimatedVisibility(
+                visible = isPeekExpanded,
+                enter = fadeIn(tween(180)) +
+                    slideInVertically(
+                        animationSpec = tween(240, easing = FastOutSlowInEasing),
+                        initialOffsetY = { height -> height / 8 }
+                    ) + expandVertically(tween(240, easing = FastOutSlowInEasing)),
+                exit = fadeOut(tween(120)) +
+                    shrinkVertically(tween(180, easing = FastOutSlowInEasing)) +
+                    slideOutVertically(
+                        animationSpec = tween(180, easing = FastOutSlowInEasing),
+                        targetOffsetY = { height -> height / 8 }
+                    )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = SparkSpacing.contentGap)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(PaperDeep.copy(alpha = 0.55f))
+                        .border(1.dp, Line.copy(alpha = 0.7f), RoundedCornerShape(12.dp))
+                        .padding(SparkSpacing.cardInset)
+                ) {
+                    Text(
+                        text = card.body,
+                        style = QuoteSmallStyle.copy(fontSize = 12.sp, lineHeight = 17.sp),
+                        color = Ink,
+                        maxLines = 5,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (card.actionLine.isNotBlank()) {
+                        Spacer(Modifier.height(SparkSpacing.contentGap))
+                        Text(
+                            text = card.actionLine,
+                            style = TinyStyle.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ember
+                            ),
+                            maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
@@ -1010,35 +747,326 @@ private fun TodayLine(card: Card) {
     }
 }
 
-/**
- * The ingest stores a scaffolding line at the head of book cards; it is not
- * part of the reading surface, so it never reaches the screen.
- */
-private fun String.displayBody(): String =
-    removePrefix("Opening lines of this public-domain classic:")
-        .trim()
-        .ifBlank { this }
+/** Use cover styling only for book-based cards; other cards get a simple type marker. */
+@Composable
+private fun PickArtwork(
+    card: Card,
+    modifier: Modifier = Modifier,
+    isPressed: Boolean = false
+) {
+    val isBookCard = card.bookLine != null &&
+        (card.type == CardType.BOOK_IDEA || card.type == CardType.SUMMARY)
 
-/** Curly quotes, exactly once. */
-private fun String.asQuote(): String {
-    val trimmed = trim().trim('"', '\u201C', '\u201D')
-    return "\u201C$trimmed\u201D"
-}
+    if (!isBookCard) {
+        IdeaArtwork(type = card.type, modifier = modifier)
+        return
+    }
 
-/** "Try this today:" in the app's voice, the instruction itself in the text tone. */
-private fun actionText(line: String) = buildAnnotatedString {
-    val split = line.indexOf(':')
-    if (split in 1..40) {
-        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = TextPrimary)) {
-            append(line.substring(0, split + 1))
+    val sunOffset by animateFloatAsState(
+        targetValue = if (isPressed) 1.05f else 1.08f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMediumLow
+        ),
+        label = "bookCoverSun"
+    )
+
+    Box(
+        modifier = modifier
+            .aspectRatio(2f / 2.9f)
+            .clip(RoundedCornerShape(5.dp))
+            .background(Forest)
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawCircle(
+                color = Ember,
+                radius = w * 0.46f,
+                center = Offset(w * sunOffset, h * 0.36f)
+            )
+            drawCircle(
+                color = Paper.copy(alpha = 0.5f),
+                radius = w * 0.37f,
+                center = Offset(w * (sunOffset + 0.09f), h * 0.43f),
+                style = Stroke(width = 1f)
+            )
+            drawCircle(
+                color = Paper.copy(alpha = 0.3f),
+                radius = w * 0.29f,
+                center = Offset(w * (sunOffset + 0.13f), h * 0.48f),
+                style = Stroke(width = 1f)
+            )
+            drawRect(
+                color = ForestDeep,
+                topLeft = Offset(0f, h * 0.66f),
+                size = androidx.compose.ui.geometry.Size(w, h * 0.34f)
+            )
         }
-        append(" " + line.substring(split + 1).trim())
-    } else {
-        append(line)
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            SparkStar(modifier = Modifier.size(10.dp), color = Paper.copy(alpha = 0.8f))
+            Column {
+                Text(
+                    text = (card.bookLine?.let { parseAuthor(it) } ?: cleanSource(card.source))
+                        .uppercase(Locale.ROOT),
+                    style = TextStyle(
+                        fontFamily = Sans,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 10.sp,
+                        lineHeight = 12.sp,
+                        letterSpacing = 0.4.sp
+                    ),
+                    color = Paper.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = card.bookLine?.let(::bookTitle) ?: card.title,
+                    style = TextStyle(
+                        fontFamily = Display,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 12.sp,
+                        lineHeight = 14.sp,
+                        letterSpacing = (-0.25).sp
+                    ),
+                    color = Color(0xFFF7F2E8),
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }
 
-@Preview(showBackground = true, widthDp = 390, heightDp = 844, backgroundColor = 0xFF0E0E11)
+@Composable
+private fun IdeaArtwork(type: CardType, modifier: Modifier = Modifier) {
+    val backgroundColor = when (type) {
+        CardType.QUOTE -> Forest
+        CardType.CHALLENGE -> ForestDeep
+        else -> SageSoft
+    }
+    val markColor = when (type) {
+        CardType.QUOTE -> Ember
+        CardType.CHALLENGE -> Paper
+        else -> SageAccent
+    }
+    val shape = RoundedCornerShape(10.dp)
+
+    Box(
+        modifier = modifier
+            .aspectRatio(2f / 2.9f)
+            .clip(shape)
+            .background(backgroundColor)
+            .border(1.dp, markColor.copy(alpha = 0.18f), shape)
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            drawCircle(
+                color = markColor.copy(alpha = 0.09f),
+                radius = w * 0.52f,
+                center = Offset(w * 0.94f, h * 0.38f)
+            )
+            drawCircle(
+                color = markColor.copy(alpha = 0.2f),
+                radius = w * 0.42f,
+                center = Offset(w * 0.94f, h * 0.38f),
+                style = Stroke(width = 1f)
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(9.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "SPARK",
+                style = TinyStyle.copy(fontSize = 8.sp, letterSpacing = 1.sp),
+                color = Paper.copy(alpha = 0.76f)
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .border(1.dp, markColor.copy(alpha = 0.48f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                SparkStar(modifier = Modifier.size(15.dp), color = markColor)
+            }
+            Text(
+                text = type.label().uppercase(Locale.ROOT),
+                style = TinyStyle.copy(fontSize = 8.sp, letterSpacing = 0.65.sp),
+                color = Paper.copy(alpha = 0.88f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+/** Forest card: the day's line, in the book's voice with engraved halos & interactive bookmark. */
+@Composable
+private fun QuoteCard(card: Card) {
+    val author = card.bookLine?.let { parseAuthor(it) } ?: card.source
+
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Forest,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(SparkSpacing.cardInset)) {
+            Text(
+                text = "${card.type.label()} · ${card.topic}",
+                style = TinyStyle.copy(letterSpacing = 0.4.sp),
+                color = Paper.copy(alpha = 0.72f)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = Ember)) { append("“") }
+                    append(card.body.asQuoteBody())
+                    withStyle(SpanStyle(color = Ember)) { append("”") }
+                },
+                style = QuoteStyle,
+                color = Color(0xFFF7F1E5)
+            )
+            Spacer(Modifier.height(16.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Paper.copy(alpha = 0.16f))
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = author,
+                style = BodyStyle.copy(fontWeight = FontWeight.SemiBold),
+                color = Paper,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = card.bookLine?.let { bookTitle(it) } ?: cleanSource(card.source),
+                style = TinyStyle,
+                color = Paper.copy(alpha = 0.72f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeStateBlock(
+    title: String,
+    message: String,
+    loading: Boolean = false,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = CardBg,
+        border = BorderStroke(1.dp, Line)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 22.dp),
+            horizontalAlignment = Alignment.Start
+        ) {
+            if (loading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    color = Ember,
+                    trackColor = PaperDeep,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                SparkStar(modifier = Modifier.size(22.dp), color = Ember)
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = title,
+                style = CardTitleStyle.copy(fontSize = 19.sp),
+                color = Ink
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(text = message, style = BodyStyle, color = InkSoft)
+            if (actionLabel != null && onAction != null) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    onClick = onAction,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(actionLabel, color = Ember, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SparkStar(modifier: Modifier = Modifier, color: Color) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val p = Path().apply {
+            moveTo(w * 0.5f, h * 0.02f)
+            cubicTo(w * 0.53f, h * 0.27f, w * 0.73f, h * 0.47f, w * 0.98f, h * 0.5f)
+            cubicTo(w * 0.73f, h * 0.53f, w * 0.53f, h * 0.73f, w * 0.5f, h * 0.98f)
+            cubicTo(w * 0.47f, h * 0.73f, w * 0.27f, h * 0.53f, w * 0.02f, h * 0.5f)
+            cubicTo(w * 0.27f, h * 0.47f, w * 0.47f, h * 0.27f, w * 0.5f, h * 0.02f)
+            close()
+        }
+        drawPath(path = p, color = color)
+    }
+}
+
+private fun CardType.label(): String = when (this) {
+    CardType.BOOK_IDEA -> "Book idea"
+    CardType.SUMMARY -> "Summary"
+    CardType.QUOTE -> "Quote"
+    CardType.CONCEPT -> "Concept"
+    CardType.QUIZ -> "Quiz"
+    CardType.AUDIO -> "Audio"
+    CardType.CHALLENGE -> "Challenge"
+}
+
+/** "Title — Author" → "Title"; anything else is returned unchanged. */
+private fun bookTitle(bookLine: String): String {
+    val parts = bookLine.split("—", "·").map { it.trim() }.filter { it.isNotEmpty() }
+    return parts.firstOrNull() ?: bookLine
+}
+
+/** A reader-facing source name: no URLs, no "Wikipedia: …" prefixes. */
+private fun cleanSource(source: String): String = when {
+    source.startsWith("Wikipedia", ignoreCase = true) -> "Wikipedia"
+    source.startsWith("ebook", ignoreCase = true) -> "Project Gutenberg"
+    source.startsWith("Bartlett", ignoreCase = true) -> "Bartlett’s Quotations"
+    source.length > 30 -> source.take(29).trimEnd() + "…"
+    else -> source
+}
+
+/** "Title — Author" → "Author"; anything else is returned unchanged. */
+private fun parseAuthor(bookLine: String): String {
+    val parts = bookLine.split("—", "·").map { it.trim() }.filter { it.isNotEmpty() }
+    return if (parts.size >= 2) parts.last() else bookLine
+}
+
+private fun String.asQuoteBody(): String =
+    trim().removePrefix("Opening lines of this public-domain classic:").trim()
+
+@Preview(showBackground = true, widthDp = 390, heightDp = 844, backgroundColor = 0xFF121110)
 @Composable
 private fun HomeScreenPreview() {
     SparkTheme {
@@ -1049,21 +1077,19 @@ private fun HomeScreenPreview() {
             minuteLimit = 15,
             deckSize = 20,
             nextCard = Card(
-                id = "preview-next",
+                id = "p1",
                 type = CardType.BOOK_IDEA,
                 topic = "mindset",
                 title = "Why read As a Man Thinketh",
-                body = "Opening lines of this public-domain classic:\n\nThe aphorism, \u201CAs a man " +
-                    "thinketh in his heart so is he,\u201D not only embraces the whole of a man\u2019s " +
-                    "being, but is so comprehensive as to reach out to every condition and " +
-                    "circumstance of his life.",
+                body = "The aphorism, “As a man thinketh in his heart so is he,” not only embraces " +
+                    "the whole of a man’s being.",
                 actionLine = "Try this today: pick the one thought you will refuse to repeat this week.",
                 source = "ebook #4507",
                 grounded = true,
-                bookLine = "As a Man Thinketh \u2014 James Allen"
+                bookLine = "As a Man Thinketh — James Allen"
             ),
             dailyQuote = Card(
-                id = "preview-quote",
+                id = "p2",
                 type = CardType.QUOTE,
                 topic = "mindset",
                 title = "Marcus Aurelius",
@@ -1071,35 +1097,7 @@ private fun HomeScreenPreview() {
                 actionLine = "",
                 source = "Meditations",
                 grounded = true,
-                bookLine = "Marcus Aurelius \u2014 Meditations"
-            ),
-            onOpenReels = {},
-            onOpenSaved = {}
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 390, heightDp = 844, backgroundColor = 0xFF0E0E11)
-@Composable
-private fun HomeScreenCompletePreview() {
-    SparkTheme {
-        HomeScreen(
-            seenCount = 20,
-            savedCount = 3,
-            cardLimit = 20,
-            minuteLimit = 15,
-            deckSize = 20,
-            nextCard = null,
-            dailyQuote = Card(
-                id = "preview-quote",
-                type = CardType.QUOTE,
-                topic = "mindset",
-                title = "Marcus Aurelius",
-                body = "The happiness of your life depends upon the quality of your thoughts.",
-                actionLine = "",
-                source = "Meditations",
-                grounded = true,
-                bookLine = "Marcus Aurelius \u2014 Meditations"
+                bookLine = "Meditations — Marcus Aurelius"
             ),
             onOpenReels = {},
             onOpenSaved = {}

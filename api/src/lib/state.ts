@@ -25,7 +25,7 @@ export async function applyStateUpdate(tokenHash: string, itemId: string, update
     return { state: existing, replayed: true as const }; // idempotent replay
   }
   const data = {
-    seenAt: update.seen ? new Date() : existing?.seenAt ?? null,
+    seenAt: existing?.seenAt ?? (update.seen ? new Date() : null),
     saved: update.saved ?? existing?.saved ?? false,
     liked: update.liked !== undefined ? update.liked : (existing?.liked ?? null),
     dismissed: update.dismissed ?? existing?.dismissed ?? false,

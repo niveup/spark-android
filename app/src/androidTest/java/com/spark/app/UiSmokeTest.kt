@@ -1,12 +1,14 @@
 package com.spark.app
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.spark.app.auth.AuthStatus
@@ -18,12 +20,15 @@ import com.spark.app.data.SavedExportFormat
 import com.spark.app.data.remote.StatsData
 import com.spark.app.feed.DoneScreen
 import com.spark.app.feed.FinishReason
+import com.spark.app.feed.FeedUiState
+import com.spark.app.feed.DeckRefreshState
 import com.spark.app.home.HomeScreen
 import com.spark.app.home.MeScreen
 import com.spark.app.home.SavedScreen
 import com.spark.app.home.SavedUiState
 import com.spark.app.home.StatsUiState
 import com.spark.app.ui.theme.SparkTheme
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -45,25 +50,31 @@ class UiSmokeTest {
     @Test
     fun doneScreenShowsLimitAndCloseCallback() {
         var closed = false
+        var deckRestarted = false
         compose.setContent {
             SparkTheme {
                 DoneScreen(
                     reason = FinishReason.CARD_LIMIT,
                     seenCount = 20,
                     savedCards = emptyList(),
-                    onCloseApp = { closed = true }
+                    onCloseApp = { closed = true },
+                    onReadAgain = { deckRestarted = true }
                 )
             }
         }
 
         compose.onNodeWithText("You're done.").assertIsDisplayed()
-        compose.onNodeWithText("You hit your card limit for this session.").assertIsDisplayed()
+        compose.onNodeWithText("You hit your planned reading limit. Clean stop.").assertIsDisplayed()
+        compose.onNodeWithText("Read this deck again")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertTrue(deckRestarted)
         compose.onNodeWithText("Close app").performClick()
         assertTrue(closed)
     }
 
     @Test
-    fun doneScreenEmptySavedStateIsExplicit() {
+    fun doneScreenEmptySavedStateShowsZeroCount() {
         compose.setContent {
             SparkTheme {
                 DoneScreen(
@@ -75,8 +86,9 @@ class UiSmokeTest {
             }
         }
 
-        compose.onNodeWithText("Review saved").performClick()
-        compose.onNodeWithText("Nothing saved this session.").assertIsDisplayed()
+        compose.onNodeWithText("0 saved").assertIsDisplayed()
+        compose.onNodeWithText("Read this deck again").assertIsDisplayed()
+        compose.onNodeWithText("Close app").assertIsDisplayed()
     }
 
     @Test
@@ -112,6 +124,7 @@ class UiSmokeTest {
 
     @Test
     fun savedScreenEmptyStateExplainsHowToSave() {
+        var openedReels = false
         compose.setContent {
             SparkTheme {
                 SavedScreen(
@@ -119,13 +132,16 @@ class UiSmokeTest {
                     query = "",
                     onQueryChange = {},
                     onRetry = {},
-                    onExport = {}
+                    onExport = {},
+                    onOpenReels = { openedReels = true }
                 )
             }
         }
 
-        compose.onNodeWithText("Nothing saved yet. Tap ♡ Save on any card in Reels.")
+        compose.onNodeWithContentDescription("Nothing saved yet. Tap ♡ Save on any card in Reels.")
             .assertIsDisplayed()
+        compose.onNodeWithText("Browse Reels").assertIsDisplayed().performClick()
+        assertTrue(openedReels)
     }
 
     @Test
@@ -143,7 +159,7 @@ class UiSmokeTest {
             }
         }
 
-        compose.onNodeWithText("Retry").performClick()
+        compose.onNodeWithText("Try again").performClick()
         assertTrue(retried)
     }
 
@@ -172,9 +188,9 @@ class UiSmokeTest {
             }
         }
 
-        compose.onNodeWithText("Export Markdown").performClick()
+        compose.onNodeWithContentDescription("Export Markdown").performClick()
         assertEquals(SavedExportFormat.MARKDOWN, requested)
-        compose.onNodeWithText("Export JSON").performClick()
+        compose.onNodeWithContentDescription("Export JSON").performClick()
         assertEquals(SavedExportFormat.JSON, requested)
     }
 
@@ -192,6 +208,7 @@ class UiSmokeTest {
             bookLine = "Building better habits"
         )
         var openedFeed = false
+        var connectionChecked = false
         compose.setContent {
             SparkTheme {
                 HomeScreen(
@@ -199,6 +216,8 @@ class UiSmokeTest {
                     savedCount = 1,
                     cardLimit = 20,
                     minuteLimit = 15,
+                    offline = true,
+                    onRetryConnection = { connectionChecked = true },
                     deckSize = 20,
                     nextCard = card,
                     onOpenReels = { openedFeed = true },
@@ -208,15 +227,27 @@ class UiSmokeTest {
         }
 
         compose.onNodeWithText("Peek inside").assertIsDisplayed().performClick()
+        compose.onNodeWithContentDescription("Offline. Tap to retry Home and check the connection.")
+            .assertIsDisplayed()
+            .performClick()
+        assertTrue(connectionChecked)
+        compose.onNodeWithText("Showing cards stored on this phone").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Your shelf").assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("Continue session").assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithContentDescription("Hide peek").assertHeightIsAtLeast(48.dp)
         compose.onNodeWithText("A small useful thought.", substring = true).assertExists()
         compose.onNodeWithText("Hide peek").assertIsDisplayed().performClick()
         compose.onNodeWithText("Peek inside").assertIsDisplayed()
         compose.onNodeWithText("Continue session").performClick()
         assertTrue(openedFeed)
+        compose.onNodeWithText("One minute, one idea").assertDoesNotExist()
     }
 
     @Test
     fun meScreenShowsStatsAccessibleSteppersAndLogout() {
+        var cardLimitDelta = 0
+        var deckRefreshed = false
+        var connectionChecked = false
         var loggedOut = false
         compose.setContent {
             SparkTheme {
@@ -230,27 +261,57 @@ class UiSmokeTest {
                             sessionsTotal = 4
                         )
                     ),
+                    deckRefreshState = DeckRefreshState.Refreshed(cardsReady = 20),
+                    offline = true,
+                    onRetryConnection = { connectionChecked = true },
                     cardLimit = 20,
                     minuteLimit = 15,
                     pendingSync = 0,
-                    onCardLimitDelta = {},
+                    onCardLimitDelta = { cardLimitDelta += it },
                     onMinuteLimitDelta = {},
                     onRetryStats = {},
                     cachedCount = 7,
                     onClearCache = {},
-                    deckCount = 12,
-                    onRefreshDeck = {},
+                    deckState = FeedUiState.Content(
+                        cards = emptyList(),
+                        cardLimit = 20,
+                        minuteLimit = 15,
+                        startedAtElapsedMs = 0L
+                    ),
+                    onRefreshDeck = { deckRefreshed = true },
                     onLogout = { loggedOut = true }
                 )
             }
         }
 
-        compose.onNodeWithText("Me").assertIsDisplayed()
-        compose.onNodeWithText("Cards seen").assertIsDisplayed()
+        compose.onNodeWithText("Your space").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Offline. Tap to check the connection.")
+            .assertIsDisplayed()
+            .performClick()
+        assertTrue(connectionChecked)
+        compose.onNodeWithText("Diagnostics").assertDoesNotExist()
+        compose.onNodeWithText("cards read").assertIsDisplayed()
         compose.onNodeWithText("12").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Increase Cards per session").assertExists()
-        compose.onNodeWithText("All changes synced ✓").assertIsDisplayed()
-        compose.onNodeWithText("Log out").performScrollTo().performClick()
+        compose.onNodeWithText("Saved").assertIsDisplayed()
+        compose.onNodeWithText("Liked").assertIsDisplayed()
+        compose.onNodeWithText("Sessions").assertIsDisplayed()
+        compose.onNodeWithText("Quizzes due").assertIsDisplayed()
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(2)
+        compose.onNodeWithContentDescription("Refresh your deck")
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        compose.onNodeWithText("Deck refreshed — 20 cards ready to read again").assertExists()
+        assertTrue(deckRefreshed)
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(3)
+        compose.onNodeWithContentDescription("Increase Cards").performClick()
+        assertEquals(1, cardLimitDelta)
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(4)
+        compose.onNodeWithText("Device & data").assertIsDisplayed()
+        compose.onNodeWithText("Offline library").assertIsDisplayed()
+        compose.onNodeWithText("All changes synced").assertIsDisplayed()
+        compose.onNodeWithText("7 cards stored for offline reading").assertIsDisplayed()
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(5)
+        compose.onNodeWithText("Log out").performClick()
         assertTrue(loggedOut)
     }
 }

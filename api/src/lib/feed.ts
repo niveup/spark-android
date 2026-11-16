@@ -45,7 +45,7 @@ export function toFeedItem(item: ItemWithBook, state?: DbState | null): ApiFeedI
     topicTags: item.topicTags,
     language: item.language,
     estSeconds: item.estSeconds,
-    progressMs: null,
+    progressMs: state?.progressMs ?? null,
     quiz:
       item.type === "quiz" && quizRaw
         ? {

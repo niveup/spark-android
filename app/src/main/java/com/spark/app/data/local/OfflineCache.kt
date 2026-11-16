@@ -6,6 +6,8 @@ import com.spark.app.sync.PendingEventStore
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.coroutines.flow.Flow
 import java.util.concurrent.atomic.AtomicLong
 
 /**
@@ -25,6 +27,7 @@ class OfflineCache(context: Context) : PendingEventStore {
         if (items.isEmpty()) return
         val entities = items.toCachedEntities(batchMs())
         db.cachedItemDao().upsertAll(entities)
+        applyPendingSavedChanges()
         val all = db.cachedItemDao().all()
         val keptIds = pruneForCap(all, CACHE_CAP).map { it.id }.toSet()
         val evictIds = all.map { it.id }.filterNot { it in keptIds }
@@ -32,16 +35,23 @@ class OfflineCache(context: Context) : PendingEventStore {
     }
 
     /** Full cached deck, most recent batch first, server order inside a batch. */
-    suspend fun feedDtos(): List<FeedItemDto> = db.cachedItemDao().all().map { it.toFeedItemDto() }
+    suspend fun feedDtos(): List<FeedItemDto> {
+        applyPendingSavedChanges()
+        return db.cachedItemDao().all().map { it.toFeedItemDto() }
+    }
 
     /** Saved cards only (however they got flagged — feed or the saved list). */
-    suspend fun savedDtos(): List<FeedItemDto> = db.cachedItemDao().saved().map { it.toFeedItemDto() }
+    suspend fun savedDtos(): List<FeedItemDto> {
+        applyPendingSavedChanges()
+        return db.cachedItemDao().saved().map { it.toFeedItemDto() }
+    }
 
     suspend fun cachedCount(): Int = db.cachedItemDao().count()
 
-    suspend fun clearAll() {
+    fun observeCachedCount(): Flow<Int> = db.cachedItemDao().observeCount()
+
+    suspend fun clearCachedCards() {
         db.cachedItemDao().clear()
-        db.pendingEventDao().clear()
     }
 
     // --- PendingEventStore ---
@@ -57,6 +67,7 @@ class OfflineCache(context: Context) : PendingEventStore {
             )
         }
         db.pendingEventDao().upsertAll(rows)
+        applyPendingSavedChanges()
     }
 
     override suspend fun all(): List<JsonObject> =
@@ -95,9 +106,26 @@ class OfflineCache(context: Context) : PendingEventStore {
     private fun List<FeedItemDto>.toCachedEntities(batchMs: Long): List<CachedItemEntity> =
         mapIndexed { index, dto -> dto.toCachedEntity(batchMs, index) }
 
+    /** Keep offline Saved in sync with queued Save/Unsave actions before upload. */
+    private suspend fun applyPendingSavedChanges() {
+        db.pendingEventDao().all().forEach { row ->
+            val event = runCatching {
+                json.parseToJsonElement(row.payload) as? JsonObject
+            }.getOrNull() ?: return@forEach
+            val itemId = (event[ITEM_ID_KEY] as? JsonPrimitive)
+                ?.takeIf { it.isString }
+                ?.content
+                ?: return@forEach
+            val saved = (event[SAVED_KEY] as? JsonPrimitive)?.booleanOrNull ?: return@forEach
+            db.cachedItemDao().setSaved(itemId, saved)
+        }
+    }
+
     private companion object {
         const val CACHE_CAP = 50
         const val CLIENT_EVENT_ID_KEY = "clientEventId"
+        const val ITEM_ID_KEY = "itemId"
+        const val SAVED_KEY = "saved"
         val json = Json { ignoreUnknownKeys = true }
     }
 }
