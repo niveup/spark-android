@@ -1,0 +1,28 @@
+{
+  "cards": [
+    {
+      "type": "quote",
+      "person": "Epictetus",
+      "work": "Enchiridion of Epictetus",
+      "chapter": "V",
+      "gutenbergId": 45109,
+      "match": "Men are disturbed not by things",
+      "action": "Try this today: name the events of one argument and the opinion you added to it.",
+      "topics": ["mindset", "focus"]
+    },
+    {
+      "type": "concept",
+      "title": "The cost of an unfinished decision",
+      "body": "An open decision keeps charging rent: every time you re-open it you pay attention again. Deciding badly and moving on is often cheaper than staying undecided for a week, because a bad decision at least produces information you can act on.",
+      "action": "Try this today: close one decision you have re-opened three times, even if the answer is imperfect.",
+      "topics": ["focus", "time"]
+    },
+    {
+      "type": "challenge",
+      "title": "The two-minute restart",
+      "body": "After a break, do not resume where you stopped. Set two minutes and do the smallest possible piece of the work: one line, one rep, one paragraph. Restarts fail because people try to resume the whole task at once.",
+      "action": "Do it now: two minutes on the thing you keep postponing.",
+      "topics": ["habits", "focus"]
+    }
+  ]
+}
