@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spark.app.data.Card
 import com.spark.app.data.TokenStore
-import com.spark.app.data.local.OfflineCache
+import com.spark.app.data.local.ItemCache
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.feed.feedItemsToCards
 import kotlinx.coroutines.Job
@@ -30,7 +30,7 @@ sealed interface SavedUiState {
 class SavedViewModel(
     private val api: SparkApi,
     private val tokens: TokenStore,
-    private val offline: OfflineCache
+    private val offline: ItemCache
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<SavedUiState>(SavedUiState.Loading)

@@ -5,11 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.spark.app.data.Card
 import com.spark.app.data.SettingsStore
-import com.spark.app.data.TokenStore
-import com.spark.app.data.local.OfflineCache
+import com.spark.app.data.local.ItemCache
 import com.spark.app.data.remote.SessionCloseRequest
 import com.spark.app.data.remote.SessionRequest
 import com.spark.app.data.remote.SparkApi
+import com.spark.app.sync.TokenReader
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,6 +43,23 @@ sealed interface FeedUiState {
     ) : FeedUiState
 }
 
+/** What happened when the reader opened a saved card from the Saved tab. */
+sealed interface ItemOpenState {
+    data object Idle : ItemOpenState
+
+    /** The card is being resolved (server first, then this device's cache). */
+    data class Opening(val itemId: String) : ItemOpenState
+
+    /** The card is ready and is now the first card of the Reels deck. */
+    data class Opened(val itemId: String, val fromCache: Boolean) : ItemOpenState
+
+    /**
+     * The card is neither on the server nor on this device — the offline
+     * deck is shown instead.
+     */
+    data class Unavailable(val itemId: String) : ItemOpenState
+}
+
 /**
  * Loads the ranked feed from the API and owns the server-side session
  * (Phase 5b): POST /sessions on load, PATCH /sessions/:id on finish.
@@ -50,13 +67,15 @@ sealed interface FeedUiState {
  */
 class FeedViewModel(
     private val api: SparkApi,
-    private val tokens: TokenStore,
+    private val tokens: TokenReader,
     private val settings: SettingsStore,
-    private val offline: OfflineCache
+    private val offline: ItemCache
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<FeedUiState>(FeedUiState.Loading)
     val state: StateFlow<FeedUiState> = _state.asStateFlow()
+
+    private val opener = SavedItemOpener(api, tokens, offline)
 
     private var openedSessionId: String? = null
     private var sessionJob: Job? = null
@@ -67,6 +86,65 @@ class FeedViewModel(
 
     private val _deckRefreshState = MutableStateFlow<DeckRefreshState>(DeckRefreshState.Idle)
     val deckRefreshState: StateFlow<DeckRefreshState> = _deckRefreshState.asStateFlow()
+
+    private val _itemOpenState = MutableStateFlow<ItemOpenState>(ItemOpenState.Idle)
+    val itemOpenState: StateFlow<ItemOpenState> = _itemOpenState.asStateFlow()
+
+    private var openJob: Job? = null
+
+    /**
+     * Opens a saved card in the Reels deck (the Saved → Reels flow).
+     *
+     * The Saved tab only stores the card id, so opening it maps that id back
+     * to a card: from the server when there is a connection, otherwise from
+     * this device's cache. The card becomes the first card of the deck and
+     * the session restarts on it. When the card is nowhere to be found, the
+     * offline deck is served instead.
+     */
+    fun openSavedItem(
+        itemId: String,
+        offlineOnly: Boolean = false,
+        onDeckReplaced: () -> Unit = {}
+    ) {
+        openJob?.cancel()
+        openJob = viewModelScope.launch {
+            _itemOpenState.value = ItemOpenState.Opening(itemId)
+            when (val result = opener.open(itemId, offlineOnly)) {
+                is SavedItemResult.Found -> {
+                    val current = (_state.value as? FeedUiState.Content)?.cards.orEmpty()
+                    // The opened card leads the deck; the rest of the session
+                    // follows it, so the reader can keep swiping.
+                    val deck = listOf(result.card) + current.filter { it.id != result.card.id }
+                    onDeckReplaced()
+                    _state.value = FeedUiState.Content(
+                        cards = deck,
+                        cardLimit = settings.cardLimit,
+                        minuteLimit = settings.minuteLimit,
+                        startedAtElapsedMs = SystemClock.elapsedRealtime(),
+                        offline = result.fromCache,
+                        deckGeneration = ++deckGeneration
+                    )
+                    _itemOpenState.value = ItemOpenState.Opened(itemId, result.fromCache)
+                }
+
+                SavedItemResult.Unavailable -> {
+                    _itemOpenState.value = ItemOpenState.Unavailable(itemId)
+                    // Nothing to open: show what this device has instead.
+                    loadInternal(
+                        refill = false,
+                        isDeckRefresh = false,
+                        onDeckReplaced = onDeckReplaced,
+                        offlineOnly = true
+                    )
+                }
+            }
+        }
+    }
+
+    /** Resets the open state once the screen reacted to it. */
+    fun clearItemOpen() {
+        _itemOpenState.value = ItemOpenState.Idle
+    }
 
     /**
      * [refill] = true re-requests the deck with seen cards included (server

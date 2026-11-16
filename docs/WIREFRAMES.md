@@ -201,7 +201,7 @@ Implemented in Phase 6 (inline mini player, Media3 service in background).
 │ ● Title one      quote   │  rows: dot=type, title, tag
 │ ● Title two      idea    │
 │ ● Title three    concept │
-│ (tap row → full card)    │
+│ (tap row → card in Reels)│  "Preview" expands the row instead
 └──────────────────────────┘
 ```
 

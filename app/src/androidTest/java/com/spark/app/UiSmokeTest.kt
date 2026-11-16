@@ -195,6 +195,73 @@ class UiSmokeTest {
     }
 
     @Test
+    fun savedCardOpensInReelsAndPreviewKeepsItHere() {
+        val card = Card(
+            id = "card-1",
+            type = CardType.CONCEPT,
+            topic = "habits",
+            title = "Start small",
+            body = "Make the habit obvious.",
+            actionLine = "Do two minutes today.",
+            source = "Test source",
+            grounded = true
+        )
+        var opened: Card? = null
+        compose.setContent {
+            SparkTheme {
+                SavedScreen(
+                    state = SavedUiState.Content(listOf(card), ""),
+                    query = "",
+                    onQueryChange = {},
+                    onRetry = {},
+                    onExport = {},
+                    onOpenCard = { opened = it }
+                )
+            }
+        }
+
+        // Tapping a saved card opens that card in Reels.
+        compose.onNodeWithContentDescription("Open in Reels: Start small").performClick()
+        assertEquals("card-1", opened?.id)
+
+        // The body is only in the expanded preview, not in the collapsed row.
+        compose.onNodeWithText("Make the habit obvious.", substring = true).assertDoesNotExist()
+
+        // Preview keeps the card on this screen instead of opening Reels.
+        compose.onNodeWithContentDescription("Preview this card here").performClick()
+        compose.onNodeWithText("Make the habit obvious.", substring = true).assertIsDisplayed()
+        assertEquals("card-1", opened?.id)
+    }
+
+    @Test
+    fun savedCardShowsOpeningWhileItIsBeingResolved() {
+        val card = Card(
+            id = "card-1",
+            type = CardType.CONCEPT,
+            topic = "habits",
+            title = "Start small",
+            body = "Make the habit obvious.",
+            actionLine = "Do two minutes today.",
+            source = "Test source",
+            grounded = true
+        )
+        compose.setContent {
+            SparkTheme {
+                SavedScreen(
+                    state = SavedUiState.Content(listOf(card), ""),
+                    query = "",
+                    onQueryChange = {},
+                    onRetry = {},
+                    onExport = {},
+                    openingItemId = "card-1"
+                )
+            }
+        }
+
+        compose.onNodeWithText("Opening…").assertIsDisplayed()
+    }
+
+    @Test
     fun homePeekOpensAndClosesAndPrimaryActionOpensFeed() {
         val card = Card(
             id = "home-preview-card",

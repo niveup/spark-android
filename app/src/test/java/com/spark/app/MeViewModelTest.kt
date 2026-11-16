@@ -2,6 +2,7 @@ package com.spark.app
 
 import com.spark.app.data.remote.BatchStateData
 import com.spark.app.data.remote.DataResponse
+import com.spark.app.data.remote.FeedItemDto
 import com.spark.app.data.remote.FeedPage
 import com.spark.app.data.remote.HealthData
 import com.spark.app.data.remote.LoginData
@@ -113,5 +114,8 @@ class MeViewModelTest {
             cursor: String?,
             q: String?
         ): FeedPage = error("Unexpected saved-items call")
+
+        override suspend fun item(auth: String, id: String): DataResponse<FeedItemDto> =
+            error("Unexpected item call")
     }
 }

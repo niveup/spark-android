@@ -153,6 +153,10 @@ fun SavedScreen(
     onOpenReels: () -> Unit = {},
     offline: Boolean = false,
     onRetryConnection: () -> Unit = {},
+    /** Opens a saved card in the Reels tab. */
+    onOpenCard: (Card) -> Unit = {},
+    /** Id of the card that is currently being opened, if any. */
+    openingItemId: String? = null,
     modifier: Modifier = Modifier,
     bottomClearance: Dp = 100.dp
 ) {
@@ -516,6 +520,8 @@ fun SavedScreen(
                         items(shown, key = { it.id }) { card ->
                             SavedCard(
                                 card = card,
+                                opening = openingItemId == card.id,
+                                onOpen = { onOpenCard(card) },
                                 modifier = Modifier.animateItem(
                                     fadeInSpec = spring(
                                         dampingRatio = Spring.DampingRatioNoBouncy,
@@ -554,15 +560,22 @@ private fun ExportLink(label: String, enabled: Boolean, onClick: () -> Unit) {
     }
 }
 
-/** One saved card, in the design's review-card shape with smooth expand micro-interaction. */
+/**
+ * One saved card. Tapping it opens the card in the Reels tab (the saved id
+ * is mapped back to the card); "Preview" expands the card here instead.
+ */
 @Composable
 private fun SavedCard(
     card: Card,
+    opening: Boolean,
+    onOpen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var expanded by rememberSaveable(card.id) { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val contextLabel = card.bookLine?.let { "${card.type.label()} · ${card.topic}" } ?: card.topic
+    val isQuote = card.type == CardType.QUOTE
+    val quoteText = if (isQuote) "“${card.body.trim('"', '“', '”')}”" else card.title
 
     Surface(
         shape = RoundedCornerShape(18.dp),
@@ -577,11 +590,12 @@ private fun SavedCard(
                 role = Role.Button
             ) {
                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                expanded = !expanded
+                onOpen()
             }
             .semantics(mergeDescendants = true) {
                 role = Role.Button
-                stateDescription = if (expanded) "Expanded, tap to collapse" else "Collapsed, tap to read full card"
+                contentDescription = "Open in Reels: $quoteText"
+                stateDescription = if (opening) "Opening" else "Opens the card in Reels"
             }
             .animateContentSize(
                 animationSpec = spring(
@@ -637,8 +651,6 @@ private fun SavedCard(
 
             Spacer(Modifier.height(SparkSpacing.contentGap))
 
-            val isQuote = card.type == CardType.QUOTE
-            val quoteText = if (isQuote) "“${card.body.trim('"', '\u201C', '\u201D')}”" else card.title
 
             Text(
                 text = quoteText,
@@ -701,11 +713,44 @@ private fun SavedCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
-                Text(
-                    text = if (expanded) "Collapse" else "Read",
-                    style = Meta,
-                    color = InkSoft
-                )
+                if (opening) {
+                    Text(
+                        text = "Opening…",
+                        style = Meta,
+                        color = Ember
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                role = Role.Button
+                            ) {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                expanded = !expanded
+                            }
+                            .heightIn(min = 48.dp)
+                            .padding(horizontal = 10.dp)
+                            .semantics(mergeDescendants = true) {
+                                role = Role.Button
+                                contentDescription = if (expanded) {
+                                    "Hide the preview of this card"
+                                } else {
+                                    "Preview this card here"
+                                }
+                                stateDescription = if (expanded) "Preview shown" else "Preview hidden"
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (expanded) "Hide preview" else "Preview",
+                            style = Meta,
+                            color = InkSoft
+                        )
+                    }
+                }
             }
         }
     }

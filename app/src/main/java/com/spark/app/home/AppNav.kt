@@ -89,6 +89,7 @@ import com.spark.app.feed.FeedScreen
 import com.spark.app.feed.FeedState
 import com.spark.app.feed.FeedUiState
 import com.spark.app.feed.FeedViewModel
+import com.spark.app.feed.ItemOpenState
 import com.spark.app.sync.InteractionSync
 import com.spark.app.ui.EmptyState
 import com.spark.app.ui.ErrorState
@@ -168,6 +169,7 @@ fun AppNav(
     val saved by savedVm.state.collectAsStateWithLifecycle()
     val stats by meVm.state.collectAsStateWithLifecycle()
     val deckRefresh by feedVm.deckRefreshState.collectAsStateWithLifecycle()
+    val itemOpen by feedVm.itemOpenState.collectAsStateWithLifecycle()
     val pendingSync by sync.pending.collectAsStateWithLifecycle()
     val state = remember { FeedState() }
     LaunchedEffect(Unit) {
@@ -229,6 +231,18 @@ fun AppNav(
         if (startOnReels) {
             tab = Tab.REELS
             onStartOnReelsHandled()
+        }
+    }
+    // A saved card opened from the Saved tab becomes the first card of the
+    // Reels deck. The deck is ready before the state flips, so the switch
+    // lands straight on the card.
+    LaunchedEffect(itemOpen) {
+        when (itemOpen) {
+            is ItemOpenState.Opened, is ItemOpenState.Unavailable -> {
+                tab = Tab.REELS
+                feedVm.clearItemOpen()
+            }
+            is ItemOpenState.Opening, ItemOpenState.Idle -> Unit
         }
     }
     val tts = remember { TtsHelper(context.applicationContext) }
@@ -410,6 +424,17 @@ fun AppNav(
                                 savedVm.load(savedQuery)
                             },
                             onOpenReels = { tab = Tab.REELS },
+                            // Saved cards open in Reels: the id is mapped back
+                            // to the card (server first, this device's cache
+                            // when offline) and the deck restarts on it.
+                            onOpenCard = { card ->
+                                feedVm.openSavedItem(
+                                    itemId = card.id,
+                                    offlineOnly = isOffline,
+                                    onDeckReplaced = state::resetSession
+                                )
+                            },
+                            openingItemId = (itemOpen as? ItemOpenState.Opening)?.itemId,
                             bottomClearance = if (hasAudio) 180.dp else 100.dp,
                             onExport = { format ->
                                 val cards = (saved as? SavedUiState.Content)?.cards.orEmpty()

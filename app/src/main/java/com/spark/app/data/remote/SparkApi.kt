@@ -57,6 +57,16 @@ interface SparkApi {
         @Query("q") q: String? = null
     ): FeedPage
 
+    /**
+     * One published card by id. The Saved tab stores only the id; opening a
+     * saved card in Reels maps that id back to the card with this call.
+     */
+    @GET("api/mobile/v1/items/{id}")
+    suspend fun item(
+        @Header("Authorization") auth: String,
+        @Path("id") id: String
+    ): DataResponse<FeedItemDto>
+
     @GET("api/mobile/v1/stats")
     suspend fun stats(@Header("Authorization") auth: String): DataResponse<StatsData>
 }

@@ -71,6 +71,9 @@ interface CachedItemDao {
     @Query("SELECT * FROM cached_items WHERE saved = 1 ORDER BY cachedAtMs DESC")
     suspend fun saved(): List<CachedItemEntity>
 
+    @Query("SELECT * FROM cached_items WHERE id = :itemId LIMIT 1")
+    suspend fun byId(itemId: String): CachedItemEntity?
+
     @Query("SELECT COUNT(*) FROM cached_items")
     suspend fun count(): Int
 

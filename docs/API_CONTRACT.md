@@ -110,6 +110,14 @@ Auth required. Query: `limit`, `cursor`, `q=` (substring search over title/body)
 Response `200`: `{ "data": FeedItem[], "nextCursor": string | null }`,
 most-recently-saved first.
 
+### GET /items/:id — one card by id (saved card → Reels)
+Auth required. Response `200`: `{ "data": FeedItem }` — the published card with
+the caller's own state (`saved`, `liked`, `dismissed`, `progressMs`).
+Unknown, draft or archived id → `NOT_FOUND`.
+The Saved tab stores only the card id; opening a saved card in the Reels tab
+maps that id back to a card with this endpoint (offline the app looks the same
+id up in its local cache instead).
+
 ### PUT /items/:id/progress — audiobook resume position (Phase 6)
 Auth required. Request: `{ "positionMs": number, "durationMs": number }`
 (`positionMs <= durationMs`, both ≥ 0).

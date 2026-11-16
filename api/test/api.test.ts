@@ -179,6 +179,37 @@ describe("item state", () => {
   });
 });
 
+describe("single item", () => {
+  it("fetches one published card by id, with the caller's state", async () => {
+    const feed = await api("/feed?limit=1", { headers: authHeaders() });
+    const itemId = ((feed.json as { data: { id: string }[] }).data[0] as { id: string }).id;
+
+    const res = await api(`/items/${itemId}`, { headers: authHeaders() });
+    assert.equal(res.status, 200);
+    const item = res.json.data as { id: string; title: string; saved: boolean };
+    assert.equal(item.id, itemId);
+    assert.ok(item.title.length > 0);
+    assert.equal(item.saved, false);
+
+    await api(`/items/${itemId}/state`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ saved: true, clientEventId: randomUUID() }),
+    });
+    const saved = await api(`/items/${itemId}`, { headers: authHeaders() });
+    assert.equal((saved.json.data as { saved: boolean }).saved, true);
+  });
+
+  it("unknown item -> 404, no token -> 401", async () => {
+    const missing = await api("/items/does-not-exist", { headers: authHeaders() });
+    assert.equal(missing.status, 404);
+    assert.equal((missing.json.error as { code: string }).code, "NOT_FOUND");
+
+    const anonymous = await api("/items/does-not-exist");
+    assert.equal(anonymous.status, 401);
+  });
+});
+
 describe("batch state", () => {
   it("uploads a batch and replays it without double-counting dwell", async () => {
     const feed = await api("/feed?limit=2", { headers: authHeaders() });

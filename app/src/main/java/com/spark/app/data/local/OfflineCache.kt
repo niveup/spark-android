@@ -16,14 +16,16 @@ import java.util.concurrent.atomic.AtomicLong
  *    prune to CACHE_CAP fresh cards (saved ones are always kept).
  *  - [feedDtos] / [savedDtos]: offline rebuilds for the Reels / Saved tabs
  *    (server-wins: the cache is overwritten on every online load).
+ *  - [itemById]: one card by id — how a saved card is found on this device
+ *    when the server cannot be reached.
  *  - PendingEventStore impl: persists queued interaction events across app
  *    restarts until the server accepts them (idempotent via clientEventId).
  */
-class OfflineCache(context: Context) : PendingEventStore {
+class OfflineCache(context: Context) : ItemCache, PendingEventStore {
 
     private val db = OfflineDatabase.build(context)
 
-    suspend fun saveFeed(items: List<FeedItemDto>) {
+    override suspend fun saveFeed(items: List<FeedItemDto>) {
         if (items.isEmpty()) return
         val entities = items.toCachedEntities(batchMs())
         db.cachedItemDao().upsertAll(entities)
@@ -35,15 +37,21 @@ class OfflineCache(context: Context) : PendingEventStore {
     }
 
     /** Full cached deck, most recent batch first, server order inside a batch. */
-    suspend fun feedDtos(): List<FeedItemDto> {
+    override suspend fun feedDtos(): List<FeedItemDto> {
         applyPendingSavedChanges()
         return db.cachedItemDao().all().map { it.toFeedItemDto() }
     }
 
     /** Saved cards only (however they got flagged — feed or the saved list). */
-    suspend fun savedDtos(): List<FeedItemDto> {
+    override suspend fun savedDtos(): List<FeedItemDto> {
         applyPendingSavedChanges()
         return db.cachedItemDao().saved().map { it.toFeedItemDto() }
+    }
+
+    /** One cached card by id, or null when this device does not hold it. */
+    override suspend fun itemById(id: String): FeedItemDto? {
+        applyPendingSavedChanges()
+        return db.cachedItemDao().byId(id)?.toFeedItemDto()
     }
 
     suspend fun cachedCount(): Int = db.cachedItemDao().count()
