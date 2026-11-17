@@ -1,6 +1,7 @@
 package com.spark.app
 
 import com.spark.app.data.remote.BatchStateData
+import com.spark.app.data.remote.BookDto
 import com.spark.app.data.remote.DataResponse
 import com.spark.app.data.remote.FeedItemDto
 import com.spark.app.data.remote.FeedPage
@@ -117,5 +118,8 @@ class MeViewModelTest {
 
         override suspend fun item(auth: String, id: String): DataResponse<FeedItemDto> =
             error("Unexpected item call")
+
+        override suspend fun books(auth: String): DataResponse<List<BookDto>> =
+            error("Unexpected books call")
     }
 }

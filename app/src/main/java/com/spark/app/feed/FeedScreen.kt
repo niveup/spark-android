@@ -156,8 +156,8 @@ fun FeedScreen(
             val flingBehavior = PagerDefaults.flingBehavior(
                 state = pagerState,
                 snapAnimationSpec = spring(
-                    dampingRatio = 0.82f,
-                    stiffness = 420f
+                    dampingRatio = 0.85f,
+                    stiffness = 500f
                 )
             )
 
@@ -168,6 +168,7 @@ fun FeedScreen(
             ) {
                 VerticalPager(
                     state = pagerState,
+                    beyondViewportPageCount = 1,
                     flingBehavior = flingBehavior,
                     modifier = Modifier.fillMaxSize()
                 ) { page ->
@@ -186,8 +187,8 @@ fun FeedScreen(
                                 val scale = 1f - (absOffset * 0.05f)
                                 val isTopBound = page == 0 && pagerState.currentPage == 0 &&
                                     pagerState.currentPageOffsetFraction < 0f
-                                val isBottomBound = page == cards.lastIndex &&
-                                    pagerState.currentPage == cards.lastIndex &&
+                                val isBottomBound = page == sessionCards.lastIndex &&
+                                    pagerState.currentPage == sessionCards.lastIndex &&
                                     pagerState.currentPageOffsetFraction > 0f
                                 val overscrollDamping = if (isTopBound || isBottomBound) {
                                     val fraction = pagerState.currentPageOffsetFraction

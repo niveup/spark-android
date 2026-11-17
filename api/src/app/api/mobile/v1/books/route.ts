@@ -9,6 +9,11 @@ export async function GET(req: Request) {
   if (!authed) return fail("UNAUTHORIZED", "Login required.");
 
   const books = await db.book.findMany({
+    where: {
+      NOT: {
+        title: { contains: "Sherlock", mode: "insensitive" },
+      },
+    },
     orderBy: { createdAt: "asc" },
     include: {
       items: {

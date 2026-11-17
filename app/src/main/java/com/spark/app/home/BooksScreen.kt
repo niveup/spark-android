@@ -3,7 +3,6 @@ package com.spark.app.home
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -15,8 +14,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -243,7 +240,6 @@ private fun BooksContent(
             val titleLower = b.title.lowercase()
             titleLower.contains("pride") ||
                 titleLower.contains("frankenstein") ||
-                titleLower.contains("sherlock") ||
                 titleLower.contains("jane eyre") ||
                 titleLower.contains("moby")
         }
@@ -264,7 +260,7 @@ private fun BooksContent(
         contentPadding = PaddingValues(bottom = bottomClearance + 24.dp)
     ) {
         // Top Header
-        item {
+        item(key = "header", contentType = "header") {
             BooksHeader(
                 offline = offline,
                 onRetryConnection = onRetryConnection,
@@ -273,7 +269,7 @@ private fun BooksContent(
         }
 
         // Filter Pills
-        item {
+        item(key = "filter_chips", contentType = "filter_chips") {
             FilterChipsRow(
                 filters = filters,
                 selected = selectedFilter,
@@ -285,7 +281,7 @@ private fun BooksContent(
         if (selectedFilter == "All") {
             // Shelf 0: Editor's Choice (Only 48 Laws of Power & The Laws of Human Nature)
             if (editorsChoiceBooks.isNotEmpty()) {
-                item {
+                item(key = "shelf_editors_choice", contentType = "shelf") {
                     BookShelfSection(
                         title = "Editor's Choice",
                         subtitle = "Curated masterworks in your library",
@@ -299,7 +295,7 @@ private fun BooksContent(
 
             // Shelf 1: Available with Audio
             if (audioBooks.isNotEmpty()) {
-                item {
+                item(key = "shelf_audio", contentType = "shelf") {
                     BookShelfSection(
                         title = "Available with Audio",
                         subtitle = "Full recordings & narrator chapters",
@@ -313,7 +309,7 @@ private fun BooksContent(
 
             // Shelf 2: Philosophy & Stoicism
             if (philosophyBooks.isNotEmpty()) {
-                item {
+                item(key = "shelf_philosophy", contentType = "shelf") {
                     BookShelfSection(
                         title = "Philosophy & Stoicism",
                         subtitle = "Ancient wisdom for modern clarity",
@@ -327,7 +323,7 @@ private fun BooksContent(
 
             // Shelf 3: Conduct of Life & Habits
             if (growthBooks.isNotEmpty()) {
-                item {
+                item(key = "shelf_growth", contentType = "shelf") {
                     BookShelfSection(
                         title = "Conduct of Life & Habits",
                         subtitle = "Classics on focus, mindset & mastery",
@@ -341,7 +337,7 @@ private fun BooksContent(
 
             // Shelf 4: Curated Classic Literature
             if (classicLiterature.isNotEmpty()) {
-                item {
+                item(key = "shelf_classics", contentType = "shelf") {
                     BookShelfSection(
                         title = "Classic Literature",
                         subtitle = "Timeless masterpieces",
@@ -356,7 +352,7 @@ private fun BooksContent(
 
         // Categorized grid only when a specific category is selected
         if (selectedFilter != "All") {
-            item {
+            item(key = "category_header", contentType = "category_header") {
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -380,7 +376,11 @@ private fun BooksContent(
                 }
             }
 
-            items(filteredList.chunked(2)) { pair ->
+            items(
+                items = filteredList.chunked(2),
+                key = { pair -> pair.joinToString("-") { it.id } },
+                contentType = { "grid_row" }
+            ) { pair ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -491,7 +491,11 @@ private fun FilterChipsRow(
         contentPadding = PaddingValues(horizontal = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(filters) { filter ->
+        items(
+            items = filters,
+            key = { it },
+            contentType = { "filter_chip" }
+        ) { filter ->
             val isSelected = filter == selected
             val bg = if (isSelected) Forest else CardBg
             val borderCol = if (isSelected) SageAccent.copy(alpha = 0.5f) else Line
@@ -564,7 +568,11 @@ private fun BookShelfSection(
             contentPadding = PaddingValues(horizontal = 20.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            items(books, key = { it.id }) { book ->
+            items(
+                items = books,
+                key = { it.id },
+                contentType = { "shelf_book" }
+            ) { book ->
                 ShelfBookCard(
                     book = book,
                     onClick = { onSelectBook(book) }
@@ -580,24 +588,24 @@ private fun ShelfBookCard(
     onClick: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
-    val interaction = remember { MutableInteractionSource() }
-    val isPressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "bookCardScale"
-    )
+    val context = LocalContext.current
+    val imageRequest = remember(book.coverUrl) {
+        if (book.coverUrl.isNullOrBlank()) null
+        else {
+            ImageRequest.Builder(context)
+                .data(book.coverUrl)
+                .crossfade(false)
+                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                .networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                .build()
+        }
+    }
 
     Column(
         modifier = Modifier
             .width(136.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
             .clickable(
-                interactionSource = interaction,
-                indication = null,
                 onClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                     onClick()
@@ -613,15 +621,9 @@ private fun ShelfBookCard(
                 .background(PaperDeep)
                 .border(1.dp, Line, RoundedCornerShape(10.dp))
         ) {
-            if (!book.coverUrl.isNullOrBlank()) {
+            if (imageRequest != null) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(book.coverUrl)
-                        .crossfade(true)
-                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                        .networkCachePolicy(coil.request.CachePolicy.ENABLED)
-                        .build(),
+                    model = imageRequest,
                     contentDescription = "${book.title} cover",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -732,23 +734,23 @@ private fun BookCard(
     modifier: Modifier = Modifier
 ) {
     val haptics = LocalHapticFeedback.current
-    val interaction = remember { MutableInteractionSource() }
-    val isPressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
-        label = "gridBookScale"
-    )
+    val context = LocalContext.current
+    val imageRequest = remember(book.coverUrl) {
+        if (book.coverUrl.isNullOrBlank()) null
+        else {
+            ImageRequest.Builder(context)
+                .data(book.coverUrl)
+                .crossfade(false)
+                .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                .networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                .build()
+        }
+    }
 
     Column(
         modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
             .clickable(
-                interactionSource = interaction,
-                indication = null,
                 onClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                     onClick()
@@ -763,15 +765,9 @@ private fun BookCard(
                 .background(PaperDeep)
                 .border(1.dp, Line, RoundedCornerShape(10.dp))
         ) {
-            if (!book.coverUrl.isNullOrBlank()) {
+            if (imageRequest != null) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(book.coverUrl)
-                        .crossfade(true)
-                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
-                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
-                        .networkCachePolicy(coil.request.CachePolicy.ENABLED)
-                        .build(),
+                    model = imageRequest,
                     contentDescription = "${book.title} cover",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
