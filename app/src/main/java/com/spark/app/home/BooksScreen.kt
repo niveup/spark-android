@@ -1094,7 +1094,8 @@ private fun BookDetailDialog(
                                         player.playUrl(
                                             url = firstAudioChapter.audioUrl,
                                             title = "${book.title}: ${firstAudioChapter.title}",
-                                            queue = audioPlaylist
+                                            queue = audioPlaylist,
+                                            isBookPlayback = true
                                         )
                                         onOpenAudioPlayer()
                                     } else {
@@ -1341,7 +1342,8 @@ private fun ChapterRowItem(
                                 player.playUrl(
                                     url = chapter.audioUrl,
                                     title = "$bookTitle: ${chapter.title}",
-                                    queue = playlist
+                                    queue = playlist,
+                                    isBookPlayback = true
                                 )
                                 onOpenAudioPlayer()
                             } else {

@@ -169,7 +169,7 @@ fun MiniAudioPlayer(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.1.sp
                             )
-                            if (state.autoplay) {
+                            if (state.autoplay && state.isBookPlayback) {
                                 Text(
                                     text = " · AUTOPLAY",
                                     color = Color(0xFF8FA396),
@@ -203,7 +203,7 @@ fun MiniAudioPlayer(
                             .clickable {
                                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                 if (state.failed) {
-                                    state.url?.let { player.playUrl(it, title) }
+                                    state.url?.let { player.playUrl(it, title, isBookPlayback = state.isBookPlayback) }
                                 } else {
                                     player.toggle()
                                 }
@@ -406,7 +406,7 @@ fun AudioPlayerOverlay(
                     Spacer(Modifier.width(22.dp))
                     FilledIconButton(
                         onClick = {
-                            if (state.failed) state.url?.let { player.playUrl(it, title) }
+                            if (state.failed) state.url?.let { player.playUrl(it, title, isBookPlayback = state.isBookPlayback) }
                             else player.toggle()
                         },
                         modifier = Modifier
@@ -503,7 +503,7 @@ fun AudioPlayerOverlay(
                                     color = if (state.autoplay) PlayerInk else PlayerMuted
                                 )
                                 Text(
-                                    text = if (state.autoplay) "Plays chapters one after another" else "Stops when current chapter ends",
+                                    text = if (state.autoplay) "Plays chapters one after another in Books" else "Stops when current chapter ends",
                                     fontSize = 11.sp,
                                     color = PlayerMuted
                                 )
