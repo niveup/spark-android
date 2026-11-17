@@ -2,6 +2,7 @@ package com.spark.app
 
 import com.spark.app.data.remote.BatchStateData
 import com.spark.app.data.remote.BookDto
+import com.spark.app.data.remote.SubtitleCueDto
 import com.spark.app.data.remote.DataResponse
 import com.spark.app.data.remote.FeedItemDto
 import com.spark.app.data.remote.FeedPage
@@ -81,6 +82,7 @@ class InteractionSyncStoreTest {
         ): DataResponse<SessionCloseData> = error("unused")
 
         override suspend fun books(auth: String): DataResponse<List<BookDto>> = error("unused")
+        override suspend fun subtitles(key: String): DataResponse<List<SubtitleCueDto>> = DataResponse(emptyList())
 
         override suspend fun savedItems(
             auth: String,

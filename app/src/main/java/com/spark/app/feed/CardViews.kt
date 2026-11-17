@@ -20,6 +20,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -87,19 +90,28 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spark.app.BuildConfig
 import com.spark.app.R
 import com.spark.app.audio.AudioPlayerBox
-import com.spark.app.ui.OfflineConnectivityButton
 import com.spark.app.audio.TtsHelper
 import com.spark.app.audio.formatMinSec
 import com.spark.app.data.Card
 import com.spark.app.data.CardType
+import com.spark.app.data.remote.DataResponse
+import com.spark.app.data.remote.SubtitleCueDto
 import com.spark.app.sync.InteractionSync
 import com.spark.app.sync.StateEvents
+import com.spark.app.ui.OfflineConnectivityButton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 // Paper-and-forest palette for the reel cards (same tokens as Home).
 private val Paper = Color(0xFFF4EFE5)
@@ -254,13 +266,17 @@ fun CardView(
                             card = card,
                             onAnswered = { correct -> sync.record(StateEvents.quiz(card.id, correct)) }
                         )
-                        CardType.AUDIO -> AudioBody(card, player, onOpenAudioPlayer)
+                        CardType.AUDIO -> AudioBody(
+                            card = card,
+                            player = player,
+                            onOpenAudioPlayer = onOpenAudioPlayer,
+                            modifier = Modifier.weight(1f)
+                        )
                         else -> StandardBody(card)
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    if (card.actionLine.isNotBlank()) {
+                    if (card.actionLine.isNotBlank() && card.type != CardType.AUDIO) {
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = card.actionLine,
                             fontSize = 11.sp,
@@ -286,51 +302,64 @@ fun CardView(
                 }
             }
 
-            Column {
-                // Tactile action row with bouncy spring responses and spark bursts
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CardAction(
-                        icon = if (saved) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Save card",
-                        stateDescription = if (saved) "Saved" else "Not saved",
-                        active = saved,
-                        accentColor = Ember,
-                        onClick = {
-                            state.toggleSave(card.id)
-                            sync.record(StateEvents.saved(card.id, !saved))
-                        }
+            val isAudioCard = card.type == CardType.AUDIO || card.audioUrl != null
+
+            if (isAudioCard) {
+                // Audiobook Card: Player controls pinned at the bottom!
+                // Per user instruction: Like, Dislike, Heart (Save), and Eye (Info) buttons removed.
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    AudioPlayerBottomBar(
+                        card = card,
+                        player = player,
+                        onOpenAudioPlayer = onOpenAudioPlayer
                     )
-                    CardAction(
-                        icon = if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
-                        contentDescription = "Like card",
-                        stateDescription = if (liked) "Liked" else "Not liked",
-                        active = liked,
-                        accentColor = Ember,
-                        onClick = {
-                            state.toggleLike(card.id)
-                            sync.record(StateEvents.rating(card.id, if (liked) null else true))
-                        }
-                    )
-                    CardAction(
-                        icon = if (disliked) {
-                            ImageVector.vectorResource(R.drawable.ic_thumb_down_filled_24)
-                        } else {
-                            ImageVector.vectorResource(R.drawable.ic_thumb_down_24)
-                        },
-                        contentDescription = "Dislike card",
-                        stateDescription = if (disliked) "Disliked" else "Not disliked",
-                        active = disliked,
-                        accentColor = EmberSoft,
-                        onClick = {
-                            state.toggleDislike(card.id)
-                            sync.record(StateEvents.rating(card.id, if (disliked) null else false))
-                        }
-                    )
-                    if (card.audioUrl == null) {
+                    Spacer(Modifier.height(76.dp))
+                }
+            } else {
+                Column {
+                    // Tactile action row with bouncy spring responses and spark bursts
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CardAction(
+                            icon = if (saved) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Save card",
+                            stateDescription = if (saved) "Saved" else "Not saved",
+                            active = saved,
+                            accentColor = Ember,
+                            onClick = {
+                                state.toggleSave(card.id)
+                                sync.record(StateEvents.saved(card.id, !saved))
+                            }
+                        )
+                        CardAction(
+                            icon = if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
+                            contentDescription = "Like card",
+                            stateDescription = if (liked) "Liked" else "Not liked",
+                            active = liked,
+                            accentColor = Ember,
+                            onClick = {
+                                state.toggleLike(card.id)
+                                sync.record(StateEvents.rating(card.id, if (liked) null else true))
+                            }
+                        )
+                        CardAction(
+                            icon = if (disliked) {
+                                ImageVector.vectorResource(R.drawable.ic_thumb_down_filled_24)
+                            } else {
+                                ImageVector.vectorResource(R.drawable.ic_thumb_down_24)
+                            },
+                            contentDescription = "Dislike card",
+                            stateDescription = if (disliked) "Disliked" else "Not disliked",
+                            active = disliked,
+                            accentColor = EmberSoft,
+                            onClick = {
+                                state.toggleDislike(card.id)
+                                sync.record(StateEvents.rating(card.id, if (disliked) null else false))
+                            }
+                        )
                         val isReadingThis = tts.isSpeaking
                         CardAction(
                             icon = Icons.Filled.PlayArrow,
@@ -344,26 +373,26 @@ fun CardView(
                                 tts.toggle("${card.title}. ${card.body}")
                             }
                         )
+                        CardAction(
+                            icon = Icons.Outlined.Info,
+                            contentDescription = "Why am I seeing this?",
+                            onClick = { showWhy = true }
+                        )
                     }
-                    CardAction(
-                        icon = Icons.Outlined.Info,
-                        contentDescription = "Why am I seeing this?",
-                        onClick = { showWhy = true }
-                    )
-                }
 
-                if (!tts.isReady) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Voice loading… try Listen again in a second.",
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        color = Paper.copy(alpha = 0.78f)
-                    )
-                }
+                    if (!tts.isReady) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Voice loading… try Listen again in a second.",
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            color = Paper.copy(alpha = 0.78f)
+                        )
+                    }
 
-                // Breathing room above the floating glass navigation bar
-                Spacer(Modifier.height(76.dp))
+                    // Breathing room above the floating glass navigation bar
+                    Spacer(Modifier.height(76.dp))
+                }
             }
         }
 
@@ -683,89 +712,269 @@ private fun StandardBody(card: Card) {
     }
 }
 
-/** Audiobook chapter card body: stream player (Phase 6). */
+/** Audiobook chapter card body: displays title, book pill, and live subtitles synced with narration. */
 @Composable
-private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: () -> Unit) {
-    Text(
-        text = card.title,
-        fontFamily = Display,
-        fontSize = 24.sp,
-        lineHeight = 30.sp,
-        fontWeight = FontWeight.Bold,
-        color = PaperSoft,
-        modifier = Modifier.semantics { heading() }
-    )
-    if (card.bookLine != null) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+private fun AudioBody(
+    card: Card,
+    player: AudioPlayerBox?,
+    onOpenAudioPlayer: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val ui = player?.state?.collectAsStateWithLifecycle()?.value
+    val url = card.audioUrl
+    val resolvedUrl = if (url != null) {
+        if (url.startsWith("http://") || url.startsWith("https://")) url
+        else "${BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
+    } else null
+    val isThis = url != null && (ui?.url == url || ui?.url == resolvedUrl)
+    val positionMs = if (isThis) (ui?.positionMs ?: 0L) else 0L
+    val isPlaying = isThis && (ui?.playing == true)
+
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = card.title,
+            fontFamily = Display,
+            fontSize = 22.sp,
+            lineHeight = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = PaperSoft,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.semantics { heading() }
+        )
+
+        if (card.bookLine != null) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Ember.copy(alpha = 0.14f))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_book_filled_24),
+                    contentDescription = null,
+                    tint = Ember,
+                    modifier = Modifier.size(13.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = card.bookLine,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = EmberSoft,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Live Subtitle Viewer taking the available vertical space
+        Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(6.dp))
-                .background(Ember.copy(alpha = 0.14f))
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .fillMaxWidth()
+                .weight(1f)
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_book_filled_24),
-                contentDescription = null,
-                tint = Ember,
-                modifier = Modifier.size(13.dp)
+            LiveSubtitleViewer(
+                card = card,
+                positionMs = positionMs,
+                isPlaying = isPlaying,
+                onSeekTo = { targetMs ->
+                    if (!isThis && url != null) {
+                        player?.playUrl(url, card.title)
+                    }
+                    player?.seekTo(targetMs)
+                }
             )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = card.bookLine,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = EmberSoft,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        }
+    }
+}
+
+/** Displays synchronized subtitles that follow the narrator's voice in real time. */
+@Composable
+private fun LiveSubtitleViewer(
+    card: Card,
+    positionMs: Long,
+    isPlaying: Boolean,
+    onSeekTo: (Long) -> Unit
+) {
+    val subtitleKey = remember(card.audioUrl) {
+        card.audioUrl?.substringAfterLast("/")?.substringBefore("?") ?: ""
+    }
+
+    var cues by remember(subtitleKey) { mutableStateOf<List<com.spark.app.data.remote.SubtitleCueDto>>(emptyList()) }
+    var loaded by remember(subtitleKey) { mutableStateOf(false) }
+
+    LaunchedEffect(subtitleKey) {
+        cues = SubtitleRepository.getSubtitles(
+            key = subtitleKey,
+            bodyFallback = card.body,
+            durationLabel = card.durationLabel
+        )
+        loaded = true
+    }
+
+    val activeIndex = remember(cues, positionMs) {
+        if (cues.isEmpty()) -1
+        else {
+            val idx = cues.indexOfFirst { positionMs in it.startMs..it.endMs }
+            if (idx != -1) idx
+            else if (positionMs < (cues.firstOrNull()?.startMs ?: 0L)) 0
+            else cues.indexOfLast { it.startMs <= positionMs }.takeIf { it != -1 } ?: (cues.size - 1)
+        }
+    }
+
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(activeIndex) {
+        if (activeIndex >= 0) {
+            listState.animateScrollToItem(
+                index = (activeIndex - 1).coerceAtLeast(0),
+                scrollOffset = -20
             )
         }
     }
 
-    val cleanBody = remember(card.body) {
-        card.body
-            .replace(Regex("^###[^\n\r]+", RegexOption.MULTILINE), "")
-            .replace(Regex("-\\s*\\*\\*Audio\\*\\*:[^\n\r]+", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("\\*\\*([^*]+)\\*\\*"), "$1")
-            .replace(Regex("\\*([^*]+)\\*"), "$1")
-            .trim()
-    }
-    if (cleanBody.isNotBlank()) {
-        Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = cleanBody,
-            fontSize = 15.sp,
-            lineHeight = 22.sp,
-            color = Paper.copy(alpha = 0.85f)
-        )
-    }
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF0F2218).copy(alpha = 0.85f),
+        border = BorderStroke(1.dp, Color(0xFF1E4230)),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(if (isPlaying) Ember else Paper.copy(alpha = 0.35f))
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = if (isPlaying) "LIVE SUBTITLES" else "SUBTITLES",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        color = if (isPlaying) Ember else Paper.copy(alpha = 0.5f)
+                    )
+                }
 
-    Spacer(modifier = Modifier.height(20.dp))
-    val url = card.audioUrl
-    if (url == null) {
-        Text("Audio link missing on this card.", color = Paper.copy(alpha = 0.6f))
-        return
+                Text(
+                    text = "Tap line to jump",
+                    fontSize = 10.sp,
+                    color = Paper.copy(alpha = 0.45f)
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            if (!loaded) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Loading transcript...",
+                        fontSize = 13.sp,
+                        color = Paper.copy(alpha = 0.5f)
+                    )
+                }
+            } else if (cues.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Audio playback ready. Press play below to listen.",
+                        fontSize = 13.sp,
+                        color = Paper.copy(alpha = 0.6f)
+                    )
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    itemsIndexed(cues) { index, cue ->
+                        val isActive = index == activeIndex
+                        val isPast = activeIndex > index
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isActive) Ember.copy(alpha = 0.16f)
+                                    else Color.Transparent
+                                )
+                                .clickable { onSeekTo(cue.startMs) }
+                                .padding(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = cue.text,
+                                fontSize = if (isActive) 17.sp else 15.sp,
+                                lineHeight = if (isActive) 24.sp else 21.sp,
+                                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+                                color = when {
+                                    isActive -> PaperSoft
+                                    isPast -> Paper.copy(alpha = 0.45f)
+                                    else -> Paper.copy(alpha = 0.70f)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
-    if (player == null) {
-        Text("Player not available right now.", color = Paper.copy(alpha = 0.6f))
-        return
+}
+
+/** Pinned bottom player controls for audiobook cards. */
+@Composable
+private fun AudioPlayerBottomBar(
+    card: Card,
+    player: AudioPlayerBox?,
+    onOpenAudioPlayer: () -> Unit
+) {
+    val url = card.audioUrl ?: return
+    val playerBox = player ?: return
+    val ui by playerBox.state.collectAsStateWithLifecycle()
+    val resolvedUrl = if (url.startsWith("http://") || url.startsWith("https://")) {
+        url
+    } else {
+        "${BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
     }
-    val ui by player.state.collectAsStateWithLifecycle()
-    val isThis = ui.url == url
+    val isThis = ui.url == url || ui.url == resolvedUrl
     val playing = isThis && ui.playing
     val duration = if (isThis && ui.durationMs > 0) ui.durationMs
     else (card.durationLabel?.let { parseMinSecPlusMs(it) } ?: 0L)
+    val position = if (isThis) ui.positionMs else 0L
 
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF132B20),
+        shape = RoundedCornerShape(22.dp),
+        color = Color(0xFF132B20).copy(alpha = 0.96f),
         border = BorderStroke(1.dp, Color(0xFF2E5E4A)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -780,9 +989,9 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: ()
                             .background(Ember)
                             .clickable {
                                 if (isThis) {
-                                    player.toggle()
+                                    playerBox.toggle()
                                 } else {
-                                    player.playUrl(url, card.title)
+                                    playerBox.playUrl(url, card.title)
                                 }
                             },
                         contentAlignment = Alignment.Center
@@ -791,7 +1000,7 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: ()
                             Text(
                                 text = "Ⅱ",
                                 color = Color(0xFF121110),
-                                fontSize = 20.sp,
+                                fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         } else {
@@ -799,7 +1008,7 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: ()
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = "Play audiobook",
                                 tint = Color(0xFF121110),
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(26.dp)
                             )
                         }
                     }
@@ -823,7 +1032,7 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: ()
 
                 IconButton(
                     onClick = {
-                        if (!isThis) player.playUrl(url, card.title)
+                        if (!isThis) playerBox.playUrl(url, card.title)
                         onOpenAudioPlayer()
                     }
                 ) {
@@ -836,12 +1045,12 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: ()
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(8.dp))
 
             if (duration > 0) {
                 Slider(
-                    value = (ui.positionMs.takeIf { isThis } ?: 0).toFloat().coerceIn(0f, duration.toFloat().coerceAtLeast(1f)),
-                    onValueChange = { player.seekTo(it.toLong()) },
+                    value = position.toFloat().coerceIn(0f, duration.toFloat().coerceAtLeast(1f)),
+                    onValueChange = { playerBox.seekTo(it.toLong()) },
                     valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
                     colors = SliderDefaults.colors(
                         thumbColor = Ember,
@@ -869,7 +1078,7 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: ()
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = formatMinSec(ui.positionMs.takeIf { isThis } ?: 0),
+                    text = formatMinSec(position),
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     color = Paper.copy(alpha = 0.7f)

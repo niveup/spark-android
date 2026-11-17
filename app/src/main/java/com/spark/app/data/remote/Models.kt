@@ -93,6 +93,13 @@ data class HealthData(
     @SerialName("version") val version: String = ""
 )
 
+@Serializable
+data class SubtitleCueDto(
+    @SerialName("startMs") val startMs: Long = 0L,
+    @SerialName("endMs") val endMs: Long = 0L,
+    @SerialName("text") val text: String = ""
+)
+
 // --- Phase 5b: interaction sync + sessions + stats ---
 
 /** Body of POST /items/state; each update is a StateEvents-built JSON object. */

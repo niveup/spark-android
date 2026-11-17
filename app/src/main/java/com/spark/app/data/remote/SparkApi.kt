@@ -72,4 +72,7 @@ interface SparkApi {
 
     @GET("api/mobile/v1/books")
     suspend fun books(@Header("Authorization") auth: String): DataResponse<List<BookDto>>
+
+    @GET("api/mobile/v1/subtitles/{key}")
+    suspend fun subtitles(@Path("key") key: String): DataResponse<List<SubtitleCueDto>>
 }

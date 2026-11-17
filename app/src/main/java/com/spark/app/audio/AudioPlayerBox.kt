@@ -284,7 +284,7 @@ class AudioPlayerBox(context: Context) {
                 }
                 delay(
                     when {
-                        c?.isPlaying == true -> 500
+                        c?.isPlaying == true -> 250
                         sleepRemainingMs > 0L -> 1_000
                         else -> 5_000
                     }
