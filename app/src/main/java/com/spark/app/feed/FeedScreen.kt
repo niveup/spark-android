@@ -180,11 +180,11 @@ fun FeedScreen(
                             .fillMaxSize()
                             .background(Paper)
                             .graphicsLayer {
-                                // Directional vertical motion blur + depth scale transition
+                                // Subtle directional motion blur + gentle depth scale
                                 val pageOffset =
                                     (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
                                 val absOffset = kotlin.math.abs(pageOffset).coerceIn(0f, 1f)
-                                val scale = 1f - (absOffset * 0.06f)
+                                val scale = 1f - (absOffset * 0.03f)
                                 val isTopBound = page == 0 && pagerState.currentPage == 0 &&
                                     pagerState.currentPageOffsetFraction < 0f
                                 val isBottomBound = page == sessionCards.lastIndex &&
@@ -204,20 +204,21 @@ fun FeedScreen(
                                 } else {
                                     scale
                                 }
-                                alpha = 1f - (absOffset * 0.25f)
+                                alpha = 1f - (absOffset * 0.15f)
                                 translationY = if (overscrollDamping != 0f) {
                                     -overscrollDamping * size.height * 0.18f
                                 } else {
-                                    pageOffset * size.height * 0.08f
+                                    pageOffset * size.height * 0.04f
                                 }
 
-                                // Native directional motion blur during swipe transitions (Android 12+)
+                                // Subtle native motion blur (very gentle optical softening)
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    val blurPx = (absOffset * 18f * density).coerceIn(0f, 36f)
-                                    renderEffect = if (absOffset > 0.02f) {
+                                    val blurY = (absOffset * 5f * density).coerceIn(0f, 9f)
+                                    val blurX = (blurY * 0.25f).coerceIn(0f, 2.5f)
+                                    renderEffect = if (absOffset > 0.04f && blurY > 0.5f) {
                                         androidx.compose.ui.graphics.BlurEffect(
-                                            radiusX = blurPx * 0.4f,
-                                            radiusY = blurPx,
+                                            radiusX = blurX,
+                                            radiusY = blurY,
                                             edgeTreatment = androidx.compose.ui.graphics.TileMode.Decal
                                         )
                                     } else {
