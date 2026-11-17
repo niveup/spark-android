@@ -6,11 +6,10 @@ See `AGENTS.md` for full brief and `docs/HANDOFF.md` for phase plan.
 
 ## Run it on the phone
 
-The debug build talks to the API on this PC through a USB tunnel
-(`adb reverse tcp:3000 tcp:3000`), so start the API first:
+Start the API and configure the USB tunnel in one step:
 
 ```powershell
-cd api; npm run dev          # leave running
+.\scripts\dev.ps1                      # starts API, opens USB tunnel, checks /health and /books
 ```
 
 Then, from the repo root, rebuild and reinstall with a clean slate:
