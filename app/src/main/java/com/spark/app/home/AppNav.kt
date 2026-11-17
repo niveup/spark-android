@@ -300,7 +300,7 @@ fun AppNav(
     var awaitingLayoutTab by remember { mutableStateOf<Tab?>(null) }
     LaunchedEffect(tab) {
         if (tab == Tab.BOOKS) {
-            booksVm.load(force = true)
+            booksVm.load()
         }
         val targetTab = tab
         if (targetTab != contentTab) {

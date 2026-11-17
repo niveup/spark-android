@@ -6,6 +6,7 @@ import com.spark.app.BuildConfig
 import com.spark.app.data.remote.BookDto
 import com.spark.app.data.remote.SparkApi
 import com.spark.app.sync.TokenReader
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +38,9 @@ class BooksViewModel(
     private var loadJob: Job? = null
 
     fun load(force: Boolean = false) {
+        if (_state.value is BooksUiState.Content && !force) {
+            return
+        }
         if (loadJob?.isActive == true) {
             if (!force) return
             loadJob?.cancel()
@@ -48,7 +52,9 @@ class BooksViewModel(
         loadJob = viewModelScope.launch(Dispatchers.IO) {
             val token = tokens.getToken()
             if (token == null) {
-                _state.value = BooksUiState.Error("Not logged in — log in again.")
+                if (_state.value !is BooksUiState.Content) {
+                    _state.value = BooksUiState.Error("Not logged in — log in again.")
+                }
                 return@launch
             }
             try {
@@ -74,12 +80,20 @@ class BooksViewModel(
                     book.copy(coverUrl = resolvedCover, chapters = resolvedChapters)
                 }
                 _state.value = BooksUiState.Content(resolvedBooks)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: IOException) {
-                _state.value = BooksUiState.Error("Could not connect to library. Tap to retry.")
+                if (_state.value !is BooksUiState.Content) {
+                    _state.value = BooksUiState.Error("Could not connect to library. Tap to retry.")
+                }
             } catch (e: HttpException) {
-                _state.value = BooksUiState.Error("Library server error (${e.code()}).")
+                if (_state.value !is BooksUiState.Content) {
+                    _state.value = BooksUiState.Error("Library server error (${e.code()}).")
+                }
             } catch (e: Exception) {
-                _state.value = BooksUiState.Error(e.message ?: "Failed to load books.")
+                if (_state.value !is BooksUiState.Content) {
+                    _state.value = BooksUiState.Error("Failed to load books. Tap to retry.")
+                }
             }
         }
     }
