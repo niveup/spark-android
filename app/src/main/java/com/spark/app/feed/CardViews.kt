@@ -822,10 +822,10 @@ private fun LiveSubtitleViewer(
     val activeIndex = remember(cues, positionMs) {
         if (cues.isEmpty()) -1
         else {
-            val idx = cues.indexOfFirst { positionMs in it.startMs..it.endMs }
-            if (idx != -1) idx
-            else if (positionMs < (cues.firstOrNull()?.startMs ?: 0L)) 0
-            else cues.indexOfLast { it.startMs <= positionMs }.takeIf { it != -1 } ?: (cues.size - 1)
+            // 200ms anticipatory lead so line highlights right as the narrator speaks the sentence
+            val targetMs = positionMs + 200L
+            val idx = cues.indexOfLast { it.startMs <= targetMs }
+            if (idx != -1) idx.coerceAtMost(cues.lastIndex) else 0
         }
     }
 

@@ -6,6 +6,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 CHAPTERS_FILE = r"D:\books\48-laws-of-power\all_48_laws_chapters.json"
 OUT_DIR = r"D:\new something\api\public\subtitles"
 VIDEO_ID = "2P1-SunHlZg"
+LAG_COMPENSATION_MS = 1800 # Compensates for YouTube ASR token emission latency
 
 os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -29,8 +30,11 @@ def group_into_sentences(snippets_for_ch, ch_start_sec):
         if not words:
             continue
         
-        start_ms = max(0, round((s.start - ch_start_sec) * 1000))
-        end_ms = max(start_ms + 500, round((s.start + s.duration - ch_start_sec) * 1000))
+        # Compensate for YouTube auto-caption lag
+        raw_start = (s.start - ch_start_sec) * 1000
+        raw_end = (s.start + s.duration - ch_start_sec) * 1000
+        start_ms = max(0, round(raw_start - LAG_COMPENSATION_MS))
+        end_ms = max(start_ms + 400, round(raw_end - LAG_COMPENSATION_MS))
         dur_per_word = (end_ms - start_ms) / len(words)
 
         for idx, w in enumerate(words):
@@ -39,7 +43,7 @@ def group_into_sentences(snippets_for_ch, ch_start_sec):
             words_timed.append((w, w_start, w_end))
 
     # Clean out stray leading artifacts (like "time law", "preface")
-    if words_timed and words_timed[0][0].lower() in ["time", "c", "/c"]:
+    while words_timed and words_timed[0][0].lower() in ["time", "c", "/c"]:
         words_timed.pop(0)
 
     sentences = []
@@ -54,10 +58,8 @@ def group_into_sentences(snippets_for_ch, ch_start_sec):
 
         if (is_end_punct or is_clause_length or is_last) and len(current_sentence) >= 6:
             stext = " ".join(w for w, _, _ in current_sentence).strip()
-            # Capitalize first letter
             if stext:
                 stext = stext[0].upper() + stext[1:]
-                # ensure ends with a period if no punctuation
                 if stext[-1] not in [".", "?", "!", ":", ","]:
                     stext += "."
                 sentences.append({
@@ -67,7 +69,6 @@ def group_into_sentences(snippets_for_ch, ch_start_sec):
                 })
             current_sentence = []
 
-    # any leftovers
     if current_sentence:
         stext = " ".join(w for w, _, _ in current_sentence).strip()
         if stext:
@@ -79,6 +80,16 @@ def group_into_sentences(snippets_for_ch, ch_start_sec):
                 "endMs": current_sentence[-1][2],
                 "text": stext
             })
+
+    # Enforce strictly contiguous and non-overlapping cue boundaries
+    sentences.sort(key=lambda x: x["startMs"])
+    for i in range(len(sentences)):
+        if i + 1 < len(sentences):
+            next_start = sentences[i+1]["startMs"]
+            if sentences[i]["endMs"] > next_start or (next_start - sentences[i]["endMs"] <= 1200):
+                sentences[i]["endMs"] = next_start
+        else:
+            sentences[i]["endMs"] = max(sentences[i]["endMs"], sentences[i]["startMs"] + 1500)
 
     return sentences
 
@@ -98,4 +109,4 @@ for ch in chapters:
 
     print(f"Chapter {c_num:02d} ({title}): {len(ch_snippets)} snippets -> {len(sentences)} full sentences.")
 
-print("\nSUCCESS: All 48 Laws chapters now have full word-for-word transcripts matching audio!")
+print("All 49 chapters generated with precision timing and zero overlap!")

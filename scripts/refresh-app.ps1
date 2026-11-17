@@ -58,7 +58,7 @@ if ($Serial) { $adbArgs += @('-s', $Serial) }
 
 Write-Host "adb: $adb"
 
-$devices = (& $adb devices) | Where-Object { $_ -match '\sdevice$' }
+$devices = (& $adb devices) | Where-Object { $_.Trim() -match '\sdevice$' }
 if (-not $devices) {
     throw 'No phone connected. Plug it in, unlock it and accept the USB debugging prompt.'
 }
