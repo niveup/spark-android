@@ -141,18 +141,6 @@ fun FeedScreen(
                 lastShown = LastShown(card.id, SystemClock.elapsedRealtime())
             }
 
-            // Session time limit: finish the session when the minutes run out.
-            LaunchedEffect(sessionCards, minuteLimit, startedAtElapsedMs) {
-                while (!state.done) {
-                    delay(TIME_TICK_MS)
-                    val elapsedMs = SystemClock.elapsedRealtime() - startedAtElapsedMs
-                    if (elapsedMs >= minuteLimit * 60_000L) {
-                        recordCurrentDwell(lastShown, sync)
-                        state.finish(FinishReason.TIME_LIMIT)
-                    }
-                }
-            }
-
             // Fluid snap fling physics
             val flingBehavior = PagerDefaults.flingBehavior(
                 state = pagerState,
