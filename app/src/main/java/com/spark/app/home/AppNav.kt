@@ -1,5 +1,6 @@
 package com.spark.app.home
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -48,6 +49,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -235,7 +237,63 @@ fun AppNav(
             card.id != nextCard?.id
     }
     var showSavedSheet by rememberSaveable { mutableStateOf(false) }
-    var tab by rememberSaveable { mutableStateOf(if (startOnReels) Tab.REELS else Tab.HOME) }
+    val initialTab = remember { if (startOnReels) Tab.REELS else Tab.HOME }
+    val tabBackStack = rememberSaveable(
+        saver = androidx.compose.runtime.saveable.listSaver(
+            save = { it.map { t -> t.name } },
+            restore = { saved ->
+                val list = mutableStateListOf<Tab>()
+                saved.forEach { name ->
+                    try {
+                        list.add(Tab.valueOf(name))
+                    } catch (_: Exception) {}
+                }
+                if (list.isEmpty()) list.add(Tab.HOME)
+                list
+            }
+        )
+    ) {
+        mutableStateListOf<Tab>().apply {
+            add(Tab.HOME)
+            if (initialTab != Tab.HOME) {
+                add(initialTab)
+            }
+        }
+    }
+    var tab by rememberSaveable { mutableStateOf(initialTab) }
+
+    fun navigateToTab(target: Tab) {
+        if (tab != target) {
+            if (target == Tab.HOME) {
+                tabBackStack.clear()
+                tabBackStack.add(Tab.HOME)
+            } else {
+                if (tabBackStack.isEmpty() || tabBackStack.first() != Tab.HOME) {
+                    tabBackStack.clear()
+                    tabBackStack.add(Tab.HOME)
+                }
+                if (tabBackStack.lastOrNull() != target) {
+                    tabBackStack.add(target)
+                }
+            }
+            tab = target
+        }
+    }
+
+    // Multi-step tab back navigation:
+    // When on Books, Reels, or Me, pressing back steps back through previous tabs until HOME.
+    // When at HOME, BackHandler is disabled so pressing back exits to phone home page.
+    BackHandler(enabled = tab != Tab.HOME || tabBackStack.size > 1) {
+        if (tabBackStack.size > 1) {
+            tabBackStack.removeAt(tabBackStack.lastIndex)
+            tab = tabBackStack.last()
+        } else {
+            tabBackStack.clear()
+            tabBackStack.add(Tab.HOME)
+            tab = Tab.HOME
+        }
+    }
+
     var contentTab by rememberSaveable { mutableStateOf(tab) }
     val transitionCover = remember { Animatable(0f) }
     val laidOutTab = remember { MutableStateFlow<Tab?>(contentTab) }
@@ -272,7 +330,7 @@ fun AppNav(
     }
     LaunchedEffect(startOnReels) {
         if (startOnReels) {
-            tab = Tab.REELS
+            navigateToTab(Tab.REELS)
             onStartOnReelsHandled()
         }
     }
@@ -392,9 +450,9 @@ fun AppNav(
                             nextCard = nextCard,
                             dailyQuote = dailyQuote,
                             bottomClearance = if (tab != Tab.REELS && hasAudio) 180.dp else 100.dp,
-                            onOpenReels = { tab = Tab.REELS },
+                            onOpenReels = { navigateToTab(Tab.REELS) },
                             onOpenSaved = { showSavedSheet = true },
-                            onOpenMe = { tab = Tab.ME }
+                            onOpenMe = { navigateToTab(Tab.ME) }
                         )
                         Tab.REELS -> when (val f = feed) {
                             is FeedUiState.Loading -> CenteredFullScreen {
@@ -460,16 +518,16 @@ fun AppNav(
                                 onRetryConnection()
                                 booksVm.load(force = true)
                             },
-                            onOpenReels = { tab = Tab.REELS },
+                            onOpenReels = { navigateToTab(Tab.REELS) },
                             onOpenChapterInReels = { chapterId ->
-                                tab = Tab.REELS
+                                navigateToTab(Tab.REELS)
                                 feedVm.openSavedItem(
                                     itemId = chapterId,
                                     offlineOnly = isOffline,
                                     onDeckReplaced = state::resetSession
                                 )
                             },
-                            onOpenMe = { tab = Tab.ME },
+                            onOpenMe = { navigateToTab(Tab.ME) },
                             player = player,
                             onOpenAudioPlayer = { showAudioPlayer = true },
                             bottomClearance = if (hasAudio) 180.dp else 100.dp
@@ -534,7 +592,7 @@ fun AppNav(
             }
             SparkBottomBar(
                 selectedTab = tab,
-                onTabSelected = { tab = it },
+                onTabSelected = { navigateToTab(it) },
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -591,11 +649,11 @@ fun AppNav(
                                 },
                                 onOpenReels = {
                                     showSavedSheet = false
-                                    tab = Tab.REELS
+                                    navigateToTab(Tab.REELS)
                                 },
                                 onOpenCard = { card ->
                                     showSavedSheet = false
-                                    tab = Tab.REELS
+                                    navigateToTab(Tab.REELS)
                                     feedVm.openSavedItem(
                                         itemId = card.id,
                                         offlineOnly = isOffline,
