@@ -1,0 +1,1284 @@
+package com.spark.app.home
+
+import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.spark.app.R
+import com.spark.app.audio.AudioPlayerBox
+import com.spark.app.data.remote.BookChapterDto
+import com.spark.app.data.remote.BookDto
+import com.spark.app.ui.EmptyState
+import com.spark.app.ui.ErrorState
+import com.spark.app.ui.LoadingState
+import com.spark.app.ui.OfflineConnectivityButton
+import com.spark.app.ui.theme.SparkSpacing
+import com.spark.app.ui.theme.SparkType
+
+private val Page = Color(0xFF121110)
+private val Paper = Color(0xFFECE6E0)
+private val PaperDeep = Color(0xFF242220)
+private val CardBg = Color(0xFF1A1817)
+private val ReadingSurface = Color(0xFF211B15)
+private val Ink = Color(0xFFECE6E0)
+private val InkSoft = Color(0xFFCFC7BE)
+private val Line = Color(0xFF383431)
+private val Ember = Color(0xFFFFB454)
+private val Forest = Color(0xFF214A36)
+private val SageSoft = Color(0xFF1E4F42)
+private val SageAccent = Color(0xFFA6D8C4)
+
+private val Display = FontFamily.Serif
+
+@Composable
+fun BooksScreen(
+    state: BooksUiState,
+    onRetry: () -> Unit,
+    offline: Boolean,
+    onRetryConnection: () -> Unit,
+    onOpenReels: () -> Unit,
+    onOpenChapterInReels: (String) -> Unit = {},
+    onOpenMe: () -> Unit = {},
+    player: AudioPlayerBox? = null,
+    onOpenAudioPlayer: () -> Unit = {},
+    bottomClearance: Dp = 100.dp
+) {
+    var selectedBook by remember { mutableStateOf<BookDto?>(null) }
+    var selectedFilter by rememberSaveable { mutableStateOf("All") }
+
+    Box(modifier = Modifier.fillMaxSize().background(Page)) {
+        when (state) {
+            is BooksUiState.Loading -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    LoadingState("Loading curated library…")
+                }
+            }
+            is BooksUiState.Error -> {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    ErrorState(
+                        text = state.message,
+                        onRetry = onRetry
+                    )
+                }
+            }
+            is BooksUiState.Content -> {
+                if (state.books.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        EmptyState(
+                            text = "No books in library yet.",
+                            actionLabel = "Retry",
+                            onAction = onRetry
+                        )
+                    }
+                } else {
+                    BooksContent(
+                        books = state.books,
+                        selectedFilter = selectedFilter,
+                        onSelectFilter = { selectedFilter = it },
+                        onSelectBook = { selectedBook = it },
+                        offline = offline,
+                        onRetryConnection = onRetryConnection,
+                        bottomClearance = bottomClearance,
+                        onOpenMe = onOpenMe
+                    )
+                }
+            }
+        }
+
+        // Book Detail Modal Sheet (opens on tapping any book card)
+        selectedBook?.let { book ->
+            BookDetailDialog(
+                book = book,
+                onDismiss = { selectedBook = null },
+                onOpenReels = {
+                    selectedBook = null
+                    onOpenReels()
+                },
+                onOpenChapterInReels = { chapterId ->
+                    selectedBook = null
+                    onOpenChapterInReels(chapterId)
+                },
+                player = player,
+                onOpenAudioPlayer = onOpenAudioPlayer
+            )
+        }
+    }
+}
+
+@Composable
+private fun BooksContent(
+    books: List<BookDto>,
+    selectedFilter: String,
+    onSelectFilter: (String) -> Unit,
+    onSelectBook: (BookDto) -> Unit,
+    offline: Boolean,
+    onRetryConnection: () -> Unit,
+    bottomClearance: Dp,
+    onOpenMe: () -> Unit
+) {
+    val filters = listOf("All", "Audio", "Philosophy", "Self-Growth", "Classics")
+
+    // Storytel-style categories
+    val audioBooks = remember(books) { books.filter { it.hasAudio } }
+    val philosophyBooks = remember(books) {
+        books.filter { b ->
+            val titleLower = b.title.lowercase()
+            val authorLower = b.author.lowercase()
+            titleLower.contains("meditation") ||
+                titleLower.contains("epictetus") ||
+                titleLower.contains("enchiridion") ||
+                titleLower.contains("thinketh") ||
+                authorLower.contains("aurelius") ||
+                authorLower.contains("allen")
+        }
+    }
+    val growthBooks = remember(books) {
+        books.filter { b ->
+            val titleLower = b.title.lowercase()
+            val authorLower = b.author.lowercase()
+            titleLower.contains("rich") ||
+                titleLower.contains("hours") ||
+                titleLower.contains("franklin") ||
+                titleLower.contains("self help") ||
+                titleLower.contains("diamonds") ||
+                titleLower.contains("power") ||
+                titleLower.contains("48") ||
+                authorLower.contains("wattles") ||
+                authorLower.contains("bennett") ||
+                authorLower.contains("smiles") ||
+                authorLower.contains("greene")
+        }
+    }
+    val classicLiterature = remember(books) {
+        books.filter { b ->
+            val titleLower = b.title.lowercase()
+            titleLower.contains("pride") ||
+                titleLower.contains("frankenstein") ||
+                titleLower.contains("sherlock") ||
+                titleLower.contains("jane eyre") ||
+                titleLower.contains("moby")
+        }
+    }
+
+    val filteredList = remember(books, selectedFilter) {
+        when (selectedFilter) {
+            "Audio" -> audioBooks
+            "Philosophy" -> philosophyBooks
+            "Self-Growth" -> growthBooks
+            "Classics" -> classicLiterature
+            else -> books
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = bottomClearance + 24.dp)
+    ) {
+        // Top Header
+        item {
+            BooksHeader(
+                offline = offline,
+                onRetryConnection = onRetryConnection,
+                onOpenMe = onOpenMe
+            )
+        }
+
+        // Filter Pills
+        item {
+            FilterChipsRow(
+                filters = filters,
+                selected = selectedFilter,
+                onSelect = onSelectFilter
+            )
+            Spacer(Modifier.height(16.dp))
+        }
+
+        if (selectedFilter == "All") {
+            // Shelf 0: Library Collection (All books)
+            if (books.isNotEmpty()) {
+                item {
+                    BookShelfSection(
+                        title = "Featured Books",
+                        subtitle = "Curated titles in your library",
+                        books = books,
+                        onSelectBook = onSelectBook,
+                        onSeeAll = { onSelectFilter("All") }
+                    )
+                    Spacer(Modifier.height(24.dp))
+                }
+            }
+
+            // Shelf 1: Available with Audio
+            if (audioBooks.isNotEmpty()) {
+                item {
+                    BookShelfSection(
+                        title = "Available with Audio",
+                        subtitle = "Full recordings & narrator chapters",
+                        books = audioBooks,
+                        onSelectBook = onSelectBook,
+                        onSeeAll = { onSelectFilter("Audio") }
+                    )
+                    Spacer(Modifier.height(24.dp))
+                }
+            }
+
+            // Shelf 2: Philosophy & Stoicism
+            if (philosophyBooks.isNotEmpty()) {
+                item {
+                    BookShelfSection(
+                        title = "Philosophy & Stoicism",
+                        subtitle = "Ancient wisdom for modern clarity",
+                        books = philosophyBooks,
+                        onSelectBook = onSelectBook,
+                        onSeeAll = { onSelectFilter("Philosophy") }
+                    )
+                    Spacer(Modifier.height(24.dp))
+                }
+            }
+
+            // Shelf 3: Conduct of Life & Habits
+            if (growthBooks.isNotEmpty()) {
+                item {
+                    BookShelfSection(
+                        title = "Conduct of Life & Habits",
+                        subtitle = "Classics on focus, mindset & mastery",
+                        books = growthBooks,
+                        onSelectBook = onSelectBook,
+                        onSeeAll = { onSelectFilter("Self-Growth") }
+                    )
+                    Spacer(Modifier.height(24.dp))
+                }
+            }
+
+            // Shelf 4: Curated Classic Literature
+            if (classicLiterature.isNotEmpty()) {
+                item {
+                    BookShelfSection(
+                        title = "Classic Literature",
+                        subtitle = "Timeless masterpieces",
+                        books = classicLiterature,
+                        onSelectBook = onSelectBook,
+                        onSeeAll = { onSelectFilter("Classics") }
+                    )
+                    Spacer(Modifier.height(24.dp))
+                }
+            }
+        }
+
+        // Categorized grid only when a specific category is selected
+        if (selectedFilter != "All") {
+            item {
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = selectedFilter,
+                            fontFamily = Display,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+                        Text(
+                            text = "${filteredList.size} books",
+                            fontSize = 12.sp,
+                            color = InkSoft
+                        )
+                    }
+                    Spacer(Modifier.height(14.dp))
+                }
+            }
+
+            items(filteredList.chunked(2)) { pair ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    BookCard(
+                        book = pair[0],
+                        onClick = { onSelectBook(pair[0]) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (pair.size > 1) {
+                        BookCard(
+                            book = pair[1],
+                            onClick = { onSelectBook(pair[1]) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BooksHeader(
+    offline: Boolean,
+    onRetryConnection: () -> Unit,
+    onOpenMe: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "A library for everyone,",
+                    fontSize = 13.sp,
+                    color = Ember,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = "Booktips for you",
+                    fontFamily = Display,
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Ink
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (offline) {
+                    OfflineConnectivityButton(
+                        onRetry = onRetryConnection,
+                        modifier = Modifier
+                    )
+                }
+
+                // SPARK brand mark (the peak of the A on its own)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(CardBg.copy(alpha = 0.85f))
+                        .border(1.dp, Line, CircleShape)
+                        .clickable(onClick = onOpenMe),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = androidx.compose.ui.res.painterResource(com.spark.app.R.drawable.ic_spark_mark),
+                        contentDescription = "Open profile",
+                        tint = Ember,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = "Public domain book summaries and chapter audio.",
+            fontSize = 12.sp,
+            color = InkSoft,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun FilterChipsRow(
+    filters: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(filters) { filter ->
+            val isSelected = filter == selected
+            val bg = if (isSelected) Forest else CardBg
+            val borderCol = if (isSelected) SageAccent.copy(alpha = 0.5f) else Line
+            val textCol = if (isSelected) Ink else InkSoft
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(bg)
+                    .border(1.dp, borderCol, RoundedCornerShape(20.dp))
+                    .clickable {
+                        haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                        onSelect(filter)
+                    }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = filter,
+                    fontSize = 12.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = textCol
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookShelfSection(
+    title: String,
+    subtitle: String,
+    books: List<BookDto>,
+    onSelectBook: (BookDto) -> Unit,
+    onSeeAll: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = title,
+                    fontFamily = Display,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Ink
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 11.sp,
+                    color = InkSoft
+                )
+            }
+            TextButton(onClick = onSeeAll) {
+                Text(
+                    text = "See all",
+                    fontSize = 12.sp,
+                    color = Ember,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            items(books, key = { it.id }) { book ->
+                ShelfBookCard(
+                    book = book,
+                    onClick = { onSelectBook(book) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShelfBookCard(
+    book: BookDto,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    val interaction = remember { MutableInteractionSource() }
+    val isPressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "bookCardScale"
+    )
+
+    Column(
+        modifier = Modifier
+            .width(136.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    onClick()
+                }
+            )
+    ) {
+        // Book Cover Box with Audio Badge
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(190.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(PaperDeep)
+                .border(1.dp, Line, RoundedCornerShape(10.dp))
+        ) {
+            if (!book.coverUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(book.coverUrl)
+                        .crossfade(true)
+                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .build(),
+                    contentDescription = "${book.title} cover",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                // Elegant fallback cover
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(ReadingSurface)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = book.title,
+                        fontFamily = Display,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink,
+                        textAlign = TextAlign.Center,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = book.author,
+                        fontSize = 10.sp,
+                        color = InkSoft,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2
+                    )
+                }
+            }
+
+            // Headphone Audio Badge (Storytel signature)
+            if (book.hasAudio) {
+                Box(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopEnd)
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xCC000000))
+                        .border(0.5.dp, Color.White.copy(alpha = 0.35f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_headphones_16),
+                        contentDescription = "Audiobook available",
+                        tint = Color.White,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = book.title,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Ink,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 16.sp
+        )
+        Text(
+            text = book.author,
+            fontSize = 11.sp,
+            color = InkSoft,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (book.chapterCount > 0) {
+            val chapterLabel = if (book.chapterCount == 1) "1 chapter" else "${book.chapterCount} chapters"
+            Text(
+                text = chapterLabel,
+                fontSize = 10.sp,
+                color = Ember,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+@Composable
+private fun BookCard(
+    book: BookDto,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptics = LocalHapticFeedback.current
+    val interaction = remember { MutableInteractionSource() }
+    val isPressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "gridBookScale"
+    )
+
+    Column(
+        modifier = modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    onClick()
+                }
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(210.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(PaperDeep)
+                .border(1.dp, Line, RoundedCornerShape(10.dp))
+        ) {
+            if (!book.coverUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(book.coverUrl)
+                        .crossfade(true)
+                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .build(),
+                    contentDescription = "${book.title} cover",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(ReadingSurface)
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = book.title,
+                        fontFamily = Display,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink,
+                        textAlign = TextAlign.Center,
+                        maxLines = 4,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = book.author,
+                        fontSize = 11.sp,
+                        color = InkSoft,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2
+                    )
+                }
+            }
+
+            if (book.hasAudio) {
+                Box(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .align(Alignment.TopEnd)
+                        .size(26.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xCC000000))
+                        .border(0.5.dp, Color.White.copy(alpha = 0.35f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_headphones_16),
+                        contentDescription = "Audiobook available",
+                        tint = Color.White,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = book.title,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Ink,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            lineHeight = 16.sp
+        )
+        Text(
+            text = book.author,
+            fontSize = 11.sp,
+            color = InkSoft,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (book.chapterCount > 0) {
+            val chapterLabel = if (book.chapterCount == 1) "1 chapter" else "${book.chapterCount} chapters"
+            Text(
+                text = chapterLabel,
+                fontSize = 10.sp,
+                color = Ember,
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+
+/**
+ * Storytel-style Book Detail Dialog / Sheet.
+ * Displays book metadata, high-res cover, audio play button, read in reels button,
+ * and a scrollable chapter-by-chapter tracklist with listen & read actions.
+ */
+@Composable
+private fun BookDetailDialog(
+    book: BookDto,
+    onDismiss: () -> Unit,
+    onOpenReels: () -> Unit,
+    onOpenChapterInReels: (String) -> Unit,
+    player: AudioPlayerBox?,
+    onOpenAudioPlayer: () -> Unit
+) {
+    val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+    var isBookmarked by remember { mutableStateOf(false) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false
+        )
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Page)
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+            color = Page
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Top Action Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Ink
+                        )
+                    }
+                    Text(
+                        text = "Book Details",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Ink
+                    )
+                    IconButton(
+                        onClick = {
+                            isBookmarked = !isBookmarked
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            Toast.makeText(
+                                context,
+                                if (isBookmarked) "Saved to your shelf" else "Removed from shelf",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (isBookmarked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Bookmark book",
+                            tint = if (isBookmarked) Ember else InkSoft
+                        )
+                    }
+                }
+
+                // Scrollable Content
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    // Hero Section: Cover & Book Meta
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(18.dp)
+                    ) {
+                        // Large Cover
+                        Box(
+                            modifier = Modifier
+                                .width(130.dp)
+                                .height(190.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(PaperDeep)
+                                .border(1.dp, Line, RoundedCornerShape(12.dp))
+                                .shadow(8.dp, RoundedCornerShape(12.dp))
+                        ) {
+                            if (!book.coverUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(book.coverUrl)
+                                        .crossfade(true)
+                                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .networkCachePolicy(coil.request.CachePolicy.ENABLED)
+                                        .build(),
+                                    contentDescription = book.title,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(ReadingSurface)
+                                        .padding(10.dp),
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Text(
+                                        text = book.title,
+                                        fontFamily = Display,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Ink,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+
+                        // Right Column Details
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = book.title,
+                                fontFamily = Display,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Ink,
+                                lineHeight = 24.sp
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = "By ${book.author}",
+                                fontSize = 13.sp,
+                                color = InkSoft
+                            )
+                            Spacer(Modifier.height(10.dp))
+
+                            // Badges
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                BadgePill(text = "Public Domain")
+                                if (book.hasAudio) {
+                                    BadgePill(text = "🎧 Audio")
+                                }
+                            }
+                            if (book.chapterCount > 0) {
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    text = "${book.chapterCount} chapter${if (book.chapterCount != 1) "s" else ""} available",
+                                    fontSize = 11.sp,
+                                    color = Ember,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
+
+                    // Action Buttons Row (Play Audio / Read in Reels)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                val firstAudioChapter = book.chapters.firstOrNull { !it.audioUrl.isNullOrBlank() }
+                                if (firstAudioChapter?.audioUrl != null && player != null) {
+                                    player.playUrl(
+                                        url = firstAudioChapter.audioUrl,
+                                        title = "${book.title}: ${firstAudioChapter.title}"
+                                    )
+                                    onOpenAudioPlayer()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Starting audio for ${book.title}…",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                tint = Ink,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = "Play Audio",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Ink
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                val firstChapter = book.chapters.firstOrNull()
+                                if (firstChapter != null) {
+                                    onOpenChapterInReels(firstChapter.id)
+                                } else {
+                                    onOpenReels()
+                                }
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Line),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_book_filled_24),
+                                contentDescription = null,
+                                tint = Ink,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = "Read in Reels",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Ink
+                            )
+                        }
+                    }
+
+                    // Chapter List Section
+                    Spacer(Modifier.height(28.dp))
+
+                    Text(
+                        text = "Chapters & Recordings",
+                        fontFamily = Display,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Listen to narration or read card summaries",
+                        fontSize = 11.sp,
+                        color = InkSoft
+                    )
+
+                    Spacer(Modifier.height(14.dp))
+
+                    if (book.chapters.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(CardBg)
+                                .border(1.dp, Line, RoundedCornerShape(10.dp))
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Full chapter summaries and audio being formatted.",
+                                fontSize = 12.sp,
+                                color = InkSoft,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    } else {
+                        book.chapters.forEachIndexed { index, chapter ->
+                            ChapterRowItem(
+                                index = index + 1,
+                                chapter = chapter,
+                                bookTitle = book.title,
+                                author = book.author,
+                                coverUrl = book.coverUrl,
+                                player = player,
+                                onOpenAudioPlayer = onOpenAudioPlayer,
+                                onOpenChapterInReels = onOpenChapterInReels
+                            )
+                            Spacer(Modifier.height(10.dp))
+                        }
+                    }
+
+                    Spacer(Modifier.height(40.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ChapterRowItem(
+    index: Int,
+    chapter: BookChapterDto,
+    bookTitle: String,
+    author: String,
+    coverUrl: String?,
+    player: AudioPlayerBox?,
+    onOpenAudioPlayer: () -> Unit,
+    onOpenChapterInReels: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(CardBg)
+            .border(1.dp, Line, RoundedCornerShape(12.dp))
+            .padding(14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Chapter Number Box
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(PaperDeep)
+                    .border(1.dp, Line, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = String.format("%02d", index),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Ember
+                )
+            }
+
+            // Chapter Info
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = chapter.title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Ink,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (chapter.actionLine.isNotBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = chapter.actionLine,
+                        fontSize = 11.sp,
+                        color = InkSoft,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Action Buttons for this Chapter
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Play Chapter Audio Button
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Forest)
+                        .clickable {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            if (!chapter.audioUrl.isNullOrBlank() && player != null) {
+                                player.playUrl(
+                                    url = chapter.audioUrl,
+                                    title = "$bookTitle: ${chapter.title}"
+                                )
+                                onOpenAudioPlayer()
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Playing audio for ${chapter.title}…",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_headphones_16),
+                        contentDescription = "Listen to chapter",
+                        tint = Ink,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+
+                // Read Chapter in Reels Button
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(PaperDeep)
+                        .border(1.dp, Line, CircleShape)
+                        .clickable {
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            onOpenChapterInReels(chapter.id)
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_book_filled_24),
+                        contentDescription = "Read chapter",
+                        tint = Ink,
+                        modifier = Modifier.size(15.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BadgePill(text: String) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(6.dp))
+            .background(PaperDeep)
+            .border(0.5.dp, Line, RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp)
+    ) {
+        Text(
+            text = text,
+            fontSize = 10.sp,
+            color = InkSoft,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}

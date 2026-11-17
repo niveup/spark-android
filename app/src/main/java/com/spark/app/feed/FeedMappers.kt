@@ -46,11 +46,24 @@ fun feedItemToCard(item: FeedItemDto): Card? {
         bookLine = item.book?.let { b ->
             if (b.author.isBlank()) b.title else "${b.title} — ${b.author}"
         },
+        coverUrl = item.book?.coverUrl?.let { url ->
+            if (url.startsWith("http://") || url.startsWith("https://")) {
+                url
+            } else {
+                "${com.spark.app.BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
+            }
+        },
         quiz = item.quiz?.let { q ->
             QuizData(options = q.options, correctIndex = q.correctIndex, explanation = q.explanation)
         },
         durationLabel = durationLabelOf(item.durationMs),
-        audioUrl = item.audioUrl,
+        audioUrl = item.audioUrl?.let { url ->
+            if (url.startsWith("http://") || url.startsWith("https://")) {
+                url
+            } else {
+                "${com.spark.app.BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
+            }
+        },
         saved = item.saved,
         liked = item.liked
     )

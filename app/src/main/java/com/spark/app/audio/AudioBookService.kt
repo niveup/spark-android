@@ -98,17 +98,34 @@ class AudioBookService : MediaSessionService() {
         val player = mediaSession?.player
         if (player == null || !player.playWhenReady || player.mediaItemCount == 0) {
             clearSleepTimer()
+            clearAudioCache()
             stopSelf()
         }
     }
 
     override fun onDestroy() {
-        sleepTimer?.let(timerHandler::removeCallbacks)
-        sleepTimer = null
+        clearSleepTimer()
+        clearAudioCache()
         mediaSession?.release()
         mediaSession = null
         player = null
         super.onDestroy()
+    }
+
+    private fun clearAudioCache() {
+        try {
+            listOf(cacheDir, codeCacheDir, externalCacheDir).filterNotNull().forEach { dir ->
+                dir.walkTopDown().forEach { file ->
+                    if (file.isFile && (
+                        file.extension.lowercase() in listOf("mp3", "m4a", "webm", "ogg", "wav", "aac") ||
+                        file.name.contains("media", ignoreCase = true) ||
+                        file.name.contains("exoplayer", ignoreCase = true)
+                    )) {
+                        file.delete()
+                    }
+                }
+            }
+        } catch (_: Exception) {}
     }
 
     private fun setSleepTimerEndAt(endAtEpochMs: Long) {

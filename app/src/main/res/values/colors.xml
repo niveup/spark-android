@@ -2,4 +2,5 @@
 <resources>
     <!-- Matches Paper ground in ui/theme/Theme.kt and all tabs -->
     <color name="spark_window">#F4EFE5</color>
+    <color name="ic_launcher_background">#0E0E11</color>
 </resources>

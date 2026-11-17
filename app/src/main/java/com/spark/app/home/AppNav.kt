@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,6 +39,8 @@ import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -112,7 +115,7 @@ private val Forest = Color(0xFFECE6E0)
 private enum class Tab(val label: String) {
     HOME("Home"),
     REELS("Reels"),
-    SAVED("Saved"),
+    BOOKS("Books"),
     ME("Me")
 }
 
@@ -121,11 +124,39 @@ private enum class Tab(val label: String) {
  * others the outline. Selection therefore reads from shape as well as colour,
  * which the old text glyphs could not express.
  */
-private fun Tab.icon(selected: Boolean): ImageVector = when (this) {
-    Tab.HOME -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
-    Tab.REELS -> if (selected) Icons.AutoMirrored.Filled.List else Icons.AutoMirrored.Outlined.List
-    Tab.SAVED -> if (selected) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder
-    Tab.ME -> if (selected) Icons.Filled.Person else Icons.Outlined.Person
+@Composable
+private fun TabIcon(
+    entry: Tab,
+    selected: Boolean,
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    when (entry) {
+        Tab.HOME -> Icon(
+            imageVector = if (selected) Icons.Filled.Home else Icons.Outlined.Home,
+            contentDescription = null,
+            tint = tint,
+            modifier = modifier
+        )
+        Tab.REELS -> Icon(
+            imageVector = if (selected) Icons.AutoMirrored.Filled.List else Icons.AutoMirrored.Outlined.List,
+            contentDescription = null,
+            tint = tint,
+            modifier = modifier
+        )
+        Tab.BOOKS -> Icon(
+            painter = painterResource(com.spark.app.R.drawable.ic_book_outlined_24),
+            contentDescription = null,
+            tint = tint,
+            modifier = modifier
+        )
+        Tab.ME -> Icon(
+            imageVector = if (selected) Icons.Filled.Person else Icons.Outlined.Person,
+            contentDescription = null,
+            tint = tint,
+            modifier = modifier
+        )
+    }
 }
 
 @Composable
@@ -159,6 +190,13 @@ fun AppNav(
             return SavedViewModel(api, tokens, offline) as T
         }
     })
+    val booksVm: BooksViewModel = viewModel(factory = object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return BooksViewModel(api, tokens) as T
+        }
+    })
+    val booksState by booksVm.state.collectAsStateWithLifecycle()
     val meVm: MeViewModel = viewModel(factory = object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -175,6 +213,7 @@ fun AppNav(
     LaunchedEffect(Unit) {
         feedVm.load(onDeckReplaced = state::resetSession)
         meVm.refresh()
+        booksVm.load()
     }
 
     // The server is the source of truth for saved/rated state — seed each fresh load.
@@ -195,12 +234,16 @@ fun AppNav(
             card.grounded &&
             card.id != nextCard?.id
     }
+    var showSavedSheet by rememberSaveable { mutableStateOf(false) }
     var tab by rememberSaveable { mutableStateOf(if (startOnReels) Tab.REELS else Tab.HOME) }
     var contentTab by rememberSaveable { mutableStateOf(tab) }
     val transitionCover = remember { Animatable(0f) }
     val laidOutTab = remember { MutableStateFlow<Tab?>(contentTab) }
     var awaitingLayoutTab by remember { mutableStateOf<Tab?>(null) }
     LaunchedEffect(tab) {
+        if (tab == Tab.BOOKS) {
+            booksVm.load(force = true)
+        }
         val targetTab = tab
         if (targetTab != contentTab) {
             // Fade the page into the app's charcoal surface before switching.
@@ -280,8 +323,8 @@ fun AppNav(
     // pendingSync refreshes once more when the queued save reaches the server,
     // so a slow upload cannot leave the just-saved card missing.
     var savedQuery by rememberSaveable { mutableStateOf("") }
-    LaunchedEffect(tab, savedQuery, pendingSync) {
-        if (tab == Tab.SAVED) {
+    LaunchedEffect(showSavedSheet, savedQuery, pendingSync) {
+        if (showSavedSheet) {
             savedVm.showCached(savedQuery, force = pendingSync > 0)
             if (savedQuery.isNotBlank()) delay(300)
             withTimeoutOrNull(2_000) { sync.awaitFlush() }
@@ -350,7 +393,7 @@ fun AppNav(
                             dailyQuote = dailyQuote,
                             bottomClearance = if (tab != Tab.REELS && hasAudio) 180.dp else 100.dp,
                             onOpenReels = { tab = Tab.REELS },
-                            onOpenSaved = { tab = Tab.SAVED },
+                            onOpenSaved = { showSavedSheet = true },
                             onOpenMe = { tab = Tab.ME }
                         )
                         Tab.REELS -> when (val f = feed) {
@@ -383,7 +426,6 @@ fun AppNav(
                                     minuteLimit = f.minuteLimit,
                                     startedAtElapsedMs = f.startedAtElapsedMs,
                                     offline = f.offline || isOffline,
-                                    openingLabel = openingLabel,
                                     deckRefreshState = deckRefresh,
                                     onReadDeckAgain = {
                                         feedVm.refreshDeck(
@@ -410,36 +452,27 @@ fun AppNav(
                                 )
                             }
                         }
-                        Tab.SAVED -> SavedScreen(
-                            state = saved,
-                            query = savedQuery,
-                            onQueryChange = { savedQuery = it },
-                            onRetry = { savedVm.load(savedQuery) },
+                        Tab.BOOKS -> BooksScreen(
+                            state = booksState,
+                            onRetry = { booksVm.load(force = true) },
                             offline = isOffline,
                             onRetryConnection = {
                                 onRetryConnection()
-                                savedVm.load(savedQuery)
+                                booksVm.load(force = true)
                             },
                             onOpenReels = { tab = Tab.REELS },
-                            // Saved cards open in Reels: the id is mapped back
-                            // to the card (server first, this device's cache
-                            // when offline) and the deck restarts on it. The
-                            // app answers the tap at once — Reels opens while
-                            // the card is being resolved.
-                            onOpenCard = { card ->
+                            onOpenChapterInReels = { chapterId ->
                                 tab = Tab.REELS
                                 feedVm.openSavedItem(
-                                    itemId = card.id,
+                                    itemId = chapterId,
                                     offlineOnly = isOffline,
                                     onDeckReplaced = state::resetSession
                                 )
                             },
-                            openingItemId = (itemOpen as? ItemOpenState.Opening)?.itemId,
-                            bottomClearance = if (hasAudio) 180.dp else 100.dp,
-                            onExport = { format ->
-                                val cards = (saved as? SavedUiState.Content)?.cards.orEmpty()
-                                SavedExporter.share(context, cards, format)
-                            }
+                            onOpenMe = { tab = Tab.ME },
+                            player = player,
+                            onOpenAudioPlayer = { showAudioPlayer = true },
+                            bottomClearance = if (hasAudio) 180.dp else 100.dp
                         )
                         Tab.ME -> MeScreen(
                             stats = stats,
@@ -487,24 +520,99 @@ fun AppNav(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (tab != Tab.REELS && hasAudio) {
                 MiniAudioPlayer(
                     player = player,
                     onOpen = { showAudioPlayer = true },
-                    modifier = Modifier.widthIn(max = 400.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
                 )
             }
             SparkBottomBar(
                 selectedTab = tab,
                 onTabSelected = { tab = it },
-                modifier = Modifier.widthIn(max = 400.dp)
+                modifier = Modifier.fillMaxWidth()
             )
+        }
+
+        
+        if (showSavedSheet) {
+            androidx.compose.ui.window.Dialog(
+                onDismissRequest = { showSavedSheet = false },
+                properties = androidx.compose.ui.window.DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false
+                )
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Paper)
+                        .statusBarsPadding()
+                        .navigationBarsPadding(),
+                    color = Paper
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { showSavedSheet = false }) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.List,
+                                    contentDescription = "Close",
+                                    tint = InkSoft
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = "Saved Library",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = InkSoft
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            SavedScreen(
+                                state = saved,
+                                query = savedQuery,
+                                onQueryChange = { savedQuery = it },
+                                onRetry = { savedVm.load(savedQuery) },
+                                offline = isOffline,
+                                onRetryConnection = {
+                                    onRetryConnection()
+                                    savedVm.load(savedQuery)
+                                },
+                                onOpenReels = {
+                                    showSavedSheet = false
+                                    tab = Tab.REELS
+                                },
+                                onOpenCard = { card ->
+                                    showSavedSheet = false
+                                    tab = Tab.REELS
+                                    feedVm.openSavedItem(
+                                        itemId = card.id,
+                                        offlineOnly = isOffline,
+                                        onDeckReplaced = state::resetSession
+                                    )
+                                },
+                                openingItemId = (itemOpen as? ItemOpenState.Opening)?.itemId,
+                                bottomClearance = if (hasAudio) 140.dp else 40.dp,
+                                onExport = { format ->
+                                    val cards = (saved as? SavedUiState.Content)?.cards.orEmpty()
+                                    SavedExporter.share(context, cards, format)
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         if (showAudioPlayer && hasAudio) {
@@ -526,29 +634,37 @@ private fun SparkBottomBar(
     onTabSelected: (Tab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val shape = RoundedCornerShape(24.dp)
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .widthIn(max = 400.dp)
-            .height(64.dp)
-            .clip(shape)
-            .background(CardBg)
-            .border(1.dp, Line, shape)
-            .padding(4.dp),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = CardBg
     ) {
-        Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    drawLine(
+                        color = Line,
+                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                        end = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                        strokeWidth = 1.dp.toPx()
+                    )
+                }
+                .navigationBarsPadding()
         ) {
-            Tab.entries.forEach { entry ->
-                SparkBottomBarItem(
-                    entry = entry,
-                    selected = selectedTab == entry,
-                    onClick = { onTabSelected(entry) }
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Tab.entries.forEach { entry ->
+                    SparkBottomBarItem(
+                        entry = entry,
+                        selected = selectedTab == entry,
+                        onClick = { onTabSelected(entry) }
+                    )
+                }
             }
         }
     }
@@ -616,9 +732,9 @@ private fun RowScope.SparkBottomBarItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = entry.icon(selected),
-            contentDescription = null,
+        TabIcon(
+            entry = entry,
+            selected = selected,
             tint = iconTint,
             modifier = Modifier.size(20.dp)
         )

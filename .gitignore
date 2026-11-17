@@ -48,3 +48,16 @@ skills-lock.json
 # The bundled, cropped cover lives in app/src/main/res/drawable-nodpi/.
 .taste-skill/
 assets/
+
+# Python
+__pycache__/
+*.pyc
+
+# Local adb and test captures
+spark-*.png
+spark-*.txt
+spark-window.xml
+.playwright-cli/
+api/public/
+
+

@@ -35,6 +35,8 @@ data class Card(
     val aiGenerated: Boolean = false,
     /** "Title — Author" when the card belongs to a book, else null. */
     val bookLine: String? = null,
+    /** URL to book cover image (hosted via Telegram/CDN), or null. */
+    val coverUrl: String? = null,
     val quiz: QuizData? = null,
     val durationLabel: String? = null,
     /** Stream URL for audiobook chapters (Phase 6) — plays via Media3. */

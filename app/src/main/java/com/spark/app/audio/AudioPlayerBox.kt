@@ -173,12 +173,17 @@ class AudioPlayerBox(context: Context) {
 
     /** Streams one chapter; replaces anything that played before. */
     fun playUrl(url: String, title: String) {
+        val resolvedUrl = if (url.startsWith("http://") || url.startsWith("https://")) {
+            url
+        } else {
+            "${com.spark.app.BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
+        }
         val c = controller
         if (c == null) {
             // Session not connected yet (first tap): remember and play once ready.
-            pending = url to title
+            pending = resolvedUrl to title
             _state.value = AudioUi(
-                url = url,
+                url = resolvedUrl,
                 title = title,
                 buffering = true,
                 playbackSpeed = _state.value.playbackSpeed,
@@ -187,7 +192,7 @@ class AudioPlayerBox(context: Context) {
             return
         }
         _state.value = AudioUi(
-            url = url,
+            url = resolvedUrl,
             title = title,
             buffering = true,
             playbackSpeed = c.playbackParameters.speed,
@@ -195,7 +200,7 @@ class AudioPlayerBox(context: Context) {
         )
         c.setMediaItem(
             MediaItem.Builder()
-                .setUri(url)
+                .setUri(resolvedUrl)
                 .setMediaMetadata(
                     MediaMetadata.Builder()
                         .setTitle(title)

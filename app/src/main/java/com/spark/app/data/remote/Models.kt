@@ -151,3 +151,24 @@ data class StatsData(
     @SerialName("quizzesDue") val quizzesDue: Int = 0,
     @SerialName("sessionsTotal") val sessionsTotal: Int = 0
 )
+
+@Serializable
+data class BookChapterDto(
+    @SerialName("id") val id: String,
+    @SerialName("title") val title: String,
+    @SerialName("type") val type: String = "summary",
+    @SerialName("audioUrl") val audioUrl: String? = null,
+    @SerialName("durationMs") val durationMs: Long? = null,
+    @SerialName("actionLine") val actionLine: String = ""
+)
+
+@Serializable
+data class BookDto(
+    @SerialName("id") val id: String,
+    @SerialName("title") val title: String,
+    @SerialName("author") val author: String = "Unknown",
+    @SerialName("coverUrl") val coverUrl: String? = null,
+    @SerialName("hasAudio") val hasAudio: Boolean = false,
+    @SerialName("chapterCount") val chapterCount: Int = 0,
+    @SerialName("chapters") val chapters: List<BookChapterDto> = emptyList()
+)

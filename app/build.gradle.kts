@@ -169,6 +169,8 @@ dependencies {
     implementation(libs.retrofit.serialization)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
+    // Async image loading with offline memory & disk cache
+    implementation(libs.coil.compose)
     // Phase 6 audiobook playback: background + lock-screen controls via a
     // MediaSessionService. Streams only — no audio files are downloaded.
     implementation(libs.media3.exoplayer)

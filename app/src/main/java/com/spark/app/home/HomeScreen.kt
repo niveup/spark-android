@@ -58,6 +58,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.Color
@@ -339,7 +343,6 @@ private fun HomeHeader(
             // The shortcut opens the saved library, where search lives.
             Box(
                 modifier = Modifier
-                    .heightIn(min = 48.dp)
                     .size(36.dp)
                     .clip(CircleShape)
                     .border(1.dp, Line, CircleShape)
@@ -364,7 +367,6 @@ private fun HomeHeader(
             // Avatar button with saved-count badge & bouncy press
             Box(
                 modifier = Modifier
-                    .heightIn(min = 48.dp)
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(Forest)
@@ -762,6 +764,34 @@ private fun PickArtwork(
         return
     }
 
+    if (!card.coverUrl.isNullOrBlank()) {
+        Box(
+            modifier = modifier
+                .aspectRatio(2f / 2.9f)
+                .clip(RoundedCornerShape(5.dp))
+                .border(1.dp, Line.copy(alpha = 0.5f), RoundedCornerShape(5.dp))
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(card.coverUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = card.bookLine,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    } else {
+        DrawnHardcover(card = card, modifier = modifier, isPressed = isPressed)
+    }
+}
+
+@Composable
+private fun DrawnHardcover(
+    card: Card,
+    modifier: Modifier = Modifier,
+    isPressed: Boolean = false
+) {
     val sunOffset by animateFloatAsState(
         targetValue = if (isPressed) 1.05f else 1.08f,
         animationSpec = spring(

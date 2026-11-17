@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SPARK mark — the same drawing as docs/brand/spark-mark.svg.
+  The peak of the A on its own, amber #F5A844.
+  Splash, notification icon, anywhere square and small.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:pathData="M9,40 L24,8 L39,40"
+        android:fillColor="#00000000"
+        android:strokeColor="#F5A844"
+        android:strokeWidth="7"
+        android:strokeLineCap="butt"
+        android:strokeLineJoin="round" />
+</vector>

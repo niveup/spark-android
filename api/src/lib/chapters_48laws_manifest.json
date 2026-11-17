@@ -1,0 +1,745 @@
+[
+  {
+    "chapter_num": 0,
+    "title": "Preface: The Rules of Power",
+    "duration_sec": 1465,
+    "duration_ms": 1465000,
+    "audio_key": "48laws_chapter_00",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_00",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBMWr6t031aO35vLyWS9TWvtrK_EWpAAIcIAACNXbRV9nbQhiRQ0eCPQQ",
+      "CQACAgUAAxkDAAIBMmr6t4dDORxZEhuU_3NIpuUVzb_vAAIfIAACNXbRV_fkqF-nuiqPPQQ"
+    ],
+    "parts_count": 2,
+    "sizes_mb": [
+      11.17,
+      11.19
+    ]
+  },
+  {
+    "chapter_num": 1,
+    "title": "Law 1: Never Outshine the Master",
+    "duration_sec": 960,
+    "duration_ms": 960000,
+    "audio_key": "48laws_chapter_01",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_01",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBDmr6r3XHiqtOvDy-Zg9Be1eZZ_KTAALZHwACNXbRV0eMiE34g40dPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      14.65
+    ]
+  },
+  {
+    "chapter_num": 2,
+    "title": "Law 2: Never Put Too Much Trust in Friends, Learn How to Use Enemies",
+    "duration_sec": 515,
+    "duration_ms": 515000,
+    "audio_key": "48laws_chapter_02",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_02",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBEGr6sEX5C8RzMitjL9b6ljBTv8mwAALhHwACNXbRVzQU2A4kAAF4pj0E"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      7.86
+    ]
+  },
+  {
+    "chapter_num": 3,
+    "title": "Law 3: Conceal Your Intentions",
+    "duration_sec": 1464,
+    "duration_ms": 1464000,
+    "audio_key": "48laws_chapter_03",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_03",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBM2r6t7GQ8XlswvpgfR2q6RwOTWaqAAIgIAACNXbRV6BPSGbn6df4PQQ",
+      "CQACAgUAAxkDAAIBNGr6t-TeN_VOQfY7BFG5JvWUXqwOAAIhIAACNXbRV71Ymqiaw_iyPQQ"
+    ],
+    "parts_count": 2,
+    "sizes_mb": [
+      11.17,
+      11.17
+    ]
+  },
+  {
+    "chapter_num": 4,
+    "title": "Law 4: Always Say Less Than Necessary",
+    "duration_sec": 289,
+    "duration_ms": 289000,
+    "audio_key": "48laws_chapter_04",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_04",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBDWr6rqaOTtPAtRkYaE42o9XO7ph1AALSHwACNXbRV2q2p_rcv-ohPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      4.41
+    ]
+  },
+  {
+    "chapter_num": 5,
+    "title": "Law 5: So Much Depends on Reputation - Guard It With Your Life",
+    "duration_sec": 466,
+    "duration_ms": 466000,
+    "audio_key": "48laws_chapter_05",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_05",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBEmr6sLYXLVL8w-yEHTWmSdbPghAMAALlHwACNXbRV5eFdz393QeBPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      7.11
+    ]
+  },
+  {
+    "chapter_num": 6,
+    "title": "Law 6: Court Attention at All Costs",
+    "duration_sec": 1014,
+    "duration_ms": 1014000,
+    "audio_key": "48laws_chapter_06",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_06",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBE2r6sPh4mnMAAeOzlgrsUyAuvMaePgAC5h8AAjV20VepfRwu_KjIbz0E"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      15.47
+    ]
+  },
+  {
+    "chapter_num": 7,
+    "title": "Law 7: Get Others to Do the Work for You, but Always Take the Credit",
+    "duration_sec": 486,
+    "duration_ms": 486000,
+    "audio_key": "48laws_chapter_07",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_07",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBFGr6sRZC0QPkDVmwj17cwJPYA2nHAALqHwACNXbRVzLDRMjDg8MPPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      7.42
+    ]
+  },
+  {
+    "chapter_num": 8,
+    "title": "Law 8: Make Other People Come to You - Use Bait if Necessary",
+    "duration_sec": 549,
+    "duration_ms": 549000,
+    "audio_key": "48laws_chapter_08",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_08",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBFWr6sUHEtq0byc1uHkwl5QMDUPVxAALrHwACNXbRVy-j90fLf9EtPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      8.38
+    ]
+  },
+  {
+    "chapter_num": 9,
+    "title": "Law 9: Win Through Your Actions, Never Through Argument",
+    "duration_sec": 357,
+    "duration_ms": 357000,
+    "audio_key": "48laws_chapter_09",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_09",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBFmr6sVfTFS-jNwABMlV1MwVEVzz0-AAC7B8AAjV20VeMN9zdrjp8kT0E"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      5.45
+    ]
+  },
+  {
+    "chapter_num": 10,
+    "title": "Law 10: Infection: Avoid the Unhappy and the Unlucky",
+    "duration_sec": 695,
+    "duration_ms": 695000,
+    "audio_key": "48laws_chapter_10",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_10",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBF2r6sZL6VXoaIB8E-OEnOMviItjPAALtHwACNXbRV7TF-H2SC9ewPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      10.61
+    ]
+  },
+  {
+    "chapter_num": 11,
+    "title": "Law 11: Learn to Keep People Dependent on You",
+    "duration_sec": 380,
+    "duration_ms": 380000,
+    "audio_key": "48laws_chapter_11",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_11",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBGGr6saca0ZXGIArw5BmFx0tMQjoIAALuHwACNXbRV83FTPLXn3BgPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      5.8
+    ]
+  },
+  {
+    "chapter_num": 12,
+    "title": "Law 12: Use Selective Honesty and Generosity to Disarm Your Victim",
+    "duration_sec": 510,
+    "duration_ms": 510000,
+    "audio_key": "48laws_chapter_12",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_12",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBGWr6scxAIGJghf4Z62WH_hu5UZX4AALvHwACNXbRVx3oKa7lyRX4PQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      7.78
+    ]
+  },
+  {
+    "chapter_num": 13,
+    "title": "Law 13: When Asking for Help, Appeal to People’s Self-Interest, Never to Their Mercy or Gratitude",
+    "duration_sec": 510,
+    "duration_ms": 510000,
+    "audio_key": "48laws_chapter_13",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_13",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBGmr6sflIz4G-7nV5OGwWxBK4Dnr1AALwHwACNXbRV1SBDKXhp5FtPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      7.78
+    ]
+  },
+  {
+    "chapter_num": 14,
+    "title": "Law 14: Pose as a Friend, Work as a Spy",
+    "duration_sec": 620,
+    "duration_ms": 620000,
+    "audio_key": "48laws_chapter_14",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_14",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBG2r6siHUHsfCuzn8R0ErDCeEAZcxAALxHwACNXbRV7hjUUTAN29lPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      9.46
+    ]
+  },
+  {
+    "chapter_num": 15,
+    "title": "Law 15: Crush Your Enemy Totally",
+    "duration_sec": 509,
+    "duration_ms": 509000,
+    "audio_key": "48laws_chapter_15",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_15",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBHGr6sk9BiUT8ZGzSqnODQwHrdEbsAALzHwACNXbRVxZNfRQjTXLMPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      7.77
+    ]
+  },
+  {
+    "chapter_num": 16,
+    "title": "Law 16: Use Absence to Increase Respect and Honor",
+    "duration_sec": 482,
+    "duration_ms": 482000,
+    "audio_key": "48laws_chapter_16",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_16",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBHWr6sm89dWRxLJ8BWlhLcSMvpKqTAAL0HwACNXbRV_90p2iujXHzPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      7.36
+    ]
+  },
+  {
+    "chapter_num": 17,
+    "title": "Law 17: Keep Others in Suspense: Cultivate an Air of Unpredictability",
+    "duration_sec": 701,
+    "duration_ms": 701000,
+    "audio_key": "48laws_chapter_17",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_17",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBHmr6sqJNjA2PfAQZVZpluHhQkdCKAAL1HwACNXbRV2UFdyDLS7O_PQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      10.7
+    ]
+  },
+  {
+    "chapter_num": 18,
+    "title": "Law 18: Do Not Build Fortresses to Protect Yourself - Isolation is Dangerous",
+    "duration_sec": 432,
+    "duration_ms": 432000,
+    "audio_key": "48laws_chapter_18",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_18",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBH2r6stKWzfqpg7kvcTW_KMM2uLfwAAL2HwACNXbRV3O47K_oLJ1oPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      6.59
+    ]
+  },
+  {
+    "chapter_num": 19,
+    "title": "Law 19: Know Who You're Dealing With - Do Not Offend the Wrong Person",
+    "duration_sec": 636,
+    "duration_ms": 636000,
+    "audio_key": "48laws_chapter_19",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_19",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBIGr6svZDMgABd-RL3DqVJrrtjhS2UQAC9x8AAjV20Vc4zDH9C9IhlD0E"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      9.71
+    ]
+  },
+  {
+    "chapter_num": 20,
+    "title": "Law 20: Do Not Commit to Anyone",
+    "duration_sec": 1122,
+    "duration_ms": 1122000,
+    "audio_key": "48laws_chapter_20",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_20",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBIWr6szH3ePxtrVnaG50HcTdEc5OuAAL6HwACNXbRV9aY9HKQYLB4PQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      17.12
+    ]
+  },
+  {
+    "chapter_num": 21,
+    "title": "Law 21: Play a Sucker to Catch a Sucker - Seem Dumber Than Your Mark",
+    "duration_sec": 634,
+    "duration_ms": 634000,
+    "audio_key": "48laws_chapter_21",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_21",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBImr6s3xPa77wwzkVi8pJtqSQDfJ7AAL8HwACNXbRV3qxmB47Vq8GPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      9.67
+    ]
+  },
+  {
+    "chapter_num": 22,
+    "title": "Law 22: Use the Surrender Tactic: Transform Weakness Into Power",
+    "duration_sec": 606,
+    "duration_ms": 606000,
+    "audio_key": "48laws_chapter_22",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_22",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBI2r6s562bmQ05nioZGWSW_DWk1J1AAL-HwACNXbRV7s0u8mLO0GuPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      9.25
+    ]
+  },
+  {
+    "chapter_num": 23,
+    "title": "Law 23: Concentrate Your Forces",
+    "duration_sec": 411,
+    "duration_ms": 411000,
+    "audio_key": "48laws_chapter_23",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_23",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBJGr6s7SyP3t1n3PxePwrzSvcB33yAAL_HwACNXbRV9AmHX02VpNHPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      6.27
+    ]
+  },
+  {
+    "chapter_num": 24,
+    "title": "Law 24: Play the Perfect Courtier",
+    "duration_sec": 719,
+    "duration_ms": 719000,
+    "audio_key": "48laws_chapter_24",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_24",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBJWr6tAWw3b_kqMmt1vw_siaJyfL2AAMgAAI1dtFXaIC5XgPEjSA9BA"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      10.97
+    ]
+  },
+  {
+    "chapter_num": 25,
+    "title": "Law 25: Recreate Yourself",
+    "duration_sec": 560,
+    "duration_ms": 560000,
+    "audio_key": "48laws_chapter_25",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_25",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBJmr6tCEyWAsd-kCsm9kuXEjzMif6AAICIAACNXbRV7fC49cSljcAAT0E"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      8.55
+    ]
+  },
+  {
+    "chapter_num": 26,
+    "title": "Law 26: Keep Your Hands Clean",
+    "duration_sec": 1053,
+    "duration_ms": 1053000,
+    "audio_key": "48laws_chapter_26",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_26",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBJ2r6tGDBLYfEJGckrYU1ZSmxbCRWAAIEIAACNXbRV1LPNqFdwdQqPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      16.07
+    ]
+  },
+  {
+    "chapter_num": 27,
+    "title": "Law 27: Play on People’s Need to Believe to Create a Cult-Like Following",
+    "duration_sec": 1155,
+    "duration_ms": 1155000,
+    "audio_key": "48laws_chapter_27",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_27",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBKGr6tKD4mVF0uJUDPFE_nIy2eaIyAAIFIAACNXbRVxa91V_ymDt_PQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      17.62
+    ]
+  },
+  {
+    "chapter_num": 28,
+    "title": "Law 28: Enter Action with Boldness",
+    "duration_sec": 676,
+    "duration_ms": 676000,
+    "audio_key": "48laws_chapter_28",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_28",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBKWr6tMaUR5VM9cBq3Es4nIPLCKkPAAIGIAACNXbRVxfft6s6vPIGPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      10.32
+    ]
+  },
+  {
+    "chapter_num": 29,
+    "title": "Law 29: Plan All the Way to the End",
+    "duration_sec": 686,
+    "duration_ms": 686000,
+    "audio_key": "48laws_chapter_29",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_29",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBKmr6tO7f6xYe-eqS432TzlsDa63WAAIHIAACNXbRV2E2ZH4f7aP8PQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      10.47
+    ]
+  },
+  {
+    "chapter_num": 30,
+    "title": "Law 30: Make Your Accomplishments Seem Effortless",
+    "duration_sec": 661,
+    "duration_ms": 661000,
+    "audio_key": "48laws_chapter_30",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_30",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBK2r6tRdB_Z3vXaczCrJbASWrRrDNAAIIIAACNXbRV1VOFeFejYuAPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      10.09
+    ]
+  },
+  {
+    "chapter_num": 31,
+    "title": "Law 31: Control the Options: Get Others to Play With the Cards You Deal",
+    "duration_sec": 800,
+    "duration_ms": 800000,
+    "audio_key": "48laws_chapter_31",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_31",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBLGr6tT4squavBcuThBR7PqJmUGGPAAIKIAACNXbRV-fcHjSn0SBBPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      12.21
+    ]
+  },
+  {
+    "chapter_num": 32,
+    "title": "Law 32: Play to People’s Fantasies",
+    "duration_sec": 739,
+    "duration_ms": 739000,
+    "audio_key": "48laws_chapter_32",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_32",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBLWr6tWJDmarmRi1-j0RW28TnvUE2AAIQIAACNXbRV4SG2ivyrCg3PQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      11.28
+    ]
+  },
+  {
+    "chapter_num": 33,
+    "title": "Law 33: Discover Each Man’s Thumbscrew",
+    "duration_sec": 623,
+    "duration_ms": 623000,
+    "audio_key": "48laws_chapter_33",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_33",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBLmr6tYMPJ72LKs3Y1opeM0emTpSZAAIVIAACNXbRV3N1uaB650nePQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      9.51
+    ]
+  },
+  {
+    "chapter_num": 34,
+    "title": "Law 34: Be Royal in Your Own Fashion: Act Like a King to Be Treated Like One",
+    "duration_sec": 607,
+    "duration_ms": 607000,
+    "audio_key": "48laws_chapter_34",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_34",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBL2r6taCsii8lmIEH_OqSBrtgKAkMAAIXIAACNXbRV5X0j5Uh6A5bPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      9.26
+    ]
+  },
+  {
+    "chapter_num": 35,
+    "title": "Law 35: Master the Art of Timing",
+    "duration_sec": 1228,
+    "duration_ms": 1228000,
+    "audio_key": "48laws_chapter_35",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_35",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBNWr6uA6SRcY4ydyLmPFLrCUdwQwrAAIiIAACNXbRV62IQ9m-QMl7PQQ",
+      "CQACAgUAAxkDAAIBNmr6uDhZDYk0em2LOXs7AV-yg82ZAAIkIAACNXbRVzy91iHbpLr_PQQ"
+    ],
+    "parts_count": 2,
+    "sizes_mb": [
+      9.37,
+      9.37
+    ]
+  },
+  {
+    "chapter_num": 36,
+    "title": "Law 36: Distain Things You Cannot Have: Ignoring Them is the Best Revenge",
+    "duration_sec": 533,
+    "duration_ms": 533000,
+    "audio_key": "48laws_chapter_36",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_36",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBN2r6uGdnRl7v0kcNcGUn2q7dgQvSAAInIAACNXbRVwI1ZA5ekkUHPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      8.13
+    ]
+  },
+  {
+    "chapter_num": 37,
+    "title": "Law 37: Create Compelling Spectacles",
+    "duration_sec": 637,
+    "duration_ms": 637000,
+    "audio_key": "48laws_chapter_37",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_37",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBOGr6uI-P9Zh28SfoUQNOnIAX3cYVAAIrIAACNXbRV_QyBuDQPv5UPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      9.72
+    ]
+  },
+  {
+    "chapter_num": 38,
+    "title": "Law 38: Think as You Like, But Behave Like Others",
+    "duration_sec": 558,
+    "duration_ms": 558000,
+    "audio_key": "48laws_chapter_38",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_38",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBOWr6uLN6qWPfTWDwEfZoZwb5OEbGAAIsIAACNXbRV5DhcvhJmSUHPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      8.52
+    ]
+  },
+  {
+    "chapter_num": 39,
+    "title": "Law 39: Stir Up Waters to Catch Fish",
+    "duration_sec": 496,
+    "duration_ms": 496000,
+    "audio_key": "48laws_chapter_39",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_39",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBOmr6uNbPo18tn47AoIAn_DcXbjrjAAIuIAACNXbRV4WYXr68uMfDPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      7.57
+    ]
+  },
+  {
+    "chapter_num": 40,
+    "title": "Law 40: Despise the Free Lunch",
+    "duration_sec": 746,
+    "duration_ms": 746000,
+    "audio_key": "48laws_chapter_40",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_40",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBO2r6uQjjhKJ25Nx0pyaW4CVXSldbAAIvIAACNXbRV8a65GjL4gn-PQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      11.38
+    ]
+  },
+  {
+    "chapter_num": 41,
+    "title": "Law 41: Avoid Stepping Into a Great Man’s Shoes",
+    "duration_sec": 692,
+    "duration_ms": 692000,
+    "audio_key": "48laws_chapter_41",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_41",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBPGr6uTRwz1Wp67QNTPsf6TTXhAPYAAIwIAACNXbRV9hCjPcYfXGtPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      10.56
+    ]
+  },
+  {
+    "chapter_num": 42,
+    "title": "Law 42: Strike the Shepherd, and the Sheep Will Scatter",
+    "duration_sec": 718,
+    "duration_ms": 718000,
+    "audio_key": "48laws_chapter_42",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_42",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBPWr6uV1RvcRvrIUqcBYEYjbTKoq1AAIxIAACNXbRV4LattWP-KmRPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      10.96
+    ]
+  },
+  {
+    "chapter_num": 43,
+    "title": "Law 43: Work on the Hearts and Minds of Others",
+    "duration_sec": 739,
+    "duration_ms": 739000,
+    "audio_key": "48laws_chapter_43",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_43",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBPmr6uYsAAb4jjHhf5DIbFarDee0AAV0AAjMgAAI1dtFXz9QEpY3D_R09BA"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      11.28
+    ]
+  },
+  {
+    "chapter_num": 44,
+    "title": "Law 44: Disarm and Infuriate With the Mirror Effect",
+    "duration_sec": 871,
+    "duration_ms": 871000,
+    "audio_key": "48laws_chapter_44",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_44",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBP2r6ucmxClcF32rIlo46ZOLKyBkSAAI0IAACNXbRV-7_4LUtSxQUPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      13.29
+    ]
+  },
+  {
+    "chapter_num": 45,
+    "title": "Law 45: Preach the Need for Change, but Never Reform Too Much at Once",
+    "duration_sec": 753,
+    "duration_ms": 753000,
+    "audio_key": "48laws_chapter_45",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_45",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBQGr6ufhROst2IQHx4aU2NxhAUKBVAAI1IAACNXbRV9KYQWv1BktrPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      11.49
+    ]
+  },
+  {
+    "chapter_num": 46,
+    "title": "Law 46: Never Appear Too Perfect",
+    "duration_sec": 905,
+    "duration_ms": 905000,
+    "audio_key": "48laws_chapter_46",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_46",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBQWr6ujXIB0wucOrQF79hhNm6Kx-pAAI5IAACNXbRV2CqpZbrHHttPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      13.81
+    ]
+  },
+  {
+    "chapter_num": 47,
+    "title": "Law 47: Do Not Go Past The Mark You Aimed For: In Victory, Learn When to Stop",
+    "duration_sec": 534,
+    "duration_ms": 534000,
+    "audio_key": "48laws_chapter_47",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_47",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBQmr6ul2v1g8WKeKWYohxKnWjrEhcAAI6IAACNXbRV6_gKpr3N-sZPQQ"
+    ],
+    "parts_count": 1,
+    "sizes_mb": [
+      8.15
+    ]
+  },
+  {
+    "chapter_num": 48,
+    "title": "Law 48: Assume Formlessness",
+    "duration_sec": 2025,
+    "duration_ms": 2025000,
+    "audio_key": "48laws_chapter_48",
+    "audio_url": "/api/mobile/v1/audio/48laws_chapter_48",
+    "telegram_file_ids": [
+      "CQACAgUAAxkDAAIBQ2r6upn9LYvqAeVmKh4YPrlITTQJAAI7IAACNXbRV-AoBxF3peiTPQQ",
+      "CQACAgUAAxkDAAIBRGr6utRBYLgwEmuQVAupVpHedHFiAAI8IAACNXbRVxLiUdlACFMVPQQ"
+    ],
+    "parts_count": 2,
+    "sizes_mb": [
+      15.44,
+      15.36
+    ]
+  }
+]

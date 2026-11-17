@@ -36,6 +36,7 @@ class MainActivity : ComponentActivity() {
             isAppearanceLightNavigationBars = false
         }
         pendingOpenReels = intent?.action == ACTION_OPEN_REELS
+        clearTransientAudioCache()
         val api = buildSparkApi()
         val tokens = TokenStore(this)
         setContent {
@@ -63,6 +64,41 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingOpenReels = intent.action == ACTION_OPEN_REELS
+    }
+
+    override fun onStart() {
+        super.onStart()
+        clearTransientAudioCache()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        clearTransientAudioCache()
+    }
+
+    override fun onDestroy() {
+        clearTransientAudioCache()
+        super.onDestroy()
+    }
+
+    /**
+     * Ensures zero audio cache is ever retained on the device when the phone
+     * closes, screen turns off, or app is minimized/closed.
+     */
+    private fun clearTransientAudioCache() {
+        try {
+            listOf(cacheDir, codeCacheDir, externalCacheDir).filterNotNull().forEach { dir ->
+                dir.walkTopDown().forEach { file ->
+                    if (file.isFile && (
+                        file.extension.lowercase() in listOf("mp3", "m4a", "webm", "ogg", "wav", "aac") ||
+                        file.name.contains("media", ignoreCase = true) ||
+                        file.name.contains("exoplayer", ignoreCase = true)
+                    )) {
+                        file.delete()
+                    }
+                }
+            }
+        } catch (_: Exception) {}
     }
 
 }

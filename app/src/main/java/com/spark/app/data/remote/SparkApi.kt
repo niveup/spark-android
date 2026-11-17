@@ -69,4 +69,7 @@ interface SparkApi {
 
     @GET("api/mobile/v1/stats")
     suspend fun stats(@Header("Authorization") auth: String): DataResponse<StatsData>
+
+    @GET("api/mobile/v1/books")
+    suspend fun books(@Header("Authorization") auth: String): DataResponse<List<BookDto>>
 }
