@@ -1,5 +1,6 @@
 package com.spark.app.feed
 
+import android.os.Build
 import android.os.SystemClock
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -179,12 +180,11 @@ fun FeedScreen(
                             .fillMaxSize()
                             .background(Paper)
                             .graphicsLayer {
-                                // Read pager motion in the layer block. This updates transforms
-                                // per frame without recomposing the full card content.
+                                // Directional vertical motion blur + depth scale transition
                                 val pageOffset =
                                     (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
                                 val absOffset = kotlin.math.abs(pageOffset).coerceIn(0f, 1f)
-                                val scale = 1f - (absOffset * 0.05f)
+                                val scale = 1f - (absOffset * 0.06f)
                                 val isTopBound = page == 0 && pagerState.currentPage == 0 &&
                                     pagerState.currentPageOffsetFraction < 0f
                                 val isBottomBound = page == sessionCards.lastIndex &&
@@ -204,11 +204,25 @@ fun FeedScreen(
                                 } else {
                                     scale
                                 }
-                                alpha = 1f - (absOffset * 0.28f)
-                                rotationX = pageOffset.coerceIn(-1f, 1f) * 4.5f
-                                cameraDistance = 14f * density
-                                if (overscrollDamping != 0f) {
-                                    translationY = -overscrollDamping * size.height * 0.18f
+                                alpha = 1f - (absOffset * 0.25f)
+                                translationY = if (overscrollDamping != 0f) {
+                                    -overscrollDamping * size.height * 0.18f
+                                } else {
+                                    pageOffset * size.height * 0.08f
+                                }
+
+                                // Native directional motion blur during swipe transitions (Android 12+)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    val blurPx = (absOffset * 18f * density).coerceIn(0f, 36f)
+                                    renderEffect = if (absOffset > 0.02f) {
+                                        androidx.compose.ui.graphics.BlurEffect(
+                                            radiusX = blurPx * 0.4f,
+                                            radiusY = blurPx,
+                                            edgeTreatment = androidx.compose.ui.graphics.TileMode.Decal
+                                        )
+                                    } else {
+                                        null
+                                    }
                                 }
                             }
                     ) {

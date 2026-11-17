@@ -15,6 +15,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,9 +48,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,6 +74,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -655,8 +659,15 @@ private fun StandardBody(card: Card) {
         modifier = Modifier.semantics { heading() }
     )
     Spacer(modifier = Modifier.height(10.dp))
+    val cleanBody = remember(card.body) {
+        card.body
+            .replace(Regex("^###[^\n\r]+", RegexOption.MULTILINE), "")
+            .replace(Regex("\\*\\*([^*]+)\\*\\*"), "$1")
+            .replace(Regex("\\*([^*]+)\\*"), "$1")
+            .trim()
+    }
     Text(
-        text = card.body,
+        text = cleanBody,
         fontSize = 15.sp,
         lineHeight = 23.sp,
         color = Paper.copy(alpha = 0.82f)
@@ -677,28 +688,66 @@ private fun StandardBody(card: Card) {
 private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: () -> Unit) {
     Text(
         text = card.title,
+        fontFamily = Display,
         fontSize = 24.sp,
+        lineHeight = 30.sp,
         fontWeight = FontWeight.Bold,
+        color = PaperSoft,
         modifier = Modifier.semantics { heading() }
     )
     if (card.bookLine != null) {
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(Ember.copy(alpha = 0.14f))
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_book_filled_24),
+                contentDescription = null,
+                tint = Ember,
+                modifier = Modifier.size(13.dp)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = card.bookLine,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = EmberSoft,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+
+    val cleanBody = remember(card.body) {
+        card.body
+            .replace(Regex("^###[^\n\r]+", RegexOption.MULTILINE), "")
+            .replace(Regex("-\\s*\\*\\*Audio\\*\\*:[^\n\r]+", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("\\*\\*([^*]+)\\*\\*"), "$1")
+            .replace(Regex("\\*([^*]+)\\*"), "$1")
+            .trim()
+    }
+    if (cleanBody.isNotBlank()) {
+        Spacer(modifier = Modifier.height(14.dp))
         Text(
-            text = "From: ${card.bookLine}",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary
+            text = cleanBody,
+            fontSize = 15.sp,
+            lineHeight = 22.sp,
+            color = Paper.copy(alpha = 0.85f)
         )
     }
-    Spacer(modifier = Modifier.height(12.dp))
-    Text(text = card.body, fontSize = 18.sp, lineHeight = 26.sp)
+
     Spacer(modifier = Modifier.height(20.dp))
     val url = card.audioUrl
     if (url == null) {
-        Text("Audio link missing on this card.")
+        Text("Audio link missing on this card.", color = Paper.copy(alpha = 0.6f))
         return
     }
     if (player == null) {
-        Text("Player not available right now.")
+        Text("Player not available right now.", color = Paper.copy(alpha = 0.6f))
         return
     }
     val ui by player.state.collectAsStateWithLifecycle()
@@ -707,70 +756,134 @@ private fun AudioBody(card: Card, player: AudioPlayerBox?, onOpenAudioPlayer: ()
     val duration = if (isThis && ui.durationMs > 0) ui.durationMs
     else (card.durationLabel?.let { parseMinSecPlusMs(it) } ?: 0L)
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFF132B20),
+        border = BorderStroke(1.dp, Color(0xFF2E5E4A)),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        FilledIconButton(
-            onClick = {
-                if (isThis) {
-                    player.toggle()
-                } else {
-                    player.playUrl(url, card.title)
-                }
-            },
-            modifier = Modifier.semantics(mergeDescendants = true) {
-                contentDescription = if (playing) "Pause audiobook" else "Play audiobook"
-            }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
-            Text(text = if (playing) "⏸" else "▶", fontSize = 20.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(Ember)
+                            .clickable {
+                                if (isThis) {
+                                    player.toggle()
+                                } else {
+                                    player.playUrl(url, card.title)
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (playing) {
+                            Text(
+                                text = "Ⅱ",
+                                color = Color(0xFF121110),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = "Play audiobook",
+                                tint = Color(0xFF121110),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = if (playing) "PLAYING CHAPTER" else "AUDIOBOOK CHAPTER",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            color = if (playing) Ember else Paper.copy(alpha = 0.65f)
+                        )
+                        Text(
+                            text = if (duration > 0) formatMinSec(duration) else (card.durationLabel ?: "Audio"),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = PaperSoft
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = {
+                        if (!isThis) player.playUrl(url, card.title)
+                        onOpenAudioPlayer()
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_headphones_16),
+                        contentDescription = "Open full audio player",
+                        tint = Ember,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            if (duration > 0) {
+                Slider(
+                    value = (ui.positionMs.takeIf { isThis } ?: 0).toFloat().coerceIn(0f, duration.toFloat().coerceAtLeast(1f)),
+                    onValueChange = { player.seekTo(it.toLong()) },
+                    valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+                    colors = SliderDefaults.colors(
+                        thumbColor = Ember,
+                        activeTrackColor = Ember,
+                        inactiveTrackColor = Paper.copy(alpha = 0.15f)
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(28.dp)
+                        .semantics { contentDescription = "Audiobook position" }
+                )
+            } else {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = Ember,
+                    trackColor = Paper.copy(alpha = 0.15f)
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = formatMinSec(ui.positionMs.takeIf { isThis } ?: 0),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = Paper.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = if (duration > 0) formatMinSec(duration) else (card.durationLabel ?: "0:00"),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = Paper.copy(alpha = 0.7f)
+                )
+            }
         }
-        if (duration > 0) {
-            Slider(
-                value = (ui.positionMs.takeIf { isThis } ?: 0).toFloat().coerceIn(0f, duration.toFloat()),
-                onValueChange = { player.seekTo(it.toLong()) },
-                valueRange = 0f..duration.toFloat(),
-                modifier = Modifier
-                    .weight(1f)
-                    .semantics { contentDescription = "Audiobook position" }
-            )
-        } else {
-            LinearProgressIndicator(
-                modifier = Modifier.weight(1f)
-            )
-        }
     }
-    Spacer(modifier = Modifier.height(4.dp))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            text = formatMinSec(ui.positionMs.takeIf { isThis } ?: 0),
-            style = MaterialTheme.typography.labelMedium
-        )
-        Text(
-            text = if (duration > 0) formatMinSec(duration) else ("length " + (card.durationLabel ?: "…")),
-            style = MaterialTheme.typography.labelMedium
-        )
-    }
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(
-        text = if (playing) "Playing — keeps running with the screen off, controls on the lock screen."
-        else "Streams online — nothing downloads to your phone.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    androidx.compose.material3.TextButton(
-        onClick = {
-            if (!isThis) player.playUrl(url, card.title)
-            onOpenAudioPlayer()
-        },
-        modifier = Modifier.heightIn(min = 48.dp)
-    ) {
-        Text("Open full player")
-    }
+
     if (isThis && ui.failed) {
         Spacer(modifier = Modifier.height(6.dp))
         Text(
