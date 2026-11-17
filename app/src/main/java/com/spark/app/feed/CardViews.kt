@@ -740,7 +740,7 @@ private fun AudioBody(
             lineHeight = 28.sp,
             fontWeight = FontWeight.Bold,
             color = PaperSoft,
-            maxLines = 3,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.semantics { heading() }
         )
@@ -772,7 +772,7 @@ private fun AudioBody(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         // Live Subtitle Viewer taking the available vertical space
         Box(
@@ -835,109 +835,79 @@ private fun LiveSubtitleViewer(
         if (activeIndex >= 0) {
             listState.animateScrollToItem(
                 index = (activeIndex - 1).coerceAtLeast(0),
-                scrollOffset = -20
+                scrollOffset = -24
             )
         }
     }
 
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFF0F2218).copy(alpha = 0.85f),
-        border = BorderStroke(1.dp, Color(0xFF1E4230)),
+    // Frameless, organic reel caption flow
+    Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 14.dp, vertical = 12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
+        if (!loaded) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .clip(CircleShape)
-                            .background(if (isPlaying) Ember else Paper.copy(alpha = 0.35f))
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = if (isPlaying) "LIVE SUBTITLES" else "SUBTITLES",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp,
-                        color = if (isPlaying) Ember else Paper.copy(alpha = 0.5f)
-                    )
-                }
-
                 Text(
-                    text = "Tap line to jump",
-                    fontSize = 10.sp,
-                    color = Paper.copy(alpha = 0.45f)
+                    text = "Loading subtitles...",
+                    fontSize = 14.sp,
+                    color = Paper.copy(alpha = 0.5f)
                 )
             }
-
-            Spacer(Modifier.height(8.dp))
-
-            if (!loaded) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Loading transcript...",
-                        fontSize = 13.sp,
-                        color = Paper.copy(alpha = 0.5f)
-                    )
+        } else if (cues.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Tap play below to start listening.",
+                    fontSize = 14.sp,
+                    color = Paper.copy(alpha = 0.6f)
+                )
+            }
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                item {
+                    Spacer(Modifier.height(8.dp))
                 }
-            } else if (cues.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Audio playback ready. Press play below to listen.",
-                        fontSize = 13.sp,
-                        color = Paper.copy(alpha = 0.6f)
-                    )
-                }
-            } else {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(cues) { index, cue ->
-                        val isActive = index == activeIndex
-                        val isPast = activeIndex > index
+                itemsIndexed(cues) { index, cue ->
+                    val isActive = index == activeIndex
+                    val isPast = activeIndex > index
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(
-                                    if (isActive) Ember.copy(alpha = 0.16f)
-                                    else Color.Transparent
-                                )
-                                .clickable { onSeekTo(cue.startMs) }
-                                .padding(horizontal = 8.dp, vertical = 6.dp)
-                        ) {
-                            Text(
-                                text = cue.text,
-                                fontSize = if (isActive) 17.sp else 15.sp,
-                                lineHeight = if (isActive) 24.sp else 21.sp,
-                                fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
-                                color = when {
-                                    isActive -> PaperSoft
-                                    isPast -> Paper.copy(alpha = 0.45f)
-                                    else -> Paper.copy(alpha = 0.70f)
-                                }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (isActive) Ember.copy(alpha = 0.16f)
+                                else Color.Transparent
                             )
-                        }
+                            .clickable { onSeekTo(cue.startMs) }
+                            .padding(
+                                horizontal = if (isActive) 12.dp else 4.dp,
+                                vertical = if (isActive) 10.dp else 4.dp
+                            )
+                    ) {
+                        Text(
+                            text = cue.text,
+                            fontSize = if (isActive) 20.sp else 16.sp,
+                            lineHeight = if (isActive) 28.sp else 23.sp,
+                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                            color = when {
+                                isActive -> PaperSoft
+                                isPast -> Paper.copy(alpha = 0.35f)
+                                else -> Paper.copy(alpha = 0.65f)
+                            }
+                        )
                     }
+                }
+                item {
+                    Spacer(Modifier.height(32.dp))
                 }
             }
         }
@@ -960,13 +930,14 @@ private fun AudioPlayerBottomBar(
         "${BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
     }
     val isThis = ui.url == url || ui.url == resolvedUrl
-    val playing = isThis && ui.playing
+    val isFailed = isThis && ui.failed
+    val playing = isThis && ui.playing && !isFailed
     val duration = if (isThis && ui.durationMs > 0) ui.durationMs
     else (card.durationLabel?.let { parseMinSecPlusMs(it) } ?: 0L)
     val position = if (isThis) ui.positionMs else 0L
 
     Surface(
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(20.dp),
         color = Color(0xFF132B20).copy(alpha = 0.96f),
         border = BorderStroke(1.dp, Color(0xFF2E5E4A)),
         modifier = Modifier.fillMaxWidth()
@@ -974,7 +945,7 @@ private fun AudioPlayerBottomBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -984,11 +955,11 @@ private fun AudioPlayerBottomBar(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(44.dp)
                             .clip(CircleShape)
                             .background(Ember)
                             .clickable {
-                                if (isThis) {
+                                if (isThis && !isFailed) {
                                     playerBox.toggle()
                                 } else {
                                     playerBox.playUrl(url, card.title)
@@ -1008,15 +979,15 @@ private fun AudioPlayerBottomBar(
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = "Play audiobook",
                                 tint = Color(0xFF121110),
-                                modifier = Modifier.size(26.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(10.dp))
                     Column {
                         Text(
                             text = if (playing) "PLAYING CHAPTER" else "AUDIOBOOK CHAPTER",
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
                             color = if (playing) Ember else Paper.copy(alpha = 0.65f)
@@ -1032,7 +1003,7 @@ private fun AudioPlayerBottomBar(
 
                 IconButton(
                     onClick = {
-                        if (!isThis) playerBox.playUrl(url, card.title)
+                        if (!isThis || isFailed) playerBox.playUrl(url, card.title)
                         onOpenAudioPlayer()
                     }
                 ) {
@@ -1045,7 +1016,7 @@ private fun AudioPlayerBottomBar(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
 
             if (duration > 0) {
                 Slider(
@@ -1059,14 +1030,14 @@ private fun AudioPlayerBottomBar(
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(28.dp)
+                        .height(26.dp)
                         .semantics { contentDescription = "Audiobook position" }
                 )
             } else {
                 LinearProgressIndicator(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp)
+                        .padding(vertical = 10.dp)
                         .clip(RoundedCornerShape(4.dp)),
                     color = Ember,
                     trackColor = Paper.copy(alpha = 0.15f)
@@ -1093,13 +1064,23 @@ private fun AudioPlayerBottomBar(
         }
     }
 
-    if (isThis && ui.failed) {
+    if (isFailed) {
         Spacer(modifier = Modifier.height(6.dp))
-        Text(
-            text = "Couldn't start this chapter — check your connection, then try again.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
+                .clickable { playerBox.playUrl(url, card.title) }
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+        ) {
+            Text(
+                text = "Connection lost · Tap to retry chapter",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
     }
 }
 
