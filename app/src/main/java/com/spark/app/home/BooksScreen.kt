@@ -201,6 +201,13 @@ private fun BooksContent(
     val filters = listOf("All", "Audio", "Philosophy", "Self-Growth", "Classics")
 
     // Storytel-style categories
+    val editorsChoiceBooks = remember(books) {
+        books.filter { b ->
+            val titleLower = b.title.lowercase()
+            titleLower.contains("48 laws") ||
+                titleLower.contains("human nature")
+        }.sortedByDescending { it.title.contains("48") }
+    }
     val audioBooks = remember(books) { books.filter { it.hasAudio } }
     val philosophyBooks = remember(books) {
         books.filter { b ->
@@ -276,13 +283,13 @@ private fun BooksContent(
         }
 
         if (selectedFilter == "All") {
-            // Shelf 0: Library Collection (All books)
-            if (books.isNotEmpty()) {
+            // Shelf 0: Editor's Choice (Only 48 Laws of Power & The Laws of Human Nature)
+            if (editorsChoiceBooks.isNotEmpty()) {
                 item {
                     BookShelfSection(
-                        title = "Featured Books",
-                        subtitle = "Curated titles in your library",
-                        books = books,
+                        title = "Editor's Choice",
+                        subtitle = "Curated masterworks in your library",
+                        books = editorsChoiceBooks,
                         onSelectBook = onSelectBook,
                         onSeeAll = { onSelectFilter("All") }
                     )
@@ -673,29 +680,45 @@ private fun ShelfBookCard(
         }
 
         Spacer(Modifier.height(8.dp))
-        Text(
-            text = book.title,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Ink,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = 16.sp
-        )
-        Text(
-            text = book.author,
-            fontSize = 11.sp,
-            color = InkSoft,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        if (book.chapterCount > 0) {
-            val chapterLabel = if (book.chapterCount == 1) "1 chapter" else "${book.chapterCount} chapters"
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = book.title,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Ink,
+                    minLines = 2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 16.sp
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = book.author.ifBlank { "Unknown" },
+                    fontSize = 11.sp,
+                    color = InkSoft,
+                    minLines = 1,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            val chapterLabel = when (book.chapterCount) {
+                0 -> "0 chapters"
+                1 -> "1 chapter"
+                else -> "${book.chapterCount} chapters"
+            }
             Text(
                 text = chapterLabel,
                 fontSize = 10.sp,
-                color = Ember,
-                fontWeight = FontWeight.Medium
+                color = if (book.chapterCount > 0) Ember else InkSoft.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Medium,
+                minLines = 1,
+                maxLines = 1
             )
         }
     }
@@ -804,29 +827,45 @@ private fun BookCard(
         }
 
         Spacer(Modifier.height(8.dp))
-        Text(
-            text = book.title,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Ink,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            lineHeight = 16.sp
-        )
-        Text(
-            text = book.author,
-            fontSize = 11.sp,
-            color = InkSoft,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        if (book.chapterCount > 0) {
-            val chapterLabel = if (book.chapterCount == 1) "1 chapter" else "${book.chapterCount} chapters"
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = book.title,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Ink,
+                    minLines = 2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 16.sp
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = book.author.ifBlank { "Unknown" },
+                    fontSize = 11.sp,
+                    color = InkSoft,
+                    minLines = 1,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            val chapterLabel = when (book.chapterCount) {
+                0 -> "0 chapters"
+                1 -> "1 chapter"
+                else -> "${book.chapterCount} chapters"
+            }
             Text(
                 text = chapterLabel,
                 fontSize = 10.sp,
-                color = Ember,
-                fontWeight = FontWeight.Medium
+                color = if (book.chapterCount > 0) Ember else InkSoft.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Medium,
+                minLines = 1,
+                maxLines = 1
             )
         }
     }
