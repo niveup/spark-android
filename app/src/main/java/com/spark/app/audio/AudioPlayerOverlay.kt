@@ -9,7 +9,9 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -39,6 +42,8 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -51,6 +56,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -61,6 +69,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spark.app.R
 
 private val PlayerPage = Color(0xFF121110)
 private val PlayerSurface = Color(0xFF1A1817)
@@ -86,9 +95,10 @@ fun MiniAudioPlayer(
     }
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 500, easing = LinearEasing),
+        animationSpec = tween(durationMillis = 400, easing = LinearEasing),
         label = "mini audio progress"
     )
+    val haptics = LocalHapticFeedback.current
 
     AnimatedVisibility(
         visible = state.url != null,
@@ -97,82 +107,147 @@ fun MiniAudioPlayer(
         modifier = modifier
     ) {
         Surface(
-            color = PlayerSurface,
-            shape = RoundedCornerShape(20.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, PlayerLine),
-            modifier = Modifier.fillMaxWidth()
+            shape = RoundedCornerShape(18.dp),
+            color = Color(0xFF13221A),
+            border = BorderStroke(1.dp, Color(0xFF233B2E)),
+            shadowElevation = 8.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .clickable { onOpen() }
         ) {
-            Column {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 14.dp, end = 8.dp, top = 8.dp, bottom = 6.dp),
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
+                    // Left Album / Audio Glyph
+                    Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable(onClick = onOpen)
-                            .padding(vertical = 5.dp)
-                            .semantics { contentDescription = "Open audio player: $title" }
+                            .size(42.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xFF1A3024))
+                            .border(1.dp, Color(0xFF2C4C3A), RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (state.buffering) "CONNECTING TO AUDIO" else "NOW PLAYING",
-                            color = PlayerAccent,
-                            fontSize = 10.sp,
-                            letterSpacing = 1.1.sp,
-                            fontWeight = FontWeight.SemiBold
+                        Icon(
+                            painter = painterResource(R.drawable.ic_headphones_16),
+                            contentDescription = null,
+                            tint = if (state.playing) PlayerAccent else PlayerMuted,
+                            modifier = Modifier.size(19.dp)
                         )
+                    }
+
+                    Spacer(Modifier.width(11.dp))
+
+                    // Title & Status
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (state.buffering) PlayerAccent
+                                        else if (state.playing) Color(0xFF4EE49B)
+                                        else PlayerMuted
+                                    )
+                            )
+                            Spacer(Modifier.width(5.dp))
+                            Text(
+                                text = when {
+                                    state.buffering -> "CONNECTING"
+                                    state.playing -> "PLAYING"
+                                    else -> "PAUSED"
+                                },
+                                color = PlayerAccent,
+                                fontSize = 9.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.1.sp
+                            )
+                            if (state.autoplay) {
+                                Text(
+                                    text = " · AUTOPLAY",
+                                    color = Color(0xFF8FA396),
+                                    fontSize = 8.5.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    letterSpacing = 0.8.sp
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.height(2.dp))
+
                         Text(
                             text = title,
-                            color = PlayerInk,
-                            fontSize = 14.sp,
-                            lineHeight = 18.sp,
-                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFF7F2EC),
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.SemiBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    Spacer(Modifier.width(6.dp))
-                    FilledIconButton(
-                        onClick = {
-                            if (state.failed) {
-                                state.url?.let { player.playUrl(it, title) }
-                            } else {
-                                player.toggle()
-                            }
-                        },
+
+                    Spacer(Modifier.width(8.dp))
+
+                    // Play / Pause Action Button
+                    Box(
                         modifier = Modifier
-                            .size(48.dp)
-                            .semantics {
-                                contentDescription = when {
-                                    state.failed -> "Retry audio"
-                                    state.playing -> "Pause audio"
-                                    else -> "Resume audio"
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(PlayerAccent)
+                            .clickable {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                if (state.failed) {
+                                    state.url?.let { player.playUrl(it, title) }
+                                } else {
+                                    player.toggle()
                                 }
-                            }
+                            },
+                        contentAlignment = Alignment.Center
                     ) {
-                        PlaybackGlyph(playing = state.playing && !state.failed)
+                        if (state.playing && !state.failed) {
+                            Text(
+                                text = "Ⅱ",
+                                color = Color(0xFF141210),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = "Play",
+                                tint = Color(0xFF141210),
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 }
+
+                // Sleek integrated progress bar at the bottom edge
                 if (state.buffering) {
                     LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.5.dp),
                         color = PlayerAccent,
-                        trackColor = PlayerRaised
+                        trackColor = Color(0xFF1B2B22)
                     )
                 } else {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(2.dp)
-                            .background(PlayerRaised)
+                            .height(2.5.dp)
+                            .background(Color(0xFF1B2B22))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(animatedProgress)
-                                .height(2.dp)
+                                .height(2.5.dp)
                                 .background(PlayerAccent)
                         )
                     }
@@ -383,6 +458,70 @@ fun AudioPlayerOverlay(
                         modifier = Modifier.weight(1f)
                     )
                 }
+
+                Spacer(Modifier.height(14.dp))
+
+                // Autoplay Next Chapter Card
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = PlayerRaised,
+                    border = BorderStroke(1.dp, PlayerLine.copy(alpha = 0.5f)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { player.toggleAutoplay() }
+                            .padding(horizontal = 14.dp, vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(if (state.autoplay) PlayerAccent.copy(alpha = 0.18f) else PlayerPage),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_headphones_16),
+                                    contentDescription = null,
+                                    tint = if (state.autoplay) PlayerAccent else PlayerMuted,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Autoplay Chapters",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = if (state.autoplay) PlayerInk else PlayerMuted
+                                )
+                                Text(
+                                    text = if (state.autoplay) "Plays chapters one after another" else "Stops when current chapter ends",
+                                    fontSize = 11.sp,
+                                    color = PlayerMuted
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = state.autoplay,
+                            onCheckedChange = { player.setAutoplay(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color(0xFF141210),
+                                checkedTrackColor = PlayerAccent,
+                                uncheckedThumbColor = PlayerMuted,
+                                uncheckedTrackColor = PlayerSurface
+                            )
+                        )
+                    }
+                }
+
                 Spacer(Modifier.height(28.dp))
             }
             }

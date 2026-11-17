@@ -892,6 +892,15 @@ private fun BookDetailDialog(
     val audioUi by player?.state?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(null) }
     val hasAudio = audioUi?.url?.isNotBlank() == true
 
+    val audioPlaylist = remember(book) {
+        book.chapters.filter { !it.audioUrl.isNullOrBlank() }.map {
+            com.spark.app.audio.PlaylistItem(
+                url = it.audioUrl!!,
+                title = "${book.title}: ${it.title}"
+            )
+        }
+    }
+
     val isCurrentBookPlaying = remember(audioUi, book) {
         val currentUrl = audioUi?.url ?: ""
         val currentTitle = audioUi?.title ?: ""
@@ -1084,7 +1093,8 @@ private fun BookDetailDialog(
                                     if (firstAudioChapter?.audioUrl != null && player != null) {
                                         player.playUrl(
                                             url = firstAudioChapter.audioUrl,
-                                            title = "${book.title}: ${firstAudioChapter.title}"
+                                            title = "${book.title}: ${firstAudioChapter.title}",
+                                            queue = audioPlaylist
                                         )
                                         onOpenAudioPlayer()
                                     } else {
@@ -1119,7 +1129,7 @@ private fun BookDetailDialog(
                             }
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = if (isCurrentBookPlaying) (if (isAudioPlayingNow) "Playing" else "Resume Audio") else "Play Audio",
+                                text = if (isCurrentBookPlaying) (if (isAudioPlayingNow) "Playing" else "Resume") else "Play Audio",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Ink
@@ -1204,6 +1214,7 @@ private fun BookDetailDialog(
                                 author = book.author,
                                 coverUrl = book.coverUrl,
                                 player = player,
+                                playlist = audioPlaylist,
                                 onOpenAudioPlayer = onOpenAudioPlayer,
                                 onOpenChapterInReels = onOpenChapterInReels
                             )
@@ -1239,6 +1250,7 @@ private fun ChapterRowItem(
     author: String,
     coverUrl: String?,
     player: AudioPlayerBox?,
+    playlist: List<com.spark.app.audio.PlaylistItem> = emptyList(),
     onOpenAudioPlayer: () -> Unit,
     onOpenChapterInReels: (String) -> Unit
 ) {
@@ -1328,7 +1340,8 @@ private fun ChapterRowItem(
                             } else if (!chapter.audioUrl.isNullOrBlank() && player != null) {
                                 player.playUrl(
                                     url = chapter.audioUrl,
-                                    title = "$bookTitle: ${chapter.title}"
+                                    title = "$bookTitle: ${chapter.title}",
+                                    queue = playlist
                                 )
                                 onOpenAudioPlayer()
                             } else {

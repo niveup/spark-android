@@ -26,6 +26,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+data class PlaylistItem(
+    val url: String,
+    val title: String
+)
+
 /** UI-facing playback state; one stream plays at a time. */
 data class AudioUi(
     /** Stream identity of the current item (the card's audioUrl). */
@@ -38,7 +43,9 @@ data class AudioUi(
     val playbackSpeed: Float = 1f,
     val sleepTimerRemainingMs: Long = 0,
     /** True after a failed load/connect (UI shows a soft error line). */
-    val failed: Boolean = false
+    val failed: Boolean = false,
+    /** Autoplays subsequent chapters continuously until finished. */
+    val autoplay: Boolean = true
 )
 
 internal object AudioSessionCommands {
@@ -46,6 +53,7 @@ internal object AudioSessionCommands {
     const val EXTRA_END_AT_EPOCH_MS = "sleep_timer_end_at_epoch_ms"
     const val PREFERENCES = "spark_audio"
     const val SLEEP_END_AT_KEY = "sleep_end_at_epoch_ms"
+    const val AUTOPLAY_KEY = "autoplay_enabled"
 }
 
 /** "8:31" from milliseconds; hours show when needed (1:04:12). */
@@ -69,8 +77,13 @@ class AudioPlayerBox(context: Context) {
         AudioSessionCommands.PREFERENCES,
         Context.MODE_PRIVATE
     )
-    private val _state = MutableStateFlow(AudioUi())
+    private val _state = MutableStateFlow(
+        AudioUi(autoplay = audioPreferences.getBoolean(AudioSessionCommands.AUTOPLAY_KEY, true))
+    )
     val state: StateFlow<AudioUi> = _state.asStateFlow()
+
+    private var playlist: List<PlaylistItem> = emptyList()
+    private var currentPlaylistIndex: Int = -1
 
     private var controller: MediaController? = null
     /** Play request tapped before the session connected — replayed once ready. */
@@ -100,6 +113,10 @@ class AudioPlayerBox(context: Context) {
                             }
 
                             override fun onPlaybackStateChanged(playbackState: Int) {
+                                if (playbackState == Player.STATE_ENDED && _state.value.autoplay) {
+                                    val hasNext = playNextChapter()
+                                    if (hasNext) return
+                                }
                                 push {
                                     it.copy(
                                         buffering = playbackState == Player.STATE_BUFFERING,
@@ -171,12 +188,23 @@ class AudioPlayerBox(context: Context) {
         }
     }
 
-    /** Streams one chapter; replaces anything that played before. */
-    fun playUrl(url: String, title: String) {
+    /** Streams one chapter; replaces anything that played before. Supports passing a playlist queue for autoplay. */
+    fun playUrl(url: String, title: String, queue: List<PlaylistItem>? = null) {
         val resolvedUrl = if (url.startsWith("http://") || url.startsWith("https://")) {
             url
         } else {
             "${com.spark.app.BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
+        }
+
+        if (queue != null && queue.isNotEmpty()) {
+            playlist = queue
+        }
+        val idx = playlist.indexOfFirst {
+            it.url == url || it.url == resolvedUrl ||
+            it.url.substringAfterLast("/").substringBefore("?") == resolvedUrl.substringAfterLast("/").substringBefore("?")
+        }
+        if (idx != -1) {
+            currentPlaylistIndex = idx
         }
 
         val currentUrl = _state.value.url
@@ -203,7 +231,8 @@ class AudioPlayerBox(context: Context) {
                 title = title,
                 buffering = true,
                 playbackSpeed = _state.value.playbackSpeed,
-                sleepTimerRemainingMs = readSleepTimerRemainingMs()
+                sleepTimerRemainingMs = readSleepTimerRemainingMs(),
+                autoplay = _state.value.autoplay
             )
             return
         }
@@ -212,7 +241,8 @@ class AudioPlayerBox(context: Context) {
             title = title,
             buffering = true,
             playbackSpeed = c.playbackParameters.speed,
-            sleepTimerRemainingMs = readSleepTimerRemainingMs()
+            sleepTimerRemainingMs = readSleepTimerRemainingMs(),
+            autoplay = _state.value.autoplay
         )
         c.setMediaItem(
             MediaItem.Builder()
@@ -227,6 +257,61 @@ class AudioPlayerBox(context: Context) {
         )
         c.prepare()
         c.play()
+    }
+
+    /** Plays the next chapter in the queue, or sequential chapter number if matched. */
+    fun playNextChapter(): Boolean {
+        // 1. Try playlist queue first
+        if (playlist.isNotEmpty() && currentPlaylistIndex in 0 until (playlist.size - 1)) {
+            val nextIndex = currentPlaylistIndex + 1
+            val nextItem = playlist[nextIndex]
+            currentPlaylistIndex = nextIndex
+            playUrl(nextItem.url, nextItem.title, playlist)
+            return true
+        }
+
+        // 2. Try URL sequential numbering fallback (e.g. _ch_01 -> _ch_02)
+        val currentUrl = _state.value.url ?: return false
+        val currentTitle = _state.value.title ?: ""
+        val chMatch = Regex("(.*_ch_)(\\d+)").find(currentUrl)
+        if (chMatch != null) {
+            val prefix = chMatch.groupValues[1]
+            val numStr = chMatch.groupValues[2]
+            val nextNum = numStr.toIntOrNull()?.plus(1)
+            if (nextNum != null) {
+                val nextNumStr = nextNum.toString().padStart(numStr.length, '0')
+                val nextUrl = "$prefix$nextNumStr"
+                val nextTitle = if (currentTitle.contains("Chapter \\d+".toRegex(RegexOption.IGNORE_CASE))) {
+                    currentTitle.replace("Chapter \\d+".toRegex(RegexOption.IGNORE_CASE), "Chapter $nextNum")
+                } else {
+                    "Chapter $nextNum"
+                }
+                playUrl(nextUrl, nextTitle)
+                return true
+            }
+        }
+        return false
+    }
+
+    /** Plays previous chapter in the queue. */
+    fun playPreviousChapter(): Boolean {
+        if (playlist.isNotEmpty() && currentPlaylistIndex > 0) {
+            val prevIndex = currentPlaylistIndex - 1
+            val prevItem = playlist[prevIndex]
+            currentPlaylistIndex = prevIndex
+            playUrl(prevItem.url, prevItem.title, playlist)
+            return true
+        }
+        return false
+    }
+
+    fun setAutoplay(enabled: Boolean) {
+        audioPreferences.edit { putBoolean(AudioSessionCommands.AUTOPLAY_KEY, enabled) }
+        push { it.copy(autoplay = enabled) }
+    }
+
+    fun toggleAutoplay() {
+        setAutoplay(!_state.value.autoplay)
     }
 
     fun toggle() {
@@ -270,12 +355,14 @@ class AudioPlayerBox(context: Context) {
 
     fun stopAndClear() {
         pending = null
+        playlist = emptyList()
+        currentPlaylistIndex = -1
         setSleepTimer(null)
         controller?.let { c ->
             c.stop()
             c.clearMediaItems()
         }
-        _state.value = AudioUi()
+        _state.value = AudioUi(autoplay = _state.value.autoplay)
     }
 
     private fun startTicker() {
