@@ -33,6 +33,8 @@ which a future web app will share. It is NOT a business. But it must be built wi
 11. Prefer boring, well-documented, popular libraries. When two options exist, pick the one with better current documentation, and say why in one line.
 12. Check the **current official docs** (Android Developers, library READMEs) before using any API. Versions change fast; do not pin from memory — use the versions that the current Android Studio recommends.
 13. **UI polish is the owner's call — flag it, never start it uninvited.** When a phase finishes and the feature set for that phase is functionally complete, end the phase summary with an explicit line: *"UI polish is due now"* (or "not yet — here's why"). Keep the concrete polish backlog in `docs/HANDOFF.md` → *UI polish backlog* and update it as items get done. Do not mix visual redesign into functional phases: a polish pass gets its own branch/phase, and only after the owner says go.
+14. **Canonical dev server & worktree hygiene:** Whenever starting the local API server (`npm run dev`) or testing device endpoints, always run from the canonical project root (`D:\new something\api`), never from an isolated branch worktree. Always commit newly added API routes and schema updates promptly so worktrees never run on stale routes resulting in 404s. Use `.\scripts\dev.ps1` to launch the API and verify tunnel + endpoint health in one step.
+
 
 ## 1.4 Locked technology decisions — Kotlin-native
 
