@@ -683,7 +683,7 @@ private fun ShelfBookCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp),
+                .height(88.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
@@ -697,7 +697,7 @@ private fun ShelfBookCard(
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 16.sp
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(3.dp))
                 Text(
                     text = book.author.ifBlank { "Unknown" },
                     fontSize = 11.sp,
@@ -714,11 +714,12 @@ private fun ShelfBookCard(
             }
             Text(
                 text = chapterLabel,
-                fontSize = 10.sp,
-                color = if (book.chapterCount > 0) Ember else InkSoft.copy(alpha = 0.7f),
-                fontWeight = FontWeight.Medium,
+                fontSize = 12.sp,
+                color = if (book.chapterCount > 0) Ember else InkSoft.copy(alpha = 0.8f),
+                fontWeight = FontWeight.SemiBold,
                 minLines = 1,
-                maxLines = 1
+                maxLines = 1,
+                lineHeight = 16.sp
             )
         }
     }
@@ -830,7 +831,7 @@ private fun BookCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp),
+                .height(88.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
@@ -844,7 +845,7 @@ private fun BookCard(
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 16.sp
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(3.dp))
                 Text(
                     text = book.author.ifBlank { "Unknown" },
                     fontSize = 11.sp,
@@ -861,11 +862,12 @@ private fun BookCard(
             }
             Text(
                 text = chapterLabel,
-                fontSize = 10.sp,
-                color = if (book.chapterCount > 0) Ember else InkSoft.copy(alpha = 0.7f),
-                fontWeight = FontWeight.Medium,
+                fontSize = 12.sp,
+                color = if (book.chapterCount > 0) Ember else InkSoft.copy(alpha = 0.8f),
+                fontWeight = FontWeight.SemiBold,
                 minLines = 1,
-                maxLines = 1
+                maxLines = 1,
+                lineHeight = 16.sp
             )
         }
     }
