@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -236,9 +237,13 @@ fun AudioPlayerOverlay(
                         onClick = onDismiss,
                         modifier = Modifier
                             .size(48.dp)
-                            .semantics { contentDescription = "Close full audio player" }
+                            .semantics { contentDescription = "Minimize full audio player" }
                     ) {
-                        Icon(Icons.Filled.Close, contentDescription = null)
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowDown,
+                            contentDescription = null,
+                            modifier = Modifier.size(28.dp)
+                        )
                     }
                     Text(
                         text = "LISTENING",

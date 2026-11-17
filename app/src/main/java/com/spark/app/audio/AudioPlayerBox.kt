@@ -178,7 +178,23 @@ class AudioPlayerBox(context: Context) {
         } else {
             "${com.spark.app.BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
         }
+
+        val currentUrl = _state.value.url
+        val isSameTrack = !currentUrl.isNullOrBlank() && (
+            currentUrl == resolvedUrl || currentUrl == url ||
+            currentUrl.substringAfterLast("/").substringBefore("?") == resolvedUrl.substringAfterLast("/").substringBefore("?")
+        )
+
         val c = controller
+        if (isSameTrack && c != null) {
+            // Same track already loaded: do not reset position to 0ms; resume if paused
+            if (!c.isPlaying) {
+                if (c.playbackState == Player.STATE_ENDED) c.seekTo(0L)
+                c.play()
+            }
+            return
+        }
+
         if (c == null) {
             // Session not connected yet (first tap): remember and play once ready.
             pending = resolvedUrl to title

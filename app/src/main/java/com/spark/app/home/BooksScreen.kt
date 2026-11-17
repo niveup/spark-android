@@ -44,6 +44,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.spark.app.audio.MiniAudioPlayer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -887,6 +889,27 @@ private fun BookDetailDialog(
     val haptics = LocalHapticFeedback.current
     var isBookmarked by remember { mutableStateOf(false) }
 
+    val audioUi by player?.state?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(null) }
+    val hasAudio = audioUi?.url?.isNotBlank() == true
+
+    val isCurrentBookPlaying = remember(audioUi, book) {
+        val currentUrl = audioUi?.url ?: ""
+        val currentTitle = audioUi?.title ?: ""
+        if (currentUrl.isBlank()) false
+        else {
+            currentTitle.contains(book.title, ignoreCase = true) ||
+            book.chapters.any { ch ->
+                val chUrl = ch.audioUrl ?: ""
+                chUrl.isNotBlank() && (
+                    currentUrl == chUrl ||
+                    currentUrl.endsWith(chUrl) ||
+                    currentUrl.substringAfterLast("/").substringBefore("?") == chUrl.substringAfterLast("/").substringBefore("?")
+                )
+            }
+        }
+    }
+    val isAudioPlayingNow = isCurrentBookPlaying && (audioUi?.playing == true)
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -902,8 +925,9 @@ private fun BookDetailDialog(
                 .navigationBarsPadding(),
             color = Page
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Top Action Bar
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Top Action Bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -949,6 +973,7 @@ private fun BookDetailDialog(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp, vertical = 8.dp)
+                        .padding(bottom = if (hasAudio) 88.dp else 16.dp)
                 ) {
                     // Hero Section: Cover & Book Meta
                     Row(
@@ -1049,19 +1074,26 @@ private fun BookDetailDialog(
                         Button(
                             onClick = {
                                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                                val firstAudioChapter = book.chapters.firstOrNull { !it.audioUrl.isNullOrBlank() }
-                                if (firstAudioChapter?.audioUrl != null && player != null) {
-                                    player.playUrl(
-                                        url = firstAudioChapter.audioUrl,
-                                        title = "${book.title}: ${firstAudioChapter.title}"
-                                    )
+                                if (isCurrentBookPlaying && player != null) {
+                                    if (audioUi?.playing == false) {
+                                        player.toggle()
+                                    }
                                     onOpenAudioPlayer()
                                 } else {
-                                    Toast.makeText(
-                                        context,
-                                        "Starting audio for ${book.title}…",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    val firstAudioChapter = book.chapters.firstOrNull { !it.audioUrl.isNullOrBlank() }
+                                    if (firstAudioChapter?.audioUrl != null && player != null) {
+                                        player.playUrl(
+                                            url = firstAudioChapter.audioUrl,
+                                            title = "${book.title}: ${firstAudioChapter.title}"
+                                        )
+                                        onOpenAudioPlayer()
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "Starting audio for ${book.title}…",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 }
                             },
                             modifier = Modifier
@@ -1070,15 +1102,24 @@ private fun BookDetailDialog(
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Forest)
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = null,
-                                tint = Ink,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            if (isAudioPlayingNow) {
+                                Text(
+                                    text = "Ⅱ",
+                                    color = Ink,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Filled.PlayArrow,
+                                    contentDescription = null,
+                                    tint = Ink,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = "Play Audio",
+                                text = if (isCurrentBookPlaying) (if (isAudioPlayingNow) "Playing" else "Resume Audio") else "Play Audio",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Ink
@@ -1173,8 +1214,21 @@ private fun BookDetailDialog(
                     Spacer(Modifier.height(40.dp))
                 }
             }
+
+            // Floating Mini Audio Player when audio is active
+            if (hasAudio && player != null) {
+                MiniAudioPlayer(
+                    player = player,
+                    onOpen = onOpenAudioPlayer,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp)
+                )
+            }
         }
     }
+}
 }
 
 @Composable
@@ -1190,6 +1244,19 @@ private fun ChapterRowItem(
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
+
+    val audioUi by player?.state?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(null) }
+    val isThisChapter = remember(audioUi, chapter) {
+        val currentUrl = audioUi?.url ?: ""
+        val chUrl = chapter.audioUrl ?: ""
+        if (currentUrl.isBlank() || chUrl.isBlank()) false
+        else {
+            currentUrl == chUrl ||
+            currentUrl.endsWith(chUrl) ||
+            currentUrl.substringAfterLast("/").substringBefore("?") == chUrl.substringAfterLast("/").substringBefore("?")
+        }
+    }
+    val isThisChapterPlaying = isThisChapter && (audioUi?.playing == true)
 
     Box(
         modifier = Modifier
@@ -1253,7 +1320,12 @@ private fun ChapterRowItem(
                         .background(Forest)
                         .clickable {
                             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            if (!chapter.audioUrl.isNullOrBlank() && player != null) {
+                            if (isThisChapter && player != null) {
+                                if (!isThisChapterPlaying) {
+                                    player.toggle()
+                                }
+                                onOpenAudioPlayer()
+                            } else if (!chapter.audioUrl.isNullOrBlank() && player != null) {
                                 player.playUrl(
                                     url = chapter.audioUrl,
                                     title = "$bookTitle: ${chapter.title}"
@@ -1269,12 +1341,21 @@ private fun ChapterRowItem(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_headphones_16),
-                        contentDescription = "Listen to chapter",
-                        tint = Ink,
-                        modifier = Modifier.size(15.dp)
-                    )
+                    if (isThisChapterPlaying) {
+                        Text(
+                            text = "Ⅱ",
+                            color = Ink,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_headphones_16),
+                            contentDescription = "Listen to chapter",
+                            tint = Ink,
+                            modifier = Modifier.size(15.dp)
+                        )
+                    }
                 }
 
                 // Read Chapter in Reels Button
