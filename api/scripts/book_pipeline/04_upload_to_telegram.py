@@ -53,7 +53,7 @@ def upload_to_telegram(slices_manifest: str, cover_image: str = None, transcript
     if cover_image and os.path.exists(cover_image):
         print(f"[*] Uploading Cover Art: {cover_image}...")
         cmd = [
-            "curl.exe", "-s",
+            "curl.exe", "-s", "--noproxy", "*",
             "-F", f"chat_id={CHAT_ID}",
             "-F", f"photo=@{cover_image}",
             f"https://api.telegram.org/bot{token}/sendPhoto"
@@ -73,7 +73,7 @@ def upload_to_telegram(slices_manifest: str, cover_image: str = None, transcript
     if transcript_file and os.path.exists(transcript_file):
         print(f"[*] Uploading Transcript: {transcript_file}...")
         cmd = [
-            "curl.exe", "-s",
+            "curl.exe", "-s", "--noproxy", "*",
             "-F", f"chat_id={CHAT_ID}",
             "-F", f"document=@{transcript_file}",
             f"https://api.telegram.org/bot{token}/sendDocument"
@@ -112,7 +112,7 @@ def upload_to_telegram(slices_manifest: str, cover_image: str = None, transcript
 
         print(f"[{idx+1}/{total}] Uploading {title} ({size_mb} MB)...")
         cmd = [
-            "curl.exe", "-s",
+            "curl.exe", "-s", "--noproxy", "*",
             "-F", f"chat_id={CHAT_ID}",
             "-F", f"title={title}",
             "-F", f"audio=@{file_path}",

@@ -42,6 +42,8 @@ export async function mapBookToSpark(options: {
   bookId?: string;
   coverTelegramFileId?: string;
   transcriptTelegramFileId?: string;
+  isEditorsChoice?: boolean;
+  category?: string;
 }) {
   const { bookTitle, author, progressFile } = options;
 
@@ -141,12 +143,16 @@ export async function mapBookToSpark(options: {
       coverUrl,
       license: "Personal Study",
       isPublicDomain: false,
+      isEditorsChoice: options.isEditorsChoice ?? false,
+      category: options.category ?? null,
       audioUrl: chaptersData[0]?.audioUrl || null
     },
     update: {
       title: bookTitle,
       author: author || "Unknown",
       coverUrl,
+      ...(options.isEditorsChoice !== undefined ? { isEditorsChoice: options.isEditorsChoice } : {}),
+      ...(options.category ? { category: options.category } : {}),
       audioUrl: chaptersData[0]?.audioUrl || null
     }
   });
@@ -223,13 +229,15 @@ if (args.length > 0) {
   const author = getArg("--author") || "Unknown";
   const progressFile = getArg("--progress-file");
   const bookId = getArg("--book-id");
+  const isEditorsChoice = args.includes("--editors-choice") || getArg("--editors-choice") === "true";
+  const category = getArg("--category") || undefined;
 
   if (!bookTitle || !progressFile) {
-    console.error("Usage: npx tsx scripts/book_pipeline/05_map_to_spark.ts --title <TITLE> --progress-file <PATH> [--author <AUTHOR>] [--book-id <ID>]");
+    console.error("Usage: npx tsx scripts/book_pipeline/05_map_to_spark.ts --title <TITLE> --progress-file <PATH> [--author <AUTHOR>] [--book-id <ID>] [--editors-choice] [--category <CATEGORY>]");
     process.exit(1);
   }
 
-  mapBookToSpark({ bookTitle, author, progressFile, bookId })
+  mapBookToSpark({ bookTitle, author, progressFile, bookId, isEditorsChoice, category })
     .catch((err) => {
       console.error("[!] Fatal mapping error:", err);
       process.exit(1);
