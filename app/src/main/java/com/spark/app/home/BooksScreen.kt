@@ -1,5 +1,7 @@
 package com.spark.app.home
 
+import androidx.activity.compose.BackHandler
+
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
@@ -29,6 +31,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -670,7 +673,7 @@ private fun ShelfBookCard(
                 AsyncImage(
                     model = imageRequest,
                     contentDescription = "${book.title} cover",
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
@@ -805,7 +808,7 @@ private fun BookCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(210.dp)
+                .aspectRatio(2f / 3f)
                 .clip(RoundedCornerShape(10.dp))
                 .background(PaperDeep)
                 .border(1.dp, Line, RoundedCornerShape(10.dp))
@@ -814,7 +817,7 @@ private fun BookCard(
                 AsyncImage(
                     model = imageRequest,
                     contentDescription = "${book.title} cover",
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
@@ -930,6 +933,7 @@ private fun BookDetailDialog(
 ) {
     val context = LocalContext.current
     val haptics = LocalHapticFeedback.current
+    BackHandler(onBack = onDismiss)
     var isBookmarked by remember { mutableStateOf(false) }
 
     val audioUi by player?.state?.collectAsStateWithLifecycle() ?: remember { mutableStateOf(null) }
@@ -1289,23 +1293,27 @@ private fun BookDetailDialog(
                             },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(46.dp),
+                                .height(46.dp)
+                                .shadow(8.dp, RoundedCornerShape(12.dp), spotColor = Ember.copy(alpha = 0.35f)),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Forest)
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Ember,
+                                contentColor = Color(0xFF141210)
+                            )
                         ) {
                             if (isAudioPlayingNow) {
-                                Text(
-                                    text = "Ⅱ",
-                                    color = Ink,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_pause),
+                                    contentDescription = "Pause Audio",
+                                    tint = Color(0xFF141210),
+                                    modifier = Modifier.size(18.dp)
                                 )
                             } else {
                                 Icon(
                                     imageVector = Icons.Filled.PlayArrow,
-                                    contentDescription = null,
-                                    tint = Ink,
-                                    modifier = Modifier.size(18.dp)
+                                    contentDescription = "Play Audio",
+                                    tint = Color(0xFF141210),
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
                             Spacer(Modifier.width(6.dp))
@@ -1313,7 +1321,7 @@ private fun BookDetailDialog(
                                 text = if (isCurrentBookPlaying) (if (isAudioPlayingNow) "Playing" else "Resume") else "Play Audio",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Ink
+                                color = Color(0xFF141210)
                             )
                         }
 
@@ -1515,7 +1523,12 @@ private fun ChapterRowItem(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(Forest)
+                        .background(if (isThisChapterPlaying) Ember else Color(0xFF242C38))
+                        .border(
+                            1.dp,
+                            if (isThisChapterPlaying) Ember.copy(alpha = 0.8f) else Color(0x33FFFFFF),
+                            CircleShape
+                        )
                         .clickable {
                             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                             if (isThisChapter && player != null) {
@@ -1547,18 +1560,18 @@ private fun ChapterRowItem(
                     contentAlignment = Alignment.Center
                 ) {
                     if (isThisChapterPlaying) {
-                        Text(
-                            text = "Ⅱ",
-                            color = Ink,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                        Icon(
+                            painter = painterResource(R.drawable.ic_pause),
+                            contentDescription = "Pause",
+                            tint = Color(0xFF141210),
+                            modifier = Modifier.size(16.dp)
                         )
                     } else {
                         Icon(
-                            painter = painterResource(R.drawable.ic_headphones_16),
-                            contentDescription = "Listen to chapter",
-                            tint = Ink,
-                            modifier = Modifier.size(15.dp)
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "Play chapter",
+                            tint = if (isThisChapter) Ember else Color.White,
+                            modifier = Modifier.size(18.dp).offset(x = 1.dp)
                         )
                     }
                 }
