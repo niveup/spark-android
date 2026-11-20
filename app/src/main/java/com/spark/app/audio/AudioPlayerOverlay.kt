@@ -3,16 +3,23 @@ package com.spark.app.audio
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,19 +54,25 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -70,6 +83,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spark.app.R
+import kotlinx.coroutines.launch
 
 private val PlayerPage = Color(0xFF121110)
 private val PlayerSurface = Color(0xFF1A1817)
@@ -83,7 +97,8 @@ private val PlayerAccent = Color(0xFFFFB454)
 fun MiniAudioPlayer(
     player: AudioPlayerBox,
     onOpen: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onDismiss: () -> Unit = { player.stopAndClear() }
 ) {
     val state by player.state.collectAsStateWithLifecycle()
     val title = state.title ?: "Audio chapter"
@@ -99,6 +114,18 @@ fun MiniAudioPlayer(
         label = "mini audio progress"
     )
     val haptics = LocalHapticFeedback.current
+    val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val offsetY = remember { Animatable(0f) }
+    val dismissThresholdPx = with(density) { 50.dp.toPx() }
+    val dismissExitTargetPx = with(density) { 200.dp.toPx() }
+
+    LaunchedEffect(state.url) {
+        if (state.url != null) {
+            offsetY.snapTo(0f)
+        }
+    }
 
     AnimatedVisibility(
         visible = state.url != null,
@@ -113,14 +140,86 @@ fun MiniAudioPlayer(
             shadowElevation = 8.dp,
             modifier = Modifier
                 .fillMaxWidth()
+                .graphicsLayer {
+                    translationY = offsetY.value
+                    val dragProgress = (offsetY.value / dismissThresholdPx).coerceIn(0f, 1f)
+                    alpha = 1f - (dragProgress * 0.45f)
+                    val s = 1f - (dragProgress * 0.03f)
+                    scaleX = s
+                    scaleY = s
+                }
+                .draggable(
+                    orientation = Orientation.Vertical,
+                    state = rememberDraggableState { delta ->
+                        coroutineScope.launch {
+                            val current = offsetY.value
+                            val next = if (delta > 0) {
+                                current + delta
+                            } else {
+                                if (current > 0) {
+                                    (current + delta).coerceAtLeast(0f)
+                                } else {
+                                    (current + delta * 0.15f).coerceAtLeast(-20f)
+                                }
+                            }
+                            offsetY.snapTo(next)
+                        }
+                    },
+                    onDragStopped = { velocity ->
+                        coroutineScope.launch {
+                            val shouldDismiss = (offsetY.value > dismissThresholdPx) ||
+                                (velocity > 800f && offsetY.value > 10f)
+                            if (shouldDismiss) {
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                offsetY.animateTo(
+                                    targetValue = dismissExitTargetPx,
+                                    animationSpec = tween(durationMillis = 180, easing = FastOutLinearInEasing)
+                                )
+                                onDismiss()
+                            } else {
+                                offsetY.animateTo(
+                                    targetValue = 0f,
+                                    animationSpec = spring(
+                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        stiffness = Spring.StiffnessMedium
+                                    )
+                                )
+                            }
+                        }
+                    }
+                )
                 .clip(RoundedCornerShape(18.dp))
                 .clickable { onOpen() }
+                .semantics {
+                    contentDescription = "Mini audio player for $title. Swipe down to close."
+                    customActions = listOf(
+                        CustomAccessibilityAction(label = "Close audio player") {
+                            onDismiss()
+                            true
+                        }
+                    )
+                }
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                // Subtle swipe handle affordance
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 5.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 32.dp, height = 3.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2C4C3A))
+                    )
+                }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                        .padding(start = 12.dp, end = 12.dp, top = 4.dp, bottom = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Left Album / Audio Glyph
