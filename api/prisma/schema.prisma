@@ -24,6 +24,8 @@ model Book {
   textUrl        String?
   audioUrl       String?
   license        String
+  isEditorsChoice Boolean  @default(false)
+  category       String?
   createdAt      DateTime @default(now())
   items          FeedItem[]
 

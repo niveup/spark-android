@@ -177,5 +177,7 @@ data class BookDto(
     @SerialName("coverUrl") val coverUrl: String? = null,
     @SerialName("hasAudio") val hasAudio: Boolean = false,
     @SerialName("chapterCount") val chapterCount: Int = 0,
+    @SerialName("isEditorsChoice") val isEditorsChoice: Boolean = false,
+    @SerialName("category") val category: String? = null,
     @SerialName("chapters") val chapters: List<BookChapterDto> = emptyList()
 )

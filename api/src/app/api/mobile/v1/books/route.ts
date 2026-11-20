@@ -28,6 +28,8 @@ export async function GET(req: Request) {
     title: b.title,
     author: b.author || "Unknown",
     coverUrl: b.coverUrl,
+    isEditorsChoice: b.isEditorsChoice ?? false,
+    category: b.category ?? null,
     hasAudio: !!b.audioUrl || b.items.some((it) => !!it.audioUrl),
     chapterCount: b.items.length,
     chapters: b.items.map((it) => ({

@@ -201,12 +201,18 @@ private fun BooksContent(
 
     // Storytel-style categories
     val editorsChoiceBooks = remember(books) {
-        books.filter { b ->
-            val titleLower = b.title.lowercase()
-            titleLower.contains("48 laws") ||
-                titleLower.contains("human nature") ||
-                titleLower.contains("art of war")
-        }.sortedBy { b ->
+        val dynamicChoice = books.filter { it.isEditorsChoice }
+        val list = if (dynamicChoice.isNotEmpty()) {
+            dynamicChoice
+        } else {
+            books.filter { b ->
+                val titleLower = b.title.lowercase()
+                titleLower.contains("48 laws") ||
+                    titleLower.contains("human nature") ||
+                    titleLower.contains("art of war")
+            }
+        }
+        list.sortedBy { b ->
             val t = b.title.lowercase()
             when {
                 t.contains("48") -> 0
