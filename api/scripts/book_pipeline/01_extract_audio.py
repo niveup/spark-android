@@ -15,6 +15,7 @@ def extract_audio(url: str, out_dir: str) -> str:
 
     cmd = [
         "yt-dlp",
+        "--js-runtimes", "node:node",
         "--extract-audio",
         "--audio-format", "mp3",
         "--audio-quality", "128K",

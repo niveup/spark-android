@@ -65,6 +65,15 @@ def upload_to_telegram(slices_manifest: str, cover_image: str = None, transcript
                 photos = data["result"]["photo"]
                 cover_file_id = photos[-1]["file_id"] # highest resolution
                 print(f"[+] Cover uploaded! file_id: {cover_file_id[:16]}...")
+                # Save cover_file_id.txt in slices dir and parent dir
+                slices_dir = os.path.dirname(os.path.abspath(slices_manifest))
+                parent_dir = os.path.dirname(slices_dir)
+                for d in [slices_dir, parent_dir]:
+                    with open(os.path.join(d, "cover_file_id.txt"), "w", encoding="utf-8") as cf:
+                        cf.write(cover_file_id)
+                covers_dir = r"D:\new something\api\public\covers"
+                os.makedirs(covers_dir, exist_ok=True)
+                shutil.copyfile(cover_image, os.path.join(covers_dir, f"{cover_file_id}.jpg"))
         except Exception as e:
             print(f"[!] Cover upload failed: {e}")
 

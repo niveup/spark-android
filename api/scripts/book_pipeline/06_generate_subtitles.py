@@ -138,7 +138,14 @@ def generate_subtitles(vtt_file: str, slices_manifest: str, slug: str, out_dir: 
             from youtube_transcript_api import YouTubeTranscriptApi
             ytt = YouTubeTranscriptApi()
             raw = list(ytt.list(video_id).find_transcript(["en", "en-US", "en-orig"]).fetch())
-            snippets = [{"start": s.start, "duration": s.duration, "text": s.text} for s in raw]
+            snippets = [
+                {
+                    "start": getattr(s, "start", s["start"] if isinstance(s, dict) else 0),
+                    "duration": getattr(s, "duration", s["duration"] if isinstance(s, dict) else 0),
+                    "text": getattr(s, "text", s["text"] if isinstance(s, dict) else "")
+                }
+                for s in raw
+            ]
         except Exception as e:
             print(f"[!] Warning: youtube_transcript_api error: {e}")
 

@@ -15,6 +15,7 @@ def extract_transcript(url: str, out_dir: str) -> str:
 
     cmd = [
         "yt-dlp",
+        "--js-runtimes", "node:node",
         "--write-auto-subs",
         "--write-subs",
         "--sub-lang", "en",

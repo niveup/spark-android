@@ -121,6 +121,11 @@ def auto_add_book(
     slices_manifest = os.path.join(slices_dir, "slices_manifest.json")
 
     # 5. Generate Synchronized Chapter Subtitles
+    video_id = ""
+    vid_match = re.search(r"(?:v=|\/|youtu\.be\/)([0-9A-Za-z_-]{11})", url)
+    if vid_match:
+        video_id = vid_match.group(1)
+
     subtitle_script = os.path.join(SCRIPT_DIR, "06_generate_subtitles.py")
     sub_cmd = [
         sys.executable, subtitle_script,
@@ -129,6 +134,8 @@ def auto_add_book(
     ]
     if vtt_file:
         sub_cmd.extend(["--vtt-file", vtt_file])
+    if video_id:
+        sub_cmd.extend(["--video-id", video_id])
     run_command(sub_cmd)
 
     # 6. Upload to Telegram Cloud
