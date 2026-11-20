@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -338,18 +339,20 @@ fun MiniAudioPlayer(
                         contentAlignment = Alignment.Center
                     ) {
                         if (state.playing && !state.failed) {
-                            Text(
-                                text = "Ⅱ",
-                                color = Color(0xFF141210),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.ExtraBold
+                            Icon(
+                                painter = painterResource(R.drawable.ic_pause),
+                                contentDescription = "Pause",
+                                tint = Color(0xFF141210),
+                                modifier = Modifier.size(18.dp)
                             )
                         } else {
                             Icon(
                                 imageVector = Icons.Filled.PlayArrow,
                                 contentDescription = "Play",
                                 tint = Color(0xFF141210),
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .offset(x = 1.dp)
                             )
                         }
                     }
@@ -582,21 +585,24 @@ fun AudioPlayerOverlay(
 
                     Spacer(Modifier.weight(0.10f))
 
-                    // --- Book Cover Artwork with Ambient Drop Shadow ---
-                    val coverSize = (screenWidth * 0.72f).coerceIn(210.dp, 280.dp)
+                    // --- Book Cover Artwork with Ambient Drop Shadow (Portrait 2:3 Aspect Ratio) ---
+                    val coverHeight = (screenHeight * 0.36f).coerceIn(260.dp, 305.dp)
+                    val coverWidth = (coverHeight * (2f / 3f)).coerceIn(172.dp, 205.dp)
                     Surface(
-                        shape = RoundedCornerShape(22.dp),
+                        shape = RoundedCornerShape(14.dp),
                         shadowElevation = 24.dp,
                         color = Color(0xFF141920),
-                        border = BorderStroke(1.dp, Color(0x28FFFFFF)),
+                        border = BorderStroke(1.dp, Color(0x33FFFFFF)),
                         modifier = Modifier
-                            .size(coverSize)
+                            .height(coverHeight)
+                            .width(coverWidth)
                             .shadow(
                                 elevation = 24.dp,
-                                shape = RoundedCornerShape(22.dp),
-                                spotColor = animatedDominantColor.copy(alpha = 0.65f)
+                                shape = RoundedCornerShape(14.dp),
+                                spotColor = animatedDominantColor.copy(alpha = 0.70f),
+                                ambientColor = animatedDominantColor.copy(alpha = 0.35f)
                             )
-                            .clip(RoundedCornerShape(22.dp))
+                            .clip(RoundedCornerShape(14.dp))
                     ) {
                         if (!state.coverUrl.isNullOrBlank()) {
                             AsyncImage(
@@ -607,7 +613,7 @@ fun AudioPlayerOverlay(
                                     .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
                                     .build(),
                                 contentDescription = title,
-                                contentScale = ContentScale.Crop,
+                                contentScale = ContentScale.Fit,
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
@@ -818,13 +824,28 @@ fun AudioPlayerOverlay(
                             onClick = { player.seekBy(-30_000L) }
                         )
 
-                        // 3. Central White Circular Play/Pause Button
+                        // 3. Central Luminous Play/Pause Button (Ember Gold with ambient glow)
+                        val playButtonGlow = Color(0xFFFFB454).copy(alpha = 0.5f)
+                        val playIconColor = Color(0xFF141210)
                         Box(
                             modifier = Modifier
                                 .size(72.dp)
+                                .shadow(
+                                    elevation = 16.dp,
+                                    shape = CircleShape,
+                                    spotColor = playButtonGlow,
+                                    ambientColor = playButtonGlow
+                                )
                                 .clip(CircleShape)
-                                .background(Color.White)
-                                .shadow(8.dp, CircleShape)
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color(0xFFFFC570),
+                                            Color(0xFFFF9E2C)
+                                        )
+                                    )
+                                )
+                                .border(1.dp, Color(0x4DFFFFFF), CircleShape)
                                 .clickable {
                                     haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
                                     if (state.failed) {
@@ -845,18 +866,20 @@ fun AudioPlayerOverlay(
                             contentAlignment = Alignment.Center
                         ) {
                             if (state.playing && !state.failed) {
-                                Text(
-                                    text = "Ⅱ",
-                                    color = Color(0xFF0F141A),
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Black
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_pause),
+                                    contentDescription = "Pause",
+                                    tint = playIconColor,
+                                    modifier = Modifier.size(32.dp)
                                 )
                             } else {
                                 Icon(
                                     imageVector = Icons.Filled.PlayArrow,
                                     contentDescription = "Play",
-                                    tint = Color(0xFF0F141A),
-                                    modifier = Modifier.size(36.dp)
+                                    tint = playIconColor,
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .offset(x = 2.dp)
                                 )
                             }
                         }

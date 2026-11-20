@@ -651,7 +651,7 @@ private fun ShelfBookCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(190.dp)
+                .height(204.dp)
                 .clip(RoundedCornerShape(10.dp))
                 .background(PaperDeep)
                 .border(1.dp, Line, RoundedCornerShape(10.dp))
@@ -1154,7 +1154,7 @@ private fun BookDetailDialog(
                         Box(
                             modifier = Modifier
                                 .width(132.dp)
-                                .height(192.dp)
+                                .height(198.dp)
                                 .shadow(
                                     elevation = 20.dp,
                                     shape = RoundedCornerShape(14.dp),
@@ -1174,7 +1174,7 @@ private fun BookDetailDialog(
                                         .networkCachePolicy(coil.request.CachePolicy.ENABLED)
                                         .build(),
                                     contentDescription = book.title,
-                                    contentScale = ContentScale.Crop,
+                                    contentScale = ContentScale.Fit,
                                     modifier = Modifier.fillMaxSize()
                                 )
                             } else {
