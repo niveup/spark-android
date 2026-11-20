@@ -204,8 +204,17 @@ private fun BooksContent(
         books.filter { b ->
             val titleLower = b.title.lowercase()
             titleLower.contains("48 laws") ||
-                titleLower.contains("human nature")
-        }.sortedByDescending { it.title.contains("48") }
+                titleLower.contains("human nature") ||
+                titleLower.contains("art of war")
+        }.sortedBy { b ->
+            val t = b.title.lowercase()
+            when {
+                t.contains("48") -> 0
+                t.contains("human nature") -> 1
+                t.contains("art of war") -> 2
+                else -> 3
+            }
+        }
     }
     val audioBooks = remember(books) { books.filter { it.hasAudio } }
     val philosophyBooks = remember(books) {
@@ -216,8 +225,10 @@ private fun BooksContent(
                 titleLower.contains("epictetus") ||
                 titleLower.contains("enchiridion") ||
                 titleLower.contains("thinketh") ||
+                titleLower.contains("art of war") ||
                 authorLower.contains("aurelius") ||
-                authorLower.contains("allen")
+                authorLower.contains("allen") ||
+                authorLower.contains("sun tzu")
         }
     }
     val growthBooks = remember(books) {
@@ -231,10 +242,12 @@ private fun BooksContent(
                 titleLower.contains("diamonds") ||
                 titleLower.contains("power") ||
                 titleLower.contains("48") ||
+                titleLower.contains("art of war") ||
                 authorLower.contains("wattles") ||
                 authorLower.contains("bennett") ||
                 authorLower.contains("smiles") ||
-                authorLower.contains("greene")
+                authorLower.contains("greene") ||
+                authorLower.contains("sun tzu")
         }
     }
     val classicLiterature = remember(books) {

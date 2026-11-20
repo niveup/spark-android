@@ -69,9 +69,15 @@ if (-not $portInUse) {
         exit 1
     }
     Write-Host "  -> Starting API server in $apiDir..." -ForegroundColor Yellow
-    Start-Process -FilePath "npm" -ArgumentList "run dev" -WorkingDirectory $apiDir -NoNewWindow
+    $npmExe = if (Get-Command npm.cmd -ErrorAction SilentlyContinue) { "npm.cmd" } else { "npm" }
+    Start-Process -FilePath $npmExe -ArgumentList "run", "dev" -WorkingDirectory $apiDir
     Write-Host "  -> Waiting for server to initialize..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 4
+    $waited = 0
+    while ($waited -lt 15) {
+        Start-Sleep -Seconds 2
+        $waited += 2
+        if (Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue) { break }
+    }
 } else {
     Write-Host "  -> API server is already running on port 3000." -ForegroundColor Green
 }
