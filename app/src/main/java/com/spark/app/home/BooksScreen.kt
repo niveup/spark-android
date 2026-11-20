@@ -915,7 +915,10 @@ private fun BookDetailDialog(
         book.chapters.filter { !it.audioUrl.isNullOrBlank() }.map {
             com.spark.app.audio.PlaylistItem(
                 url = it.audioUrl!!,
-                title = "${book.title}: ${it.title}"
+                title = it.title,
+                coverUrl = book.coverUrl,
+                author = book.author,
+                bookTitle = book.title
             )
         }
     }
@@ -1112,9 +1115,12 @@ private fun BookDetailDialog(
                                     if (firstAudioChapter?.audioUrl != null && player != null) {
                                         player.playUrl(
                                             url = firstAudioChapter.audioUrl,
-                                            title = "${book.title}: ${firstAudioChapter.title}",
+                                            title = firstAudioChapter.title,
                                             queue = audioPlaylist,
-                                            isBookPlayback = true
+                                            isBookPlayback = true,
+                                            coverUrl = book.coverUrl,
+                                            author = book.author,
+                                            bookTitle = book.title
                                         )
                                         onOpenAudioPlayer()
                                     } else {
@@ -1360,9 +1366,12 @@ private fun ChapterRowItem(
                             } else if (!chapter.audioUrl.isNullOrBlank() && player != null) {
                                 player.playUrl(
                                     url = chapter.audioUrl,
-                                    title = "$bookTitle: ${chapter.title}",
+                                    title = chapter.title,
                                     queue = playlist,
-                                    isBookPlayback = true
+                                    isBookPlayback = true,
+                                    coverUrl = coverUrl,
+                                    author = author,
+                                    bookTitle = bookTitle
                                 )
                                 onOpenAudioPlayer()
                             } else {

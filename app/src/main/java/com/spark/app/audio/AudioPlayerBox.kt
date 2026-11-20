@@ -28,7 +28,10 @@ import kotlinx.coroutines.launch
 
 data class PlaylistItem(
     val url: String,
-    val title: String
+    val title: String,
+    val coverUrl: String? = null,
+    val author: String? = null,
+    val bookTitle: String? = null
 )
 
 /** UI-facing playback state; one stream plays at a time. */
@@ -47,7 +50,10 @@ data class AudioUi(
     /** Autoplays subsequent chapters continuously until finished (Books section only). */
     val autoplay: Boolean = true,
     /** Whether the currently playing track was initiated from the Books section. */
-    val isBookPlayback: Boolean = false
+    val isBookPlayback: Boolean = false,
+    val coverUrl: String? = null,
+    val author: String? = null,
+    val bookTitle: String? = null
 )
 
 internal object AudioSessionCommands {
@@ -91,7 +97,16 @@ class AudioPlayerBox(context: Context) {
 
     private var controller: MediaController? = null
     /** Play request tapped before the session connected — replayed once ready. */
-    private var pending: Pair<String, String>? = null
+    private data class PendingAudio(
+        val url: String,
+        val title: String,
+        val queue: List<PlaylistItem>? = null,
+        val isBookPlayback: Boolean = false,
+        val coverUrl: String? = null,
+        val author: String? = null,
+        val bookTitle: String? = null
+    )
+    private var pending: PendingAudio? = null
     private var pendingPlaybackSpeed: Float? = null
 
     /** Connects to the service and starts the position ticker. */
@@ -182,10 +197,17 @@ class AudioPlayerBox(context: Context) {
                         connectedController,
                         audioPreferences.getLong(AudioSessionCommands.SLEEP_END_AT_KEY, 0L)
                     )
-                    pending?.let { (url, title) ->
-                        val fromBook = pendingIsBook
+                    pending?.let { p ->
                         pending = null
-                        playUrl(url, title, isBookPlayback = fromBook)
+                        playUrl(
+                            url = p.url,
+                            title = p.title,
+                            queue = p.queue,
+                            isBookPlayback = p.isBookPlayback,
+                            coverUrl = p.coverUrl,
+                            author = p.author,
+                            bookTitle = p.bookTitle
+                        )
                     }
                     startTicker()
                 },
@@ -194,12 +216,18 @@ class AudioPlayerBox(context: Context) {
         }
     }
 
+    fun getPlaylist(): List<PlaylistItem> = playlist
+    fun getCurrentPlaylistIndex(): Int = currentPlaylistIndex
+
     /** Streams one chapter; replaces anything that played before. Supports passing a playlist queue for autoplay (Books section only). */
     fun playUrl(
         url: String,
         title: String,
         queue: List<PlaylistItem>? = null,
-        isBookPlayback: Boolean = false
+        isBookPlayback: Boolean = false,
+        coverUrl: String? = null,
+        author: String? = null,
+        bookTitle: String? = null
     ) {
         val resolvedUrl = if (url.startsWith("http://") || url.startsWith("https://")) {
             url
@@ -208,6 +236,10 @@ class AudioPlayerBox(context: Context) {
         }
 
         this.isBookPlayback = isBookPlayback
+        var resolvedCover = coverUrl
+        var resolvedAuthor = author
+        var resolvedBookTitle = bookTitle
+
         if (isBookPlayback && !queue.isNullOrEmpty()) {
             playlist = queue
             val idx = playlist.indexOfFirst {
@@ -215,6 +247,15 @@ class AudioPlayerBox(context: Context) {
                 it.url.substringAfterLast("/").substringBefore("?") == resolvedUrl.substringAfterLast("/").substringBefore("?")
             }
             currentPlaylistIndex = if (idx != -1) idx else 0
+            if (idx != -1) {
+                val item = playlist[idx]
+                if (resolvedCover == null) resolvedCover = item.coverUrl
+                if (resolvedAuthor == null) resolvedAuthor = item.author
+                if (resolvedBookTitle == null) resolvedBookTitle = item.bookTitle
+            }
+        } else if (queue != null) {
+            playlist = queue
+            currentPlaylistIndex = playlist.indexOfFirst { it.url == url || it.url == resolvedUrl }
         } else {
             playlist = emptyList()
             currentPlaylistIndex = -1
@@ -228,7 +269,12 @@ class AudioPlayerBox(context: Context) {
 
         val c = controller
         if (isSameTrack && c != null) {
-            _state.value = _state.value.copy(isBookPlayback = isBookPlayback)
+            _state.value = _state.value.copy(
+                isBookPlayback = isBookPlayback,
+                coverUrl = resolvedCover ?: _state.value.coverUrl,
+                author = resolvedAuthor ?: _state.value.author,
+                bookTitle = resolvedBookTitle ?: _state.value.bookTitle
+            )
             // Same track already loaded: do not reset position to 0ms; resume if paused
             if (!c.isPlaying) {
                 if (c.playbackState == Player.STATE_ENDED) c.seekTo(0L)
@@ -239,7 +285,15 @@ class AudioPlayerBox(context: Context) {
 
         if (c == null) {
             // Session not connected yet (first tap): remember and play once ready.
-            pending = resolvedUrl to title
+            pending = PendingAudio(
+                url = resolvedUrl,
+                title = title,
+                queue = queue,
+                isBookPlayback = isBookPlayback,
+                coverUrl = resolvedCover,
+                author = resolvedAuthor,
+                bookTitle = resolvedBookTitle
+            )
             pendingIsBook = isBookPlayback
             _state.value = AudioUi(
                 url = resolvedUrl,
@@ -248,7 +302,10 @@ class AudioPlayerBox(context: Context) {
                 playbackSpeed = _state.value.playbackSpeed,
                 sleepTimerRemainingMs = readSleepTimerRemainingMs(),
                 autoplay = _state.value.autoplay,
-                isBookPlayback = isBookPlayback
+                isBookPlayback = isBookPlayback,
+                coverUrl = resolvedCover,
+                author = resolvedAuthor,
+                bookTitle = resolvedBookTitle
             )
             return
         }
@@ -259,17 +316,20 @@ class AudioPlayerBox(context: Context) {
             playbackSpeed = c.playbackParameters.speed,
             sleepTimerRemainingMs = readSleepTimerRemainingMs(),
             autoplay = _state.value.autoplay,
-            isBookPlayback = isBookPlayback
+            isBookPlayback = isBookPlayback,
+            coverUrl = resolvedCover,
+            author = resolvedAuthor,
+            bookTitle = resolvedBookTitle
         )
+        val metadataBuilder = MediaMetadata.Builder()
+            .setTitle(title)
+            .setArtist(resolvedAuthor ?: resolvedBookTitle ?: "SPARK · LibriVox")
+        resolvedCover?.let { metadataBuilder.setArtworkUri(android.net.Uri.parse(it)) }
+
         c.setMediaItem(
             MediaItem.Builder()
                 .setUri(resolvedUrl)
-                .setMediaMetadata(
-                    MediaMetadata.Builder()
-                        .setTitle(title)
-                        .setArtist("SPARK · LibriVox")
-                        .build()
-                )
+                .setMediaMetadata(metadataBuilder.build())
                 .build()
         )
         c.prepare()
@@ -285,7 +345,15 @@ class AudioPlayerBox(context: Context) {
             val nextIndex = currentPlaylistIndex + 1
             val nextItem = playlist[nextIndex]
             currentPlaylistIndex = nextIndex
-            playUrl(nextItem.url, nextItem.title, playlist, isBookPlayback = true)
+            playUrl(
+                url = nextItem.url,
+                title = nextItem.title,
+                queue = playlist,
+                isBookPlayback = true,
+                coverUrl = nextItem.coverUrl ?: _state.value.coverUrl,
+                author = nextItem.author ?: _state.value.author,
+                bookTitle = nextItem.bookTitle ?: _state.value.bookTitle
+            )
             return true
         }
 
@@ -305,7 +373,15 @@ class AudioPlayerBox(context: Context) {
                 } else {
                     "Chapter $nextNum"
                 }
-                playUrl(nextUrl, nextTitle, isBookPlayback = true)
+                playUrl(
+                    url = nextUrl,
+                    title = nextTitle,
+                    queue = playlist,
+                    isBookPlayback = true,
+                    coverUrl = _state.value.coverUrl,
+                    author = _state.value.author,
+                    bookTitle = _state.value.bookTitle
+                )
                 return true
             }
         }
@@ -320,7 +396,15 @@ class AudioPlayerBox(context: Context) {
             val prevIndex = currentPlaylistIndex - 1
             val prevItem = playlist[prevIndex]
             currentPlaylistIndex = prevIndex
-            playUrl(prevItem.url, prevItem.title, playlist, isBookPlayback = true)
+            playUrl(
+                url = prevItem.url,
+                title = prevItem.title,
+                queue = playlist,
+                isBookPlayback = true,
+                coverUrl = prevItem.coverUrl ?: _state.value.coverUrl,
+                author = prevItem.author ?: _state.value.author,
+                bookTitle = prevItem.bookTitle ?: _state.value.bookTitle
+            )
             return true
         }
         return false
