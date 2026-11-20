@@ -42,13 +42,19 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.spark.app.audio.MiniAudioPlayer
+import com.spark.app.audio.extractDominantColor
+import com.spark.app.audio.generateFallbackColor
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -56,6 +62,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,9 +72,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import coil.imageLoader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -941,6 +955,45 @@ private fun BookDetailDialog(
     }
     val isAudioPlayingNow = isCurrentBookPlaying && (audioUi?.playing == true)
 
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+
+    var dominantColor by remember { mutableStateOf(generateFallbackColor(book.title)) }
+
+    LaunchedEffect(book.coverUrl, book.title) {
+        val cover = book.coverUrl
+        if (!cover.isNullOrBlank()) {
+            withContext(Dispatchers.IO) {
+                try {
+                    val request = ImageRequest.Builder(context)
+                        .data(cover)
+                        .allowHardware(false)
+                        .diskCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .memoryCachePolicy(coil.request.CachePolicy.ENABLED)
+                        .build()
+                    val result = context.imageLoader.execute(request)
+                    val drawable = result.drawable
+                    if (drawable is android.graphics.drawable.BitmapDrawable) {
+                        dominantColor = extractDominantColor(drawable.bitmap)
+                    } else {
+                        dominantColor = generateFallbackColor(book.title)
+                    }
+                } catch (_: Exception) {
+                    dominantColor = generateFallbackColor(book.title)
+                }
+            }
+        } else {
+            dominantColor = generateFallbackColor(book.title)
+        }
+    }
+
+    val animatedDominantColor by animateColorAsState(
+        targetValue = dominantColor,
+        animationSpec = tween(durationMillis = 650),
+        label = "book ambient glow color"
+    )
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -948,17 +1001,52 @@ private fun BookDetailDialog(
             decorFitsSystemWindows = false
         )
     ) {
-        Surface(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Page)
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-            color = Page
+                .background(Color(0xFF090D11))
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Top Action Bar
+            // Radial ambient glow: scatters the book's dominant color around the book artwork
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                animatedDominantColor.copy(alpha = 0.72f),
+                                animatedDominantColor.copy(alpha = 0.35f),
+                                Color.Transparent
+                            ),
+                            center = Offset(
+                                with(LocalDensity.current) { (screenWidth / 2).toPx() },
+                                with(LocalDensity.current) { (screenHeight * 0.22f).toPx() }
+                            ),
+                            radius = with(LocalDensity.current) { (screenWidth * 1.25f).toPx() }
+                        )
+                    )
+            )
+
+            // Vertical ambient falloff gradient: smooth fade down into rich dark playback surface
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            0.0f to animatedDominantColor.copy(alpha = 0.35f),
+                            0.35f to animatedDominantColor.copy(alpha = 0.20f),
+                            0.65f to Color(0xFF090D11).copy(alpha = 0.90f),
+                            1.0f to Color(0xFF090D11)
+                        )
+                    )
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            ) {
+                // Top Action Bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -970,31 +1058,82 @@ private fun BookDetailDialog(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
-                            tint = Ink
+                            tint = Color.White
                         )
                     }
                     Text(
                         text = "Book Details",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Ink
+                        color = Color.White
                     )
-                    IconButton(
-                        onClick = {
-                            isBookmarked = !isBookmarked
-                            haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                            Toast.makeText(
-                                context,
-                                if (isBookmarked) "Saved to your shelf" else "Removed from shelf",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = {
+                                isBookmarked = !isBookmarked
+                                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                Toast.makeText(
+                                    context,
+                                    if (isBookmarked) "Saved to your shelf" else "Removed from shelf",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = if (isBookmarked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription = "Bookmark book",
+                                tint = if (isBookmarked) Ember else Color.White.copy(alpha = 0.8f)
+                            )
                         }
-                    ) {
-                        Icon(
-                            imageVector = if (isBookmarked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = "Bookmark book",
-                            tint = if (isBookmarked) Ember else InkSoft
-                        )
+
+                        // Triple dot options menu requested by user
+                        var menuExpanded by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) {
+                                Icon(
+                                    imageVector = Icons.Filled.MoreVert,
+                                    contentDescription = "More options",
+                                    tint = Color.White
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = menuExpanded,
+                                onDismissRequest = { menuExpanded = false },
+                                modifier = Modifier.background(Color(0xFF1B222C))
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Read in Reels", color = Color.White) },
+                                    onClick = {
+                                        menuExpanded = false
+                                        val first = book.chapters.firstOrNull()
+                                        onDismiss()
+                                        if (first != null) onOpenChapterInReels(first.id) else onOpenReels()
+                                    }
+                                )
+                                if (book.hasAudio) {
+                                    DropdownMenuItem(
+                                        text = { Text("Open Player", color = Color.White) },
+                                        onClick = {
+                                            menuExpanded = false
+                                            val firstAudio = book.chapters.firstOrNull { !it.audioUrl.isNullOrBlank() }
+                                            if (firstAudio?.audioUrl != null && player != null) {
+                                                player.playUrl(
+                                                    url = firstAudio.audioUrl,
+                                                    title = firstAudio.title,
+                                                    queue = audioPlaylist,
+                                                    isBookPlayback = true,
+                                                    coverUrl = book.coverUrl,
+                                                    author = book.author,
+                                                    bookTitle = book.title
+                                                )
+                                            }
+                                            onDismiss()
+                                            onOpenAudioPlayer()
+                                        }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1004,22 +1143,26 @@ private fun BookDetailDialog(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp, vertical = 8.dp)
-                        .padding(bottom = if (hasAudio) 88.dp else 16.dp)
+                        .padding(bottom = if (hasAudio) 96.dp else 24.dp)
                 ) {
                     // Hero Section: Cover & Book Meta
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(18.dp)
                     ) {
-                        // Large Cover
+                        // Large Cover with Ambient Glow Shadow
                         Box(
                             modifier = Modifier
-                                .width(130.dp)
-                                .height(190.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(PaperDeep)
-                                .border(1.dp, Line, RoundedCornerShape(12.dp))
-                                .shadow(8.dp, RoundedCornerShape(12.dp))
+                                .width(132.dp)
+                                .height(192.dp)
+                                .shadow(
+                                    elevation = 20.dp,
+                                    shape = RoundedCornerShape(14.dp),
+                                    spotColor = animatedDominantColor.copy(alpha = 0.85f)
+                                )
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color(0xFF18181A))
+                                .border(1.dp, Color(0x33FFFFFF), RoundedCornerShape(14.dp))
                         ) {
                             if (!book.coverUrl.isNullOrBlank()) {
                                 AsyncImage(
@@ -1048,7 +1191,7 @@ private fun BookDetailDialog(
                                         fontFamily = Display,
                                         fontSize = 12.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Ink,
+                                        color = Color.White,
                                         textAlign = TextAlign.Center
                                     )
                                 }
@@ -1060,16 +1203,16 @@ private fun BookDetailDialog(
                             Text(
                                 text = book.title,
                                 fontFamily = Display,
-                                fontSize = 20.sp,
+                                fontSize = 21.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Ink,
-                                lineHeight = 24.sp
+                                color = Color.White,
+                                lineHeight = 26.sp
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
                                 text = "By ${book.author}",
-                                fontSize = 13.sp,
-                                color = InkSoft
+                                fontSize = 13.5.sp,
+                                color = Color.White.copy(alpha = 0.75f)
                             )
                             Spacer(Modifier.height(10.dp))
 
@@ -1087,9 +1230,9 @@ private fun BookDetailDialog(
                                 Spacer(Modifier.height(6.dp))
                                 Text(
                                     text = "${book.chapterCount} chapter${if (book.chapterCount != 1) "s" else ""} available",
-                                    fontSize = 11.sp,
+                                    fontSize = 11.5.sp,
                                     color = Ember,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
                         }
@@ -1109,6 +1252,7 @@ private fun BookDetailDialog(
                                     if (audioUi?.playing == false) {
                                         player.toggle()
                                     }
+                                    onDismiss()
                                     onOpenAudioPlayer()
                                 } else {
                                     val firstAudioChapter = book.chapters.firstOrNull { !it.audioUrl.isNullOrBlank() }
@@ -1122,6 +1266,7 @@ private fun BookDetailDialog(
                                             author = book.author,
                                             bookTitle = book.title
                                         )
+                                        onDismiss()
                                         onOpenAudioPlayer()
                                     } else {
                                         Toast.makeText(
@@ -1165,6 +1310,7 @@ private fun BookDetailDialog(
                         OutlinedButton(
                             onClick = {
                                 haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                                onDismiss()
                                 val firstChapter = book.chapters.firstOrNull()
                                 if (firstChapter != null) {
                                     onOpenChapterInReels(firstChapter.id)
@@ -1176,13 +1322,13 @@ private fun BookDetailDialog(
                                 .weight(1f)
                                 .height(46.dp),
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, Line),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink)
+                            border = BorderStroke(1.dp, Color(0x55FFFFFF)),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_book_filled_24),
                                 contentDescription = null,
-                                tint = Ink,
+                                tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(6.dp))
@@ -1190,7 +1336,7 @@ private fun BookDetailDialog(
                                 text = "Read in Reels",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.SemiBold,
-                                color = Ink
+                                color = Color.White
                             )
                         }
                     }
@@ -1203,13 +1349,13 @@ private fun BookDetailDialog(
                         fontFamily = Display,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Ink
+                        color = Color.White
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = "Listen to narration or read card summaries",
-                        fontSize = 11.sp,
-                        color = InkSoft
+                        fontSize = 11.5.sp,
+                        color = Color.White.copy(alpha = 0.70f)
                     )
 
                     Spacer(Modifier.height(14.dp))
@@ -1219,15 +1365,15 @@ private fun BookDetailDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(CardBg)
-                                .border(1.dp, Line, RoundedCornerShape(10.dp))
+                                .background(Color(0x331A1817))
+                                .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(10.dp))
                                 .padding(20.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = "Full chapter summaries and audio being formatted.",
                                 fontSize = 12.sp,
-                                color = InkSoft,
+                                color = Color.White.copy(alpha = 0.70f),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -1241,6 +1387,7 @@ private fun BookDetailDialog(
                                 coverUrl = book.coverUrl,
                                 player = player,
                                 playlist = audioPlaylist,
+                                onDismiss = onDismiss,
                                 onOpenAudioPlayer = onOpenAudioPlayer,
                                 onOpenChapterInReels = onOpenChapterInReels
                             )
@@ -1256,7 +1403,10 @@ private fun BookDetailDialog(
             if (hasAudio && player != null) {
                 MiniAudioPlayer(
                     player = player,
-                    onOpen = onOpenAudioPlayer,
+                    onOpen = {
+                        onDismiss()
+                        onOpenAudioPlayer()
+                    },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
@@ -1265,7 +1415,6 @@ private fun BookDetailDialog(
             }
         }
     }
-}
 }
 
 @Composable
@@ -1277,6 +1426,7 @@ private fun ChapterRowItem(
     coverUrl: String?,
     player: AudioPlayerBox?,
     playlist: List<com.spark.app.audio.PlaylistItem> = emptyList(),
+    onDismiss: () -> Unit,
     onOpenAudioPlayer: () -> Unit,
     onOpenChapterInReels: (String) -> Unit
 ) {
@@ -1300,8 +1450,8 @@ private fun ChapterRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(CardBg)
-            .border(1.dp, Line, RoundedCornerShape(12.dp))
+            .background(Color(0x351A1817))
+            .border(1.dp, Color(0x28FFFFFF), RoundedCornerShape(12.dp))
             .padding(14.dp)
     ) {
         Row(
@@ -1314,8 +1464,8 @@ private fun ChapterRowItem(
                 modifier = Modifier
                     .size(34.dp)
                     .clip(CircleShape)
-                    .background(PaperDeep)
-                    .border(1.dp, Line, CircleShape),
+                    .background(Color(0x44000000))
+                    .border(1.dp, Color(0x33FFFFFF), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -1332,7 +1482,7 @@ private fun ChapterRowItem(
                     text = chapter.title,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Ink,
+                    color = Color.White,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1341,7 +1491,7 @@ private fun ChapterRowItem(
                     Text(
                         text = chapter.actionLine,
                         fontSize = 11.sp,
-                        color = InkSoft,
+                        color = Color.White.copy(alpha = 0.65f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -1362,6 +1512,7 @@ private fun ChapterRowItem(
                                 if (!isThisChapterPlaying) {
                                     player.toggle()
                                 }
+                                onDismiss()
                                 onOpenAudioPlayer()
                             } else if (!chapter.audioUrl.isNullOrBlank() && player != null) {
                                 player.playUrl(
@@ -1373,6 +1524,7 @@ private fun ChapterRowItem(
                                     author = author,
                                     bookTitle = bookTitle
                                 )
+                                onDismiss()
                                 onOpenAudioPlayer()
                             } else {
                                 Toast.makeText(
@@ -1406,10 +1558,11 @@ private fun ChapterRowItem(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(PaperDeep)
-                        .border(1.dp, Line, CircleShape)
+                        .background(Color(0x44000000))
+                        .border(1.dp, Color(0x33FFFFFF), CircleShape)
                         .clickable {
                             haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                            onDismiss()
                             onOpenChapterInReels(chapter.id)
                         },
                     contentAlignment = Alignment.Center
@@ -1417,7 +1570,7 @@ private fun ChapterRowItem(
                     Icon(
                         painter = painterResource(R.drawable.ic_book_filled_24),
                         contentDescription = "Read chapter",
-                        tint = Ink,
+                        tint = Color.White,
                         modifier = Modifier.size(15.dp)
                     )
                 }

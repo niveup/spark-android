@@ -673,7 +673,8 @@ fun AppNav(
             }
         }
 
-        if (showAudioPlayer && hasAudio) {
+        val audioState by player.state.collectAsStateWithLifecycle()
+        if (showAudioPlayer && (hasAudio || audioState.url != null)) {
             AudioPlayerOverlay(
                 player = player,
                 onDismiss = { showAudioPlayer = false }

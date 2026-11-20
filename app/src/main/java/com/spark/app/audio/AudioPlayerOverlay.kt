@@ -1265,7 +1265,7 @@ private fun AudibleAutoplayControl(
     }
 }
 
-private fun extractDominantColor(bitmap: Bitmap): Color {
+internal fun extractDominantColor(bitmap: Bitmap): Color {
     val scaled = Bitmap.createScaledBitmap(bitmap, 28, 28, false)
     val width = scaled.width
     val height = scaled.height
@@ -1328,7 +1328,7 @@ private fun extractDominantColor(bitmap: Bitmap): Color {
     return Color(chosen)
 }
 
-private fun generateFallbackColor(key: String): Color {
+internal fun generateFallbackColor(key: String): Color {
     val palettes = listOf(
         Color(0xFF1B3B5F), // Deep cerulean / navy
         Color(0xFF1A4636), // Deep emerald
