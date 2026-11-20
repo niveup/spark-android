@@ -166,10 +166,20 @@ class AudioPlayerBox(context: Context) {
                                     }
                                     return
                                 }
+                                val meta = mediaItem.mediaMetadata
+                                val metaCover = meta.artworkUri?.toString()
+                                val metaAuthor = meta.artist?.toString()
+                                val metaBookTitle = meta.albumTitle?.toString()
+                                val isBook = this@AudioPlayerBox.isBookPlayback || !metaBookTitle.isNullOrBlank() || !metaCover.isNullOrBlank()
+                                this@AudioPlayerBox.isBookPlayback = isBook
                                 push {
                                     it.copy(
                                         url = mediaItem.localConfiguration?.uri?.toString() ?: it.url,
-                                        title = mediaItem.mediaMetadata.title?.toString() ?: it.title,
+                                        title = meta.title?.toString() ?: it.title,
+                                        coverUrl = metaCover ?: it.coverUrl,
+                                        author = metaAuthor ?: it.author,
+                                        bookTitle = metaBookTitle ?: it.bookTitle,
+                                        isBookPlayback = isBook,
                                         failed = false
                                     )
                                 }
@@ -178,17 +188,26 @@ class AudioPlayerBox(context: Context) {
                     )
                     val currentMediaItem = connectedController.currentMediaItem
                     if (currentMediaItem != null) {
+                        val meta = currentMediaItem.mediaMetadata
+                        val metaCover = meta.artworkUri?.toString()
+                        val metaAuthor = meta.artist?.toString()
+                        val metaBookTitle = meta.albumTitle?.toString()
+                        val isBook = this@AudioPlayerBox.isBookPlayback || !metaBookTitle.isNullOrBlank() || !metaCover.isNullOrBlank()
+                        this@AudioPlayerBox.isBookPlayback = isBook
                         push {
                             it.copy(
                                 url = currentMediaItem.localConfiguration?.uri?.toString() ?: it.url,
-                                title = currentMediaItem.mediaMetadata.title?.toString() ?: it.title,
+                                title = meta.title?.toString() ?: it.title,
+                                coverUrl = metaCover ?: it.coverUrl,
+                                author = metaAuthor ?: it.author,
+                                bookTitle = metaBookTitle ?: it.bookTitle,
                                 playing = connectedController.isPlaying,
                                 buffering = connectedController.playbackState == Player.STATE_BUFFERING,
                                 positionMs = connectedController.currentPosition.coerceAtLeast(0),
                                 durationMs = connectedController.duration.coerceAtLeast(0),
                                 playbackSpeed = connectedController.playbackParameters.speed,
                                 sleepTimerRemainingMs = readSleepTimerRemainingMs(),
-                                isBookPlayback = isBookPlayback
+                                isBookPlayback = isBook
                             )
                         }
                     }
@@ -323,7 +342,8 @@ class AudioPlayerBox(context: Context) {
         )
         val metadataBuilder = MediaMetadata.Builder()
             .setTitle(title)
-            .setArtist(resolvedAuthor ?: resolvedBookTitle ?: "SPARK · LibriVox")
+            .setArtist(resolvedAuthor ?: resolvedBookTitle ?: "SPARK")
+            .setAlbumTitle(resolvedBookTitle ?: "")
         resolvedCover?.let { metadataBuilder.setArtworkUri(android.net.Uri.parse(it)) }
 
         c.setMediaItem(

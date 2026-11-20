@@ -241,11 +241,17 @@ private fun BooksContent(
         books.filter { b ->
             val titleLower = b.title.lowercase()
             val authorLower = b.author.lowercase()
-            titleLower.contains("meditation") ||
+            b.category?.equals("Philosophy", ignoreCase = true) == true ||
+                titleLower.contains("what is life") ||
+                titleLower.contains("prince") ||
+                titleLower.contains("meditation") ||
                 titleLower.contains("epictetus") ||
                 titleLower.contains("enchiridion") ||
                 titleLower.contains("thinketh") ||
                 titleLower.contains("art of war") ||
+                authorLower.contains("schrödinger") ||
+                authorLower.contains("schrodinger") ||
+                authorLower.contains("machiavelli") ||
                 authorLower.contains("aurelius") ||
                 authorLower.contains("allen") ||
                 authorLower.contains("sun tzu")
@@ -255,7 +261,9 @@ private fun BooksContent(
         books.filter { b ->
             val titleLower = b.title.lowercase()
             val authorLower = b.author.lowercase()
-            titleLower.contains("rich") ||
+            b.category?.equals("Self-Growth", ignoreCase = true) == true ||
+                titleLower.contains("atomic") ||
+                titleLower.contains("rich") ||
                 titleLower.contains("hours") ||
                 titleLower.contains("franklin") ||
                 titleLower.contains("self help") ||
@@ -263,6 +271,7 @@ private fun BooksContent(
                 titleLower.contains("power") ||
                 titleLower.contains("48") ||
                 titleLower.contains("art of war") ||
+                authorLower.contains("clear") ||
                 authorLower.contains("wattles") ||
                 authorLower.contains("bennett") ||
                 authorLower.contains("smiles") ||
@@ -273,7 +282,8 @@ private fun BooksContent(
     val classicLiterature = remember(books) {
         books.filter { b ->
             val titleLower = b.title.lowercase()
-            titleLower.contains("pride") ||
+            b.category?.equals("Classics", ignoreCase = true) == true ||
+                titleLower.contains("pride") ||
                 titleLower.contains("frankenstein") ||
                 titleLower.contains("jane eyre") ||
                 titleLower.contains("moby")
