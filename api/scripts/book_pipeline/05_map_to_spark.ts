@@ -61,7 +61,7 @@ export async function mapBookToSpark(options: {
   const rawSlices: SliceItem[] = JSON.parse(fs.readFileSync(progressFile, "utf-8"));
   const bookSlug = bookTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-  let effectiveBookId = options.bookId || `cmv_${bookSlug.replace(/-/g, "_")}`;
+  let effectiveBookId = (options.bookId && options.bookId !== "auto") ? options.bookId : `cmv_${bookSlug.replace(/-/g, "_")}`;
 
   // 1. Group slices by chapter_num
   const byChapter = new Map<number, SliceItem[]>();

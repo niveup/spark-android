@@ -46,8 +46,9 @@ def download_cover(cover_input: str, out_dir: str) -> str:
         except Exception as e:
             print(f"[!] Warning downloading cover with curl: {e}")
     elif os.path.exists(cover_input):
-        print(f"[*] Copying local cover: {cover_input}...")
-        shutil.copy2(cover_input, target_path)
+        if os.path.abspath(cover_input) != os.path.abspath(target_path):
+            print(f"[*] Copying local cover: {cover_input}...")
+            shutil.copy2(cover_input, target_path)
         return target_path
 
     return ""
@@ -113,7 +114,10 @@ def auto_add_book(
     slices_dir = os.path.join(work_dir, "slices_18mb")
     slice_script = os.path.join(SCRIPT_DIR, "03_slice_audio_18mb.py")
     slice_cmd = [sys.executable, slice_script, "--input-mp3", mp3_file, "--out-dir", slices_dir]
-    if info_json:
+    chapters_file = os.path.join(work_dir, "chapters.json")
+    if os.path.exists(chapters_file):
+        slice_cmd.extend(["--chapters-json", chapters_file])
+    elif info_json:
         slice_cmd.extend(["--info-json", info_json])
     if not run_command(slice_cmd):
         sys.exit(1)

@@ -33,14 +33,29 @@ def get_audio_duration(file_path: str) -> float:
     except:
         return 0.0
 
-def slice_audio(input_mp3: str, out_dir: str, info_json: str = None) -> list:
+def slice_audio(input_mp3: str, out_dir: str, info_json: str = None, chapters_json: str = None) -> list:
     os.makedirs(out_dir, exist_ok=True)
     total_duration = get_audio_duration(input_mp3)
     print(f"[*] Input MP3: {input_mp3} ({round(total_duration, 1)}s = {round(total_duration/60, 1)}m)")
 
     raw_chapters = []
+    # 0. Try reading custom chapters_json if provided
+    if chapters_json and os.path.exists(chapters_json):
+        try:
+            with open(chapters_json, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                for c in data:
+                    raw_chapters.append({
+                        "title": c.get("title", ""),
+                        "start_time": int(c.get("start_time", 0)),
+                        "end_time": int(c.get("end_time", total_duration))
+                    })
+            print(f"[+] Loaded {len(raw_chapters)} curated chapters from {chapters_json}")
+        except Exception as e:
+            print(f"[!] Warning reading chapters_json: {e}")
+
     # 1. Try reading chapters from yt-dlp info.json
-    if info_json and os.path.exists(info_json):
+    if not raw_chapters and info_json and os.path.exists(info_json):
         try:
             with open(info_json, "r", encoding="utf-8") as f:
                 info = json.load(f)
@@ -160,6 +175,7 @@ if __name__ == "__main__":
     parser.add_argument("--input-mp3", required=True, help="Master MP3 file")
     parser.add_argument("--out-dir", required=True, help="Directory to save sliced MP3s")
     parser.add_argument("--info-json", help="yt-dlp info.json file for chapter metadata")
+    parser.add_argument("--chapters-json", help="Curated chapters JSON file")
     args = parser.parse_args()
 
-    slice_audio(args.input_mp3, args.out_dir, args.info_json)
+    slice_audio(args.input_mp3, args.out_dir, args.info_json, args.chapters_json)
