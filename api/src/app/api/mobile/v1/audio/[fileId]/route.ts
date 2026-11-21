@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { Readable } from "stream";
 
-const AUDIO_DIR = path.join(process.cwd(), "public", "audio");
+// Up to 5 minutes execution on Vercel Fluid Compute
+export const maxDuration = 300;
+
+const AUDIO_TMP_DIR = path.join(os.tmpdir(), "spark_audio");
+const LOCAL_AUDIO_DIR = path.join(process.cwd(), "public", "audio");
 const MANIFESTS_DIR = path.join(process.cwd(), "src", "lib", "audio_manifests");
 
 // Helper to download a single file from Telegram
@@ -61,21 +66,29 @@ export async function GET(
     return new NextResponse("Missing file ID", { status: 400 });
   }
 
-  // Ensure AUDIO_DIR exists
-  if (!fs.existsSync(AUDIO_DIR)) {
-    fs.mkdirSync(AUDIO_DIR, { recursive: true });
+  // Resolve cached file from local disk or serverless writable /tmp
+  let cachedFilePath: string | null = null;
+  const localCandidate = path.join(LOCAL_AUDIO_DIR, `${fileId}.mp3`);
+  const tmpCandidate = path.join(AUDIO_TMP_DIR, `${fileId}.mp3`);
+
+  if (fs.existsSync(localCandidate)) {
+    cachedFilePath = localCandidate;
+  } else if (fs.existsSync(tmpCandidate)) {
+    cachedFilePath = tmpCandidate;
   }
 
-  const cachedFilePath = path.join(AUDIO_DIR, `${fileId}.mp3`);
-
   // 1. If not cached, fetch from Telegram (supports single or multi-part unified chapters)
-  if (!fs.existsSync(cachedFilePath)) {
+  if (!cachedFilePath) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) {
       return new NextResponse("Telegram bot not configured", { status: 500 });
     }
 
     try {
+      if (!fs.existsSync(AUDIO_TMP_DIR)) {
+        fs.mkdirSync(AUDIO_TMP_DIR, { recursive: true });
+      }
+
       const manifestParts = findManifestEntry(fileId);
       if (manifestParts && manifestParts.length > 0) {
         const buffers: Buffer[] = [];
@@ -84,11 +97,13 @@ export async function GET(
           buffers.push(buf);
         }
         const combined = Buffer.concat(buffers);
-        fs.writeFileSync(cachedFilePath, combined);
+        fs.writeFileSync(tmpCandidate, combined);
+        cachedFilePath = tmpCandidate;
       } else {
         // Standard single Telegram file_id
         const buf = await downloadTelegramFile(fileId, token);
-        fs.writeFileSync(cachedFilePath, buf);
+        fs.writeFileSync(tmpCandidate, buf);
+        cachedFilePath = tmpCandidate;
       }
     } catch (err: any) {
       console.error("Error fetching audio from Telegram:", err);

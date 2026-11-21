@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import os from "os";
 
-const CACHE_DIR = path.join(process.cwd(), "public", "covers");
+export const maxDuration = 60;
+
+const CACHE_TMP_DIR = path.join(os.tmpdir(), "spark_covers");
+const LOCAL_CACHE_DIR = path.join(process.cwd(), "public", "covers");
 
 export async function GET(
   _req: Request,
@@ -13,14 +17,18 @@ export async function GET(
     return new NextResponse("Missing file ID", { status: 400 });
   }
 
-  // 1. Check if already cached on local server disk
+  // 1. Check if already cached on local disk or serverless /tmp
   try {
-    if (!fs.existsSync(CACHE_DIR)) {
-      fs.mkdirSync(CACHE_DIR, { recursive: true });
-    }
-    const cachedFilePath = path.join(CACHE_DIR, `${fileId}.jpg`);
+    const localFile = path.join(LOCAL_CACHE_DIR, `${fileId}.jpg`);
+    const tmpFile = path.join(CACHE_TMP_DIR, `${fileId}.jpg`);
 
-    if (fs.existsSync(cachedFilePath)) {
+    const cachedFilePath = fs.existsSync(localFile)
+      ? localFile
+      : fs.existsSync(tmpFile)
+      ? tmpFile
+      : null;
+
+    if (cachedFilePath) {
       const fileBuffer = fs.readFileSync(cachedFilePath);
       return new NextResponse(fileBuffer, {
         status: 200,
@@ -69,9 +77,12 @@ export async function GET(
     const arrayBuffer = await imageRes.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // 4. Save to server disk cache permanently
+    // 4. Save to temporary disk cache
     try {
-      const cachedFilePath = path.join(CACHE_DIR, `${fileId}.jpg`);
+      if (!fs.existsSync(CACHE_TMP_DIR)) {
+        fs.mkdirSync(CACHE_TMP_DIR, { recursive: true });
+      }
+      const cachedFilePath = path.join(CACHE_TMP_DIR, `${fileId}.jpg`);
       fs.writeFileSync(cachedFilePath, buffer);
     } catch (saveErr) {
       console.warn("Could not save cover to disk cache:", saveErr);

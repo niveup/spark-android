@@ -28,6 +28,13 @@ val sparkAdb = sparkLocalProps.getProperty("sdk.dir")?.let { sdk ->
     file("$sdk/platform-tools/$name")
 }
 
+// Optional API base URL override from local.properties (e.g. spark.api.url=https://spark-api.vercel.app)
+// or gradle CLI (-Pspark.api.url=...). If omitted, debug defaults to local USB tunnel (http://127.0.0.1:3000).
+val sparkConfiguredApiUrl: String? = sparkLocalProps.getProperty("spark.api.url")
+    ?.trim()
+    ?.takeIf { it.isNotEmpty() }
+    ?: (project.findProperty("spark.api.url") as? String)?.trim()?.takeIf { it.isNotEmpty() }
+
 // Task class (not an ad-hoc closure): plain-string state, no Gradle-mode
 // surprises. A doLast closure form of this failed with the configuration
 // cache on ("cannot serialize Gradle script object references").
@@ -108,9 +115,9 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            // Dev: USB tunnel — adb reverse tcp:3000 tcp:3000 makes the
-            // phone's 127.0.0.1:3000 hit the PC's API (Wi-Fi is blocked by firewall).
-            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:3000\"")
+            // Dev: USB tunnel (127.0.0.1:3000) or cloud server if spark.api.url is configured in local.properties.
+            val debugApiUrl = sparkConfiguredApiUrl ?: "http://127.0.0.1:3000"
+            buildConfigField("String", "API_BASE_URL", "\"$debugApiUrl\"")
             buildConfigField("String", "SENTRY_DSN", "\"$sparkSentryDsn\"")
         }
         release {
@@ -121,7 +128,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            buildConfigField("String", "API_BASE_URL", "\"https://example.com\"")
+            val releaseApiUrl = sparkConfiguredApiUrl ?: "https://example.com"
+            buildConfigField("String", "API_BASE_URL", "\"$releaseApiUrl\"")
             buildConfigField("String", "SENTRY_DSN", "\"$sparkSentryDsn\"")
         }
         // Phase 8 QA: a release-like, R8-minified build signed with the local
@@ -134,7 +142,8 @@ android {
             versionNameSuffix = "-qa"
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += listOf("release")
-            buildConfigField("String", "API_BASE_URL", "\"http://127.0.0.1:3000\"")
+            val qaApiUrl = sparkConfiguredApiUrl ?: "http://127.0.0.1:3000"
+            buildConfigField("String", "API_BASE_URL", "\"$qaApiUrl\"")
             buildConfigField("String", "SENTRY_DSN", "\"$sparkSentryDsn\"")
         }
     }
