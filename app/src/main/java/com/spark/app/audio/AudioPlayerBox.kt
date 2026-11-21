@@ -128,7 +128,12 @@ class AudioPlayerBox(context: Context) {
                     connectedController.addListener(
                         object : Player.Listener {
                             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                                push { it.copy(playing = isPlaying, buffering = false) }
+                                push {
+                                    it.copy(
+                                        playing = isPlaying,
+                                        buffering = if (isPlaying) false else (connectedController.playbackState == Player.STATE_BUFFERING || (it.buffering && connectedController.playWhenReady))
+                                    )
+                                }
                             }
 
                             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -138,7 +143,7 @@ class AudioPlayerBox(context: Context) {
                                 }
                                 push {
                                     it.copy(
-                                        buffering = playbackState == Player.STATE_BUFFERING,
+                                        buffering = playbackState == Player.STATE_BUFFERING || (playbackState == Player.STATE_IDLE && connectedController.playWhenReady),
                                         playing = if (
                                             playbackState == Player.STATE_IDLE ||
                                             playbackState == Player.STATE_ENDED
@@ -443,9 +448,13 @@ class AudioPlayerBox(context: Context) {
         val c = controller ?: return
         if (c.isPlaying) {
             c.pause()
+            push { it.copy(playing = false, buffering = false) }
         } else {
             if (c.playbackState == Player.STATE_ENDED) c.seekTo(0L)
             c.play()
+            if (c.playbackState == Player.STATE_BUFFERING || !c.isPlaying) {
+                push { it.copy(buffering = true) }
+            }
         }
     }
 
@@ -500,7 +509,7 @@ class AudioPlayerBox(context: Context) {
                     push {
                         it.copy(
                             playing = c.isPlaying,
-                            buffering = c.playbackState == Player.STATE_BUFFERING,
+                            buffering = c.playbackState == Player.STATE_BUFFERING || (c.playWhenReady && !c.isPlaying && c.playbackState != Player.STATE_ENDED),
                             positionMs = c.currentPosition.coerceAtLeast(0),
                             durationMs = if (d > 0) d else it.durationMs,
                             playbackSpeed = c.playbackParameters.speed,

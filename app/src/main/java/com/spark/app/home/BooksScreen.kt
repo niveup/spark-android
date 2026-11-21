@@ -968,6 +968,7 @@ private fun BookDetailDialog(
         }
     }
     val isAudioPlayingNow = isCurrentBookPlaying && (audioUi?.playing == true)
+    val isAudioBufferingNow = isCurrentBookPlaying && (audioUi?.buffering == true)
 
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
@@ -1301,7 +1302,13 @@ private fun BookDetailDialog(
                                 contentColor = Color(0xFF141210)
                             )
                         ) {
-                            if (isAudioPlayingNow) {
+                            if (isAudioBufferingNow) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color(0xFF141210),
+                                    strokeWidth = 2.dp
+                                )
+                            } else if (isAudioPlayingNow) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_pause),
                                     contentDescription = "Pause Audio",
@@ -1318,7 +1325,11 @@ private fun BookDetailDialog(
                             }
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = if (isCurrentBookPlaying) (if (isAudioPlayingNow) "Playing" else "Resume") else "Play Audio",
+                                text = if (isCurrentBookPlaying) {
+                                    if (isAudioBufferingNow) "Buffering…"
+                                    else if (isAudioPlayingNow) "Playing"
+                                    else "Resume"
+                                } else "Play Audio",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF141210)
@@ -1463,6 +1474,7 @@ private fun ChapterRowItem(
         }
     }
     val isThisChapterPlaying = isThisChapter && (audioUi?.playing == true)
+    val isThisChapterBuffering = isThisChapter && (audioUi?.buffering == true)
 
     Box(
         modifier = Modifier
@@ -1523,10 +1535,10 @@ private fun ChapterRowItem(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(if (isThisChapterPlaying) Ember else Color(0xFF242C38))
+                        .background(if (isThisChapterPlaying || isThisChapterBuffering) Ember else Color(0xFF242C38))
                         .border(
                             1.dp,
-                            if (isThisChapterPlaying) Ember.copy(alpha = 0.8f) else Color(0x33FFFFFF),
+                            if (isThisChapterPlaying || isThisChapterBuffering) Ember.copy(alpha = 0.8f) else Color(0x33FFFFFF),
                             CircleShape
                         )
                         .clickable {
@@ -1559,7 +1571,13 @@ private fun ChapterRowItem(
                         },
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isThisChapterPlaying) {
+                    if (isThisChapterBuffering) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color(0xFF141210),
+                            strokeWidth = 2.dp
+                        )
+                    } else if (isThisChapterPlaying) {
                         Icon(
                             painter = painterResource(R.drawable.ic_pause),
                             contentDescription = "Pause",

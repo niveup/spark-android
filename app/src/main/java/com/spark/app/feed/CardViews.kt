@@ -49,6 +49,7 @@ import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -932,6 +933,7 @@ private fun AudioPlayerBottomBar(
     val isThis = ui.url == url || ui.url == resolvedUrl
     val isFailed = isThis && ui.failed
     val playing = isThis && ui.playing && !isFailed
+    val isBuffering = isThis && ui.buffering && !isFailed
     val duration = if (isThis && ui.durationMs > 0) ui.durationMs
     else (card.durationLabel?.let { parseMinSecPlusMs(it) } ?: 0L)
     val position = if (isThis) ui.positionMs else 0L
@@ -967,7 +969,13 @@ private fun AudioPlayerBottomBar(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        if (playing) {
+                        if (isBuffering) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color(0xFF121110),
+                                strokeWidth = 2.dp
+                            )
+                        } else if (playing) {
                             Text(
                                 text = "Ⅱ",
                                 color = Color(0xFF121110),
@@ -986,7 +994,7 @@ private fun AudioPlayerBottomBar(
                     Spacer(Modifier.width(10.dp))
                     Column {
                         Text(
-                            text = if (playing) "PLAYING CHAPTER" else "AUDIOBOOK CHAPTER",
+                            text = if (isBuffering) "LOADING AUDIO..." else if (playing) "PLAYING CHAPTER" else "AUDIOBOOK CHAPTER",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,

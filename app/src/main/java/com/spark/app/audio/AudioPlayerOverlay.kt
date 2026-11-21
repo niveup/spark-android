@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledIconButton
@@ -338,7 +339,13 @@ fun MiniAudioPlayer(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        if (state.playing && !state.failed) {
+                        if (state.buffering) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(18.dp),
+                                color = Color(0xFF141210),
+                                strokeWidth = 2.dp
+                            )
+                        } else if (state.playing && !state.failed) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_pause),
                                 contentDescription = "Pause",
@@ -865,7 +872,13 @@ fun AudioPlayerOverlay(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            if (state.playing && !state.failed) {
+                            if (state.buffering) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(34.dp),
+                                    color = playIconColor,
+                                    strokeWidth = 3.dp
+                                )
+                            } else if (state.playing && !state.failed) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_pause),
                                     contentDescription = "Pause",
@@ -998,13 +1011,21 @@ fun AudioPlayerOverlay(
                                                 overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.weight(1f)
                                             )
-                                            if (isCurrent && state.playing) {
-                                                Text(
-                                                    text = "Playing",
-                                                    color = Color(0xFFFFB454),
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.SemiBold
-                                                )
+                                            if (isCurrent) {
+                                                if (state.buffering) {
+                                                    CircularProgressIndicator(
+                                                        modifier = Modifier.size(14.dp),
+                                                        color = Color(0xFFFFB454),
+                                                        strokeWidth = 2.dp
+                                                    )
+                                                } else if (state.playing) {
+                                                    Text(
+                                                        text = "Playing",
+                                                        color = Color(0xFFFFB454),
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.SemiBold
+                                                    )
+                                                }
                                             }
                                         }
                                     }
