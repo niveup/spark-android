@@ -208,3 +208,13 @@ Owner diagram: *the saved row stores one key; clicking it opens that reel in the
 - **Verified here.** API: new endpoint returns the card with the caller's own state (`saved`/`liked`), 404 on unknown ids, 401 without a token — checked against the live DEV database, plus 2 new integration tests (`npm test` → 59 pass). App: `lintDebug`, `testDebugUnitTest` (62 pass) and `assembleDebug` green; 3 new on-device Compose tests cover the tap → open, the row size, and the "Opening…" state (compiled, not run on the phone).
 - **Still to check on the phone.** Tap a saved row online → Reels opens on that card; the same row with the phone in airplane mode → the cached card opens; a saved row that was never cached while offline → the offline deck appears.
 
+## Phase 3c.1 - Cloud importer (GitHub Actions) [DONE Nov 2026 - Phase 1 only]
+The importer can now run without the owner's PC. `.github/workflows/import-cards.yml`
+(Node 24, `npm ci` in `api`) starts on `repository_dispatch`
+(`spark-content-import`) or `workflow_dispatch`, validates the payload in
+`.github/scripts/build-payload.mjs` (50 cards / 60 KB ceiling, `{cards:[...]}`),
+writes it to `$RUNNER_TEMP/cards.json` (never the repo), runs
+`node prisma/import-cards.ts --summary ... [--dry-run]`, and reports to Telegram
+via `.github/scripts/import-report.mjs`. `concurrency: content-import`,
+`contents: read`, no `NODE_ENV`. Setup and troubleshooting:
+`docs/CONTENT_AUTOMATION.md`. No schedule and no Gmail trigger yet (Phase 2).
