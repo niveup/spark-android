@@ -11,8 +11,8 @@ const AUDIO_TMP_DIR = path.join(os.tmpdir(), "spark_audio");
 const LOCAL_AUDIO_DIR = path.join(process.cwd(), "public", "audio");
 const MANIFESTS_DIR = path.join(process.cwd(), "src", "lib", "audio_manifests");
 
-// Helper to download a single file from Telegram
-async function downloadTelegramFile(fileId: string, token: string): Promise<Buffer> {
+// Helper to resolve Telegram file_path
+async function getTelegramFilePath(fileId: string, token: string): Promise<string> {
   const fileRes = await fetch(
     `https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`
   );
@@ -25,7 +25,12 @@ async function downloadTelegramFile(fileId: string, token: string): Promise<Buff
     throw new Error(`File not found on Telegram for ID: ${fileId}`);
   }
 
-  const filePath = fileJson.result.file_path;
+  return fileJson.result.file_path;
+}
+
+// Helper to download a single file from Telegram (for multi-part concatenation)
+async function downloadTelegramFile(fileId: string, token: string): Promise<Buffer> {
+  const filePath = await getTelegramFilePath(fileId, token);
   const audioRes = await fetch(
     `https://api.telegram.org/file/bot${token}/${filePath}`
   );
@@ -77,20 +82,22 @@ export async function GET(
     cachedFilePath = tmpCandidate;
   }
 
-  // 1. If not cached, fetch from Telegram (supports single or multi-part unified chapters)
+  // 1. If not cached, stream or concatenate from Telegram
   if (!cachedFilePath) {
     const token = process.env.TELEGRAM_BOT_TOKEN;
     if (!token) {
       return new NextResponse("Telegram bot not configured", { status: 500 });
     }
 
-    try {
-      if (!fs.existsSync(AUDIO_TMP_DIR)) {
-        fs.mkdirSync(AUDIO_TMP_DIR, { recursive: true });
-      }
+    const manifestParts = findManifestEntry(fileId);
 
-      const manifestParts = findManifestEntry(fileId);
-      if (manifestParts && manifestParts.length > 0) {
+    // Multi-part chapter: concatenate into temporary disk file first
+    if (manifestParts && manifestParts.length > 1) {
+      try {
+        if (!fs.existsSync(AUDIO_TMP_DIR)) {
+          fs.mkdirSync(AUDIO_TMP_DIR, { recursive: true });
+        }
+
         const buffers: Buffer[] = [];
         for (const tgId of manifestParts) {
           const buf = await downloadTelegramFile(tgId, token);
@@ -99,15 +106,49 @@ export async function GET(
         const combined = Buffer.concat(buffers);
         fs.writeFileSync(tmpCandidate, combined);
         cachedFilePath = tmpCandidate;
-      } else {
-        // Standard single Telegram file_id
-        const buf = await downloadTelegramFile(fileId, token);
-        fs.writeFileSync(tmpCandidate, buf);
-        cachedFilePath = tmpCandidate;
+      } catch (err: any) {
+        console.error("Error fetching multi-part audio from Telegram:", err);
+        return new NextResponse(err?.message || "Internal server error", { status: 500 });
       }
-    } catch (err: any) {
-      console.error("Error fetching audio from Telegram:", err);
-      return new NextResponse(err?.message || "Internal server error", { status: 500 });
+    } else {
+      // Single-file chapter: Stream directly from Telegram with Range support (INSTANT playback)
+      const targetFileId = (manifestParts && manifestParts.length === 1) ? manifestParts[0] : fileId;
+      try {
+        const filePath = await getTelegramFilePath(targetFileId, token);
+        const range = req.headers.get("range");
+        const tgHeaders: Record<string, string> = {};
+        if (range) tgHeaders["range"] = range;
+
+        const tgRes = await fetch(
+          `https://api.telegram.org/file/bot${token}/${filePath}`,
+          { headers: tgHeaders }
+        );
+
+        if (!tgRes.ok && tgRes.status !== 206) {
+          return new NextResponse(`Source streaming error: ${tgRes.statusText}`, {
+            status: tgRes.status,
+          });
+        }
+
+        const responseHeaders = new Headers();
+        responseHeaders.set("Content-Type", "audio/mpeg");
+        responseHeaders.set("Accept-Ranges", "bytes");
+        responseHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
+
+        const cl = tgRes.headers.get("content-length");
+        if (cl) responseHeaders.set("Content-Length", cl);
+
+        const cr = tgRes.headers.get("content-range");
+        if (cr) responseHeaders.set("Content-Range", cr);
+
+        return new NextResponse(tgRes.body, {
+          status: tgRes.status,
+          headers: responseHeaders,
+        });
+      } catch (err: any) {
+        console.error("Direct audio streaming error:", err);
+        return new NextResponse(err?.message || "Streaming failed", { status: 500 });
+      }
     }
   }
 
