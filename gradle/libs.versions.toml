@@ -4,7 +4,7 @@
 # Network/security versions checked live against Maven Central + Google Maven (Oct 2026).
 # Retrofit 3.0.0 itself depends on OkHttp 4.12.0 (see its POM) — pinned as a pair.
 agp = "9.3.0"
-kotlin = "2.2.0"
+kotlin = "2.4.21"
 composeBom = "2026.08.00"
 coreKtx = "1.16.0"
 lifecycle = "2.9.1"
