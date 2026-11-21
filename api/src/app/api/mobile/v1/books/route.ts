@@ -42,5 +42,10 @@ export async function GET(req: Request) {
     })),
   }));
 
-  return ok(data);
+  const response = ok(data);
+  response.headers.set(
+    "Cache-Control",
+    "public, s-maxage=3600, stale-while-revalidate=86400"
+  );
+  return response;
 }
