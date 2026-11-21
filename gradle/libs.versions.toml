@@ -33,7 +33,7 @@ kover = "0.9.11"
 # Sentry crash reporting (Phase 8). The SDK and the Gradle plugin are versioned
 # SEPARATELY by Sentry — the plugin is NOT the SDK version. Verified live on
 # Maven Central (Oct 2026): sentry-android 8.61.0, plugin 6.24.0.
-sentry = "8.61.0"
+sentry = "8.65.0"
 sentryGradlePlugin = "6.24.0"
 coil = "2.7.0"
 
