@@ -12,7 +12,7 @@ activityCompose = "1.10.1"
 junit = "4.13.2"
 retrofit = "3.0.0"
 okhttp = "4.12.0"
-serialization = "1.11.0"
+serialization = "1.13.0"
 navigation = "2.10.2"
 securityCrypto = "1.1.0"
 # Media3 verified live against Google Maven (Oct 2026): 1.11.1 is the latest stable.
