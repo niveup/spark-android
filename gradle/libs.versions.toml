@@ -22,7 +22,7 @@ media3 = "1.11.1"
 # Kotlin Gradle plugin 2.2.10, and KSP refuses older pairings. 2.2.10-2.0.2
 # verified live on Maven Central (Oct 2026). Room needs KSP.
 room = "2.8.5"
-ksp = "2.2.10-2.0.2"
+ksp = "2.3.14"
 # Coroutines test utilities (JVM tests for the Phase 7 sync persistence).
 coroutinesTest = "1.11.0"
 # Instrumented Compose UI tests (Phase 8).
