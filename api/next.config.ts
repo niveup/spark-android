@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/**/*": [
       "./public/subtitles/**/*",
+      "./src/lib/subtitles/**/*",
       "./src/lib/audio_manifests/**/*",
       "./src/lib/chapters_48laws_manifest.json",
     ],

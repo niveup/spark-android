@@ -3,7 +3,25 @@ import fs from "fs";
 import path from "path";
 import { ok, fail } from "@/lib/api";
 
-const SUBTITLES_DIR = path.join(process.cwd(), "public", "subtitles");
+const SUBTITLES_DIR = path.join(process.cwd(), "src", "lib", "subtitles");
+const subtitleMemoryCache = new Map<string, any[]>();
+
+function findSubtitleFile(key: string): string | null {
+  const safeKey = key.replace(/[^a-zA-Z0-9_\-]/g, "");
+  const keysToTry = [safeKey];
+
+  if (safeKey.startsWith("the-laws-of-human-nature_")) {
+    keysToTry.push(safeKey.replace("the-laws-of-human-nature_", "human_nature_"));
+  } else if (safeKey.startsWith("human_nature_")) {
+    keysToTry.push(safeKey.replace("human_nature_", "the-laws-of-human-nature_"));
+  }
+
+  for (const k of keysToTry) {
+    const p = path.join(SUBTITLES_DIR, `${k}.json`);
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
 
 export async function GET(
   req: Request,
@@ -13,27 +31,24 @@ export async function GET(
   if (!key) return fail("VALIDATION", "Missing subtitle key");
 
   const safeKey = key.replace(/[^a-zA-Z0-9_\-]/g, "");
-  let filePath = path.join(SUBTITLES_DIR, `${safeKey}.json`);
-
-  if (!fs.existsSync(filePath)) {
-    if (safeKey.startsWith("the-laws-of-human-nature_")) {
-      const alias = safeKey.replace("the-laws-of-human-nature_", "human_nature_");
-      const aliasPath = path.join(SUBTITLES_DIR, `${alias}.json`);
-      if (fs.existsSync(aliasPath)) filePath = aliasPath;
-    } else if (safeKey.startsWith("human_nature_")) {
-      const alias = safeKey.replace("human_nature_", "the-laws-of-human-nature_");
-      const aliasPath = path.join(SUBTITLES_DIR, `${alias}.json`);
-      if (fs.existsSync(aliasPath)) filePath = aliasPath;
-    }
+  if (subtitleMemoryCache.has(safeKey)) {
+    const cachedData = subtitleMemoryCache.get(safeKey)!;
+    const res = ok(cachedData);
+    res.headers.set("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+    return res;
   }
 
-  if (!fs.existsSync(filePath)) {
+  const filePath = findSubtitleFile(key);
+  if (!filePath) {
     return ok([]);
   }
 
   try {
     const content = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-    return ok(content);
+    subtitleMemoryCache.set(safeKey, content);
+    const res = ok(content);
+    res.headers.set("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
+    return res;
   } catch {
     return ok([]);
   }
