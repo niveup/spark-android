@@ -214,7 +214,7 @@ private fun BooksContent(
     bottomClearance: Dp,
     onOpenMe: () -> Unit
 ) {
-    val filters = listOf("All", "Audio", "Philosophy", "Self-Growth", "Classics")
+    val filters = listOf("All", "Editor's Choice", "Audio", "Philosophy", "Self-Growth")
 
     // Storytel-style categories
     val editorsChoiceBooks = remember(books) {
@@ -252,11 +252,13 @@ private fun BooksContent(
                 titleLower.contains("enchiridion") ||
                 titleLower.contains("thinketh") ||
                 titleLower.contains("art of war") ||
+                titleLower.contains("atheist") ||
                 authorLower.contains("schrödinger") ||
                 authorLower.contains("schrodinger") ||
                 authorLower.contains("machiavelli") ||
                 authorLower.contains("aurelius") ||
                 authorLower.contains("allen") ||
+                authorLower.contains("bhagat") ||
                 authorLower.contains("sun tzu")
         }
     }
@@ -295,6 +297,7 @@ private fun BooksContent(
 
     val filteredList = remember(books, selectedFilter) {
         when (selectedFilter) {
+            "Editor's Choice" -> editorsChoiceBooks
             "Audio" -> audioBooks
             "Philosophy" -> philosophyBooks
             "Self-Growth" -> growthBooks
@@ -326,129 +329,55 @@ private fun BooksContent(
             Spacer(Modifier.height(16.dp))
         }
 
-        if (selectedFilter == "All") {
-            // Shelf 0: Editor's Choice (Only 48 Laws of Power & The Laws of Human Nature)
-            if (editorsChoiceBooks.isNotEmpty()) {
-                item(key = "shelf_editors_choice", contentType = "shelf") {
-                    BookShelfSection(
-                        title = "Editor's Choice",
-                        subtitle = "Curated masterworks in your library",
-                        books = editorsChoiceBooks,
-                        onSelectBook = onSelectBook,
-                        onSeeAll = { onSelectFilter("All") }
+        // Unified 2-column grid for all views — no separate sections in "All"
+        item(key = "category_header", contentType = "category_header") {
+            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (selectedFilter == "All") "All Books" else selectedFilter,
+                        fontFamily = Display,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Ink
                     )
-                    Spacer(Modifier.height(24.dp))
-                }
-            }
-
-            // Shelf 1: Available with Audio
-            if (audioBooks.isNotEmpty()) {
-                item(key = "shelf_audio", contentType = "shelf") {
-                    BookShelfSection(
-                        title = "Available with Audio",
-                        subtitle = "Full recordings & narrator chapters",
-                        books = audioBooks,
-                        onSelectBook = onSelectBook,
-                        onSeeAll = { onSelectFilter("Audio") }
+                    Text(
+                        text = "${filteredList.size} books",
+                        fontSize = 12.sp,
+                        color = InkSoft
                     )
-                    Spacer(Modifier.height(24.dp))
                 }
-            }
-
-            // Shelf 2: Philosophy & Stoicism
-            if (philosophyBooks.isNotEmpty()) {
-                item(key = "shelf_philosophy", contentType = "shelf") {
-                    BookShelfSection(
-                        title = "Philosophy & Stoicism",
-                        subtitle = "Ancient wisdom for modern clarity",
-                        books = philosophyBooks,
-                        onSelectBook = onSelectBook,
-                        onSeeAll = { onSelectFilter("Philosophy") }
-                    )
-                    Spacer(Modifier.height(24.dp))
-                }
-            }
-
-            // Shelf 3: Conduct of Life & Habits
-            if (growthBooks.isNotEmpty()) {
-                item(key = "shelf_growth", contentType = "shelf") {
-                    BookShelfSection(
-                        title = "Conduct of Life & Habits",
-                        subtitle = "Classics on focus, mindset & mastery",
-                        books = growthBooks,
-                        onSelectBook = onSelectBook,
-                        onSeeAll = { onSelectFilter("Self-Growth") }
-                    )
-                    Spacer(Modifier.height(24.dp))
-                }
-            }
-
-            // Shelf 4: Curated Classic Literature
-            if (classicLiterature.isNotEmpty()) {
-                item(key = "shelf_classics", contentType = "shelf") {
-                    BookShelfSection(
-                        title = "Classic Literature",
-                        subtitle = "Timeless masterpieces",
-                        books = classicLiterature,
-                        onSelectBook = onSelectBook,
-                        onSeeAll = { onSelectFilter("Classics") }
-                    )
-                    Spacer(Modifier.height(24.dp))
-                }
+                Spacer(Modifier.height(14.dp))
             }
         }
 
-        // Categorized grid only when a specific category is selected
-        if (selectedFilter != "All") {
-            item(key = "category_header", contentType = "category_header") {
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = selectedFilter,
-                            fontFamily = Display,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Ink
-                        )
-                        Text(
-                            text = "${filteredList.size} books",
-                            fontSize = 12.sp,
-                            color = InkSoft
-                        )
-                    }
-                    Spacer(Modifier.height(14.dp))
-                }
-            }
-
-            items(
-                items = filteredList.chunked(2),
-                key = { pair -> pair.joinToString("-") { it.id } },
-                contentType = { "grid_row" }
-            ) { pair ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+        items(
+            items = filteredList.chunked(2),
+            key = { pair -> pair.joinToString("-") { it.id } },
+            contentType = { "grid_row" }
+        ) { pair ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                BookCard(
+                    book = pair[0],
+                    onClick = { onSelectBook(pair[0]) },
+                    modifier = Modifier.weight(1f)
+                )
+                if (pair.size > 1) {
                     BookCard(
-                        book = pair[0],
-                        onClick = { onSelectBook(pair[0]) },
+                        book = pair[1],
+                        onClick = { onSelectBook(pair[1]) },
                         modifier = Modifier.weight(1f)
                     )
-                    if (pair.size > 1) {
-                        BookCard(
-                            book = pair[1],
-                            onClick = { onSelectBook(pair[1]) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    } else {
-                        Spacer(Modifier.weight(1f))
-                    }
+                } else {
+                    Spacer(Modifier.weight(1f))
                 }
             }
         }

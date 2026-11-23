@@ -74,3 +74,20 @@ spark-*.txt
 spark-window.xml
 .playwright-cli/
 api/public/audio/
+
+# Secrets & local properties
+sentry.properties
+.env
+.env.*
+api/.env*
+*.zip
+
+# Next.js & Node
+node_modules/
+api/node_modules/
+api/.next/
+api/generated/
+api/next-env.d.ts
+api/tsconfig.tsbuildinfo
+api/public/covers/
+

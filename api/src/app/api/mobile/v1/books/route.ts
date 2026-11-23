@@ -3,17 +3,29 @@ import { fail, ok } from "@/lib/api";
 import { requireAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
+const ALLOWED_BOOK_TITLES = [
+  "the 48 laws of power",
+  "the laws of human nature",
+  "the art of war",
+  "atomic habits",
+  "what is life",
+  "why i am an atheist",
+];
+
+function isAllowedBook(title: string): boolean {
+  const normalized = title.toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+  return ALLOWED_BOOK_TITLES.some((allowed) => {
+    const normAllowed = allowed.toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+    return normalized.includes(normAllowed) || normAllowed.includes(normalized);
+  });
+}
+
 // Contract: GET /api/mobile/v1/books — list all books with covers, chapters & audio
 export async function GET(req: Request) {
   const authed = await requireAuth(req);
   if (!authed) return fail("UNAUTHORIZED", "Login required.");
 
   const books = await db.book.findMany({
-    where: {
-      NOT: {
-        title: { contains: "Sherlock", mode: "insensitive" },
-      },
-    },
     orderBy: { createdAt: "asc" },
     include: {
       items: {
@@ -23,7 +35,9 @@ export async function GET(req: Request) {
     },
   });
 
-  const data = books.map((b) => ({
+  const allowedBooks = books.filter((b) => isAllowedBook(b.title));
+
+  const data = allowedBooks.map((b) => ({
     id: b.id,
     title: b.title,
     author: b.author || "Unknown",

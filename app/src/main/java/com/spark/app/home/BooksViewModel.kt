@@ -22,6 +22,23 @@ sealed interface BooksUiState {
     data class Content(val books: List<BookDto>) : BooksUiState
 }
 
+private val ALLOWED_BOOK_TITLES = listOf(
+    "the 48 laws of power",
+    "the laws of human nature",
+    "the art of war",
+    "atomic habits",
+    "what is life",
+    "why i am an atheist"
+)
+
+private fun isAllowedBook(title: String): Boolean {
+    val norm = title.lowercase().replace(Regex("[^a-z0-9]"), " ").replace(Regex("\\s+"), " ").trim()
+    return ALLOWED_BOOK_TITLES.any { allowed ->
+        val normAllowed = allowed.lowercase().replace(Regex("[^a-z0-9]"), " ").replace(Regex("\\s+"), " ").trim()
+        norm.contains(normAllowed) || normAllowed.contains(norm)
+    }
+}
+
 /**
  * Storytel-inspired Books library viewmodel.
  * Loads curated classics and audiobooks from /api/mobile/v1/books,
@@ -79,7 +96,8 @@ class BooksViewModel(
                     }
                     book.copy(coverUrl = resolvedCover, chapters = resolvedChapters)
                 }
-                _state.value = BooksUiState.Content(resolvedBooks)
+                val filteredBooks = resolvedBooks.filter { isAllowedBook(it.title) }
+                _state.value = BooksUiState.Content(filteredBooks)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: IOException) {

@@ -5,26 +5,20 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,30 +27,27 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,30 +62,40 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.spark.app.BuildConfig
 import com.spark.app.R
 import com.spark.app.audio.AudioPlayerBox
@@ -102,27 +103,142 @@ import com.spark.app.audio.TtsHelper
 import com.spark.app.audio.formatMinSec
 import com.spark.app.data.Card
 import com.spark.app.data.CardType
-import com.spark.app.data.remote.DataResponse
-import com.spark.app.data.remote.SubtitleCueDto
 import com.spark.app.sync.InteractionSync
 import com.spark.app.sync.StateEvents
 import com.spark.app.ui.OfflineConnectivityButton
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import okhttp3.OkHttpClient
-import okhttp3.Request
 
-// Paper-and-forest palette for the reel cards (same tokens as Home).
-private val Paper = Color(0xFFF4EFE5)
-private val PaperSoft = Color(0xFFFAF5EA)
-private val Ember = Color(0xFFFFB454)
-private val EmberSoft = Color(0xFFFFDDB8)
-private val ForestTop = Color(0xFF1C4534)
-private val ForestMid = Color(0xFF163528)
-private val ForestDeep = Color(0xFF0D2118)
-private val Display = FontFamily.Serif
+// Exact design palette tokens from Main.dc.html
+private val CanvasBackground = Color(0xFF0B0B0A)
+private val CardBackground = Color(0xFF1A1A18)
+private val BrutalistShadow = Color(0xFF3A3A36)
+private val GoldAccent = Color(0xFFF2B632)
+private val IvoryText = Color(0xFFF3F1EA)
+private val MutedText = Color(0xFFA3A29B)
+private val BodyTextColor = Color(0xFFD2D0C6)
+private val WaveformUnplayed = Color(0xFF6B6A64)
+private val SageFallbackCover = Color(0xFF5B9467)
+private val TrackLineColor = Color(0xFF2A2A27)
+
+/**
+ * Bookmark ribbon shape from Main.dc.html:
+ * SVG path: M0 0h34v56l-17-12L0 56z
+ */
+private val RibbonShape = GenericShape { size, _ ->
+    moveTo(0f, 0f)
+    lineTo(size.width, 0f)
+    lineTo(size.width, size.height)
+    val notchDepth = 12f * (size.height / 56f)
+    lineTo(size.width / 2f, size.height - notchDepth)
+    lineTo(0f, size.height)
+    close()
+}
+
+/**
+ * 51-bar waveform coordinates extracted exactly from Main.dc.html:
+ * viewBox: 0 0 308 44
+ * Each element is Triple(x, y1, y2).
+ */
+private val WAVEFORM_BARS = listOf(
+    Triple(3f, 17f, 27f),
+    Triple(9f, 16f, 28f),
+    Triple(15f, 13f, 31f),
+    Triple(21f, 16f, 28f),
+    Triple(27f, 16f, 28f),
+    Triple(33f, 16f, 28f),
+    Triple(39f, 16f, 28f),
+    Triple(45f, 14f, 30f),
+    Triple(51f, 17f, 27f),
+    Triple(57f, 15f, 29f),
+    Triple(63f, 14f, 30f),
+    Triple(69f, 11f, 33f),
+    Triple(75f, 8f, 36f),
+    Triple(81f, 5f, 39f),
+    Triple(87f, 8f, 36f),
+    Triple(93f, 10f, 34f),
+    Triple(99f, 12f, 32f),
+    Triple(105f, 15f, 29f),
+    Triple(111f, 12f, 32f),
+    Triple(117f, 10f, 34f),
+    Triple(123f, 6f, 38f),
+    Triple(129f, 9f, 35f),
+    Triple(135f, 7f, 37f),
+    Triple(141f, 11f, 33f),
+    Triple(147f, 14f, 30f),
+    Triple(153f, 17f, 27f),
+    Triple(159f, 16f, 28f),
+    Triple(165f, 14f, 30f),
+    Triple(171f, 17f, 27f),
+    Triple(177f, 15f, 29f),
+    Triple(183f, 14f, 30f),
+    Triple(189f, 14f, 30f),
+    Triple(195f, 13f, 31f),
+    Triple(201f, 16f, 28f),
+    Triple(207f, 18f, 26f),
+    Triple(213f, 14f, 30f),
+    Triple(219f, 9f, 35f),
+    Triple(225f, 8f, 36f),
+    Triple(231f, 7f, 37f),
+    Triple(237f, 6f, 38f),
+    Triple(243f, 8f, 36f),
+    Triple(249f, 11f, 33f),
+    Triple(255f, 13f, 31f),
+    Triple(261f, 13f, 31f),
+    Triple(267f, 12f, 32f),
+    Triple(273f, 8f, 36f),
+    Triple(279f, 8f, 36f),
+    Triple(285f, 8f, 36f),
+    Triple(291f, 10f, 34f),
+    Triple(297f, 14f, 30f),
+    Triple(303f, 13f, 31f)
+)
+
+/**
+ * Top Segmented Progress Bar:
+ * Height 4dp, track #2A2A27, stroke #F3F1EA with dashes (15.05dp dash, 3dp gap).
+ */
+@Composable
+fun TopSegmentedProgressBar(
+    currentPage: Int,
+    totalPages: Int,
+    modifier: Modifier = Modifier
+) {
+    val progressFraction = remember(currentPage, totalPages) {
+        if (totalPages <= 0) 0f
+        else ((currentPage + 1).toFloat() / totalPages.toFloat()).coerceIn(0f, 1f)
+    }
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(4.dp)
+    ) {
+        val strokeWidthPx = 4.dp.toPx()
+        val dashOnPx = 15.05.dp.toPx()
+        val dashOffPx = 3.dp.toPx()
+        val pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashOnPx, dashOffPx), 0f)
+
+        // Background track: #2A2A27
+        drawLine(
+            color = TrackLineColor,
+            start = Offset(0f, size.height / 2f),
+            end = Offset(size.width, size.height / 2f),
+            strokeWidth = strokeWidthPx,
+            pathEffect = pathEffect
+        )
+
+        // Progress line: #F3F1EA
+        if (progressFraction > 0f) {
+            drawLine(
+                color = IvoryText,
+                start = Offset(0f, size.height / 2f),
+                end = Offset(size.width * progressFraction, size.height / 2f),
+                strokeWidth = strokeWidthPx,
+                pathEffect = pathEffect
+            )
+        }
+    }
+}
 
 @Composable
 fun CardView(
@@ -144,24 +260,45 @@ fun CardView(
     var showWhy by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     val saved = state.saved.contains(card.id)
     val liked = state.liked.contains(card.id)
-    val disliked = state.disliked.contains(card.id)
 
     // Center double-tap burst state
     val doubleTapBurst = remember { Animatable(0f) }
 
+    // Parse book title and author
+    val (bookTitle, bookAuthor) = remember(card) {
+        if (!card.bookLine.isNullOrBlank()) {
+            val line = card.bookLine
+            val parts = when {
+                line.contains(" — ") -> line.split(" — ", limit = 2)
+                line.contains(" - ") -> line.split(" - ", limit = 2)
+                line.contains(" by ") -> line.split(" by ", limit = 2)
+                else -> listOf(line, card.source.ifBlank { "Author" })
+            }
+            Pair(parts[0].trim(), parts.getOrNull(1)?.trim() ?: card.source.ifBlank { "Author" })
+        } else {
+            Pair(card.source.ifBlank { card.topic }, "SPARK")
+        }
+    }
+
+    // Card Index number for top-right bookmark ribbon tag (e.g., "11")
+    val ribbonNumber = remember(counter) {
+        counter.substringBefore("/").trim()
+    }
+
+    val isAudioCard = card.type == CardType.AUDIO || !card.audioUrl.isNullOrBlank()
+
+    // Outer card container with brutalist shadow, inner dashed border, and ribbon tag
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 14.dp, vertical = 10.dp)
-            .clip(RoundedCornerShape(26.dp))
-            .background(Brush.verticalGradient(listOf(ForestTop, ForestMid, ForestDeep)))
+            .padding(start = 16.dp, end = 22.dp, top = 8.dp, bottom = 86.dp)
             .pointerInput(card.id) {
                 detectTapGestures(
                     onDoubleTap = {
-                        // Double tap toggles Like (reels convention) with floating heart burst
                         val wasLiked = state.liked.contains(card.id)
                         state.toggleLike(card.id)
                         sync.record(StateEvents.rating(card.id, if (wasLiked) null else true))
@@ -177,224 +314,288 @@ fun CardView(
                 )
             }
     ) {
-        Column(
+        // Brutalist shadow + card surface
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .drawBehind {
+                    val cornerPx = 28.dp.toPx()
+                    val shadowOffset = 6.dp.toPx()
+                    // Brutalist solid shadow: 6px 6px 0 #3A3A36
+                    drawRoundRect(
+                        color = BrutalistShadow,
+                        topLeft = Offset(shadowOffset, shadowOffset),
+                        size = size,
+                        cornerRadius = CornerRadius(cornerPx, cornerPx)
+                    )
+                }
+                .clip(RoundedCornerShape(28.dp))
+                .background(CardBackground)
+                .drawWithContent {
+                    drawContent()
+                    // Inner dashed border: inset 8px, border 1.5px dashed rgba(243,241,234,0.2), radius 21px
+                    val insetPx = 8.dp.toPx()
+                    val cornerPx = 21.dp.toPx()
+                    val strokePx = 1.5.dp.toPx()
+                    val dashEffect = PathEffect.dashPathEffect(floatArrayOf(10.dp.toPx(), 6.dp.toPx()), 0f)
+                    drawRoundRect(
+                        color = IvoryText.copy(alpha = 0.20f),
+                        topLeft = Offset(insetPx, insetPx),
+                        size = Size(size.width - insetPx * 2, size.height - insetPx * 2),
+                        cornerRadius = CornerRadius(cornerPx, cornerPx),
+                        style = Stroke(width = strokePx, pathEffect = dashEffect)
+                    )
+                }
         ) {
-            key(card.id) {
+            // Main card interior content
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 22.dp, end = 22.dp, top = 26.dp, bottom = 18.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
                 Column(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f, fill = false)
                 ) {
-                    // Header row: topic chip, counter, and live listening status
+                    // Top-Left Header: Tilted book thumbnail + Book Title & Author
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 40.dp), // clearance for top-right ribbon
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${card.type.label()} · ${card.topic}",
-                                fontSize = 12.sp,
-                                letterSpacing = 0.2.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Paper.copy(alpha = 0.86f),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(100.dp))
-                                    .background(Paper.copy(alpha = 0.09f))
-                                    .padding(horizontal = 10.dp, vertical = 6.dp)
-                            )
-                        }
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            // Gentle live listening indicator badge
-                            if (tts.isSpeaking) {
-                                LiveListeningPill()
-                                Spacer(Modifier.width(8.dp))
-                            }
-
-                            if (offline && onRetryOffline != null) {
-                                OfflineConnectivityButton(
-                                    onRetry = onRetryOffline,
-                                    modifier = Modifier.size(48.dp),
-                                    description = "Offline library. Tap to retry the deck."
-                                )
-                                Spacer(Modifier.width(4.dp))
-                            }
-
-                            if (openingLabel != null) {
-                                OpeningPill(openingLabel)
-                                Spacer(Modifier.width(8.dp))
-                            }
-
-                            Text(
-                                text = counter,
-                                fontSize = 11.sp,
-                                letterSpacing = 1.2.sp,
-                                color = Paper.copy(alpha = 0.35f)
-                            )
-                        }
-                    }
-
-                    if (!card.grounded) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
+                        // Tilted mini book cover: 28px × 40px, -5deg, rounded 3px
+                        Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(Ember.copy(alpha = 0.12f))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .size(width = 28.dp, height = 40.dp)
+                                .graphicsLayer { rotationZ = -5f }
+                                .clip(RoundedCornerShape(3.dp)),
+                            contentAlignment = Alignment.Center
                         ) {
+                            if (!card.coverUrl.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(card.coverUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "$bookTitle cover",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                // Sage green fallback cover with 3 horizontal lines (from Main.dc.html)
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(SageFallbackCover),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Canvas(modifier = Modifier.size(18.dp, 22.dp)) {
+                                        val sx = size.width / 18f
+                                        val sy = size.height / 22f
+                                        val strk = 1.6f * density
+                                        drawLine(IvoryText, Offset(3f * sx, 6f * sy), Offset(15f * sx, 6f * sy), strk, StrokeCap.Round)
+                                        drawLine(IvoryText, Offset(3f * sx, 10f * sy), Offset(15f * sx, 10f * sy), strk, StrokeCap.Round)
+                                        drawLine(IvoryText, Offset(5f * sx, 16f * sy), Offset(13f * sx, 16f * sy), strk, StrokeCap.Round)
+                                    }
+                                }
+                            }
+                        }
+
+                        Spacer(Modifier.width(12.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "AI-written, unverified",
-                                fontSize = 11.sp,
-                                color = EmberSoft
+                                text = bookTitle,
+                                fontFamily = FontFamily.Serif,
+                                fontStyle = FontStyle.Italic,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 17.sp,
+                                color = IvoryText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = bookAuthor,
+                                fontSize = 13.sp,
+                                color = MutedText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        if (offline && onRetryOffline != null) {
+                            OfflineConnectivityButton(
+                                onRetry = onRetryOffline,
+                                modifier = Modifier.size(36.dp),
+                                description = "Offline. Tap to retry."
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    when (card.type) {
-                        CardType.QUOTE -> QuoteBody(card)
-                        CardType.QUIZ -> QuizBody(
-                            card = card,
-                            onAnswered = { correct -> sync.record(StateEvents.quiz(card.id, correct)) }
-                        )
-                        CardType.AUDIO -> AudioBody(
-                            card = card,
-                            player = player,
-                            onOpenAudioPlayer = onOpenAudioPlayer,
-                            modifier = Modifier.weight(1f)
-                        )
-                        else -> StandardBody(card)
+                    // Sub-header Metadata: "APPENDIX · 46 SEC" / "CHAPTER 1 · 46 SEC"
+                    val subHeaderMeta = remember(card) {
+                        val chapterPart = when {
+                            card.type == CardType.AUDIO -> "CHAPTER"
+                            card.type == CardType.SUMMARY -> "SUMMARY"
+                            card.type == CardType.QUOTE -> "QUOTE"
+                            else -> card.topic.uppercase()
+                        }
+                        val durPart = card.durationLabel?.uppercase() ?: "46 SEC"
+                        "$chapterPart · $durPart"
                     }
 
-                    if (card.actionLine.isNotBlank() && card.type != CardType.AUDIO) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = card.actionLine,
-                            fontSize = 11.sp,
-                            lineHeight = 16.sp,
-                            color = Paper.copy(alpha = 0.8f)
+                    Spacer(Modifier.height(20.dp))
+                    Text(
+                        text = subHeaderMeta,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.5.sp,
+                        color = MutedText
+                    )
+
+                    // Headline (Card Title): 34-36sp serif semi-bold #F3F1EA
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = card.title,
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 32.sp,
+                        lineHeight = 36.sp,
+                        letterSpacing = (-0.5).sp,
+                        color = IvoryText,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() }
+                    )
+
+                    // Playful golden underline flourish under title
+                    Canvas(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(6.dp)
+                            .padding(top = 2.dp)
+                    ) {
+                        val path = Path().apply {
+                            val w = size.width
+                            val h = size.height
+                            moveTo(0f, h * 0.6f)
+                            cubicTo(w * 0.15f, 0f, w * 0.35f, h, w * 0.55f, h * 0.4f)
+                            cubicTo(w * 0.75f, 0f, w * 0.9f, h * 0.8f, w, h * 0.5f)
+                        }
+                        drawPath(
+                            path = path,
+                            color = GoldAccent,
+                            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round)
                         )
+                    }
+
+                    // Body Text with Drop Cap
+                    Spacer(Modifier.height(16.dp))
+                    val scrollState = rememberScrollState()
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f, fill = false)
+                            .verticalScroll(scrollState)
+                    ) {
+                        when (card.type) {
+                            CardType.QUOTE -> QuoteBodyEditorial(card)
+                            CardType.QUIZ -> QuizBodyEditorial(card, onAnswered = { correct ->
+                                sync.record(StateEvents.quiz(card.id, correct))
+                            })
+                            else -> StandardBodyEditorial(card)
+                        }
                     }
 
                     if (showFinish) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         Button(
                             onClick = onFinish,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(100.dp),
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = Ember,
-                                contentColor = ForestDeep
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = GoldAccent,
+                                contentColor = CardBackground
                             )
                         ) {
                             Text("Finish session", fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
-            }
 
-            val isAudioCard = card.type == CardType.AUDIO || card.audioUrl != null
-
-            if (isAudioCard) {
-                // Audiobook Card: Player controls pinned at the bottom!
-                // Per user instruction: Like, Dislike, Heart (Save), and Eye (Info) buttons removed.
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    AudioPlayerBottomBar(
+                // Bottom Player Controls or Non-Audio Action Row
+                if (isAudioCard) {
+                    AudioPlayerSection(
                         card = card,
                         player = player,
-                        onOpenAudioPlayer = onOpenAudioPlayer
+                        saved = saved,
+                        liked = liked,
+                        onToggleSave = {
+                            state.toggleSave(card.id)
+                            sync.record(StateEvents.saved(card.id, !saved))
+                        },
+                        onToggleLike = {
+                            state.toggleLike(card.id)
+                            sync.record(StateEvents.rating(card.id, if (liked) null else true))
+                        }
                     )
-                    Spacer(Modifier.height(76.dp))
-                }
-            } else {
-                Column {
-                    // Tactile action row with bouncy spring responses and spark bursts
+                } else {
+                    // Non-Audio Cards: Audio section removed entirely per user instruction
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp, start = 4.dp, end = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        CardAction(
-                            icon = if (saved) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = "Save card",
-                            stateDescription = if (saved) "Saved" else "Not saved",
-                            active = saved,
-                            accentColor = Ember,
-                            onClick = {
-                                state.toggleSave(card.id)
-                                sync.record(StateEvents.saved(card.id, !saved))
-                            }
-                        )
-                        CardAction(
-                            icon = if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp,
-                            contentDescription = "Like card",
-                            stateDescription = if (liked) "Liked" else "Not liked",
-                            active = liked,
-                            accentColor = Ember,
-                            onClick = {
-                                state.toggleLike(card.id)
-                                sync.record(StateEvents.rating(card.id, if (liked) null else true))
-                            }
-                        )
-                        CardAction(
-                            icon = if (disliked) {
-                                ImageVector.vectorResource(R.drawable.ic_thumb_down_filled_24)
-                            } else {
-                                ImageVector.vectorResource(R.drawable.ic_thumb_down_24)
-                            },
-                            contentDescription = "Dislike card",
-                            stateDescription = if (disliked) "Disliked" else "Not disliked",
-                            active = disliked,
-                            accentColor = EmberSoft,
-                            onClick = {
-                                state.toggleDislike(card.id)
-                                sync.record(StateEvents.rating(card.id, if (disliked) null else false))
-                            }
-                        )
-                        val isReadingThis = tts.isSpeaking
-                        CardAction(
-                            icon = Icons.Filled.PlayArrow,
-                            contentDescription = if (isReadingThis) "Stop listening" else "Listen to this card",
-                            stateDescription = if (isReadingThis) "Playing voice" else "Not playing",
-                            active = isReadingThis,
-                            customContent = {
-                                AudioPulseIndicator(active = isReadingThis)
-                            },
-                            onClick = {
-                                tts.toggle("${card.title}. ${card.body}")
-                            }
-                        )
-                        CardAction(
-                            icon = Icons.Outlined.Info,
-                            contentDescription = "Why am I seeing this?",
-                            onClick = { showWhy = true }
-                        )
-                    }
+                        SaveBookmarkButton(saved = saved, onClick = {
+                            state.toggleSave(card.id)
+                            sync.record(StateEvents.saved(card.id, !saved))
+                        })
 
-                    if (!tts.isReady) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "Voice loading… try Listen again in a second.",
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            color = Paper.copy(alpha = 0.78f)
-                        )
-                    }
+                        if (card.actionLine.isNotBlank()) {
+                            Text(
+                                text = card.actionLine,
+                                fontSize = 12.sp,
+                                color = MutedText,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(horizontal = 8.dp)
+                            )
+                        }
 
-                    // Breathing room above the floating glass navigation bar
-                    Spacer(Modifier.height(76.dp))
+                        LikeHeartButton(liked = liked, onClick = {
+                            state.toggleLike(card.id)
+                            sync.record(StateEvents.rating(card.id, if (liked) null else true))
+                        })
+                    }
                 }
             }
+        }
+
+        // Top-Right Bookmark Ribbon Tag: 34px × 56px, right: 28px, fill #F2B632, number in #1A1A18
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(end = 28.dp)
+                .size(width = 34.dp, height = 56.dp)
+                .clip(RibbonShape)
+                .background(GoldAccent),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            Text(
+                text = ribbonNumber,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = CardBackground,
+                modifier = Modifier.padding(top = 10.dp)
+            )
         }
 
         // Floating Double-Tap Heart Burst Overlay
@@ -411,12 +612,20 @@ fun CardView(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = null,
-                    tint = Ember,
-                    modifier = Modifier.size(72.dp)
-                )
+                Canvas(modifier = Modifier.size(72.dp)) {
+                    val scale = size.width / 24f
+                    val path = Path().apply {
+                        moveTo(12f * scale, 21.35f * scale)
+                        cubicTo(11.45f * scale, 20.85f * scale, 2f * scale, 12.28f * scale, 2f * scale, 7.5f * scale)
+                        cubicTo(2f * scale, 4.42f * scale, 4.42f * scale, 2f * scale, 7.5f * scale, 2f * scale)
+                        cubicTo(9.24f * scale, 2f * scale, 10.91f * scale, 2.81f * scale, 12f * scale, 4.09f * scale)
+                        cubicTo(13.09f * scale, 2.81f * scale, 14.76f * scale, 2f * scale, 16.5f * scale, 2f * scale)
+                        cubicTo(19.58f * scale, 2f * scale, 22f * scale, 4.42f * scale, 22f * scale, 7.5f * scale)
+                        cubicTo(22f * scale, 12.28f * scale, 12.55f * scale, 20.85f * scale, 12f * scale, 21.35f * scale)
+                        close()
+                    }
+                    drawPath(path, color = GoldAccent)
+                }
             }
         }
     }
@@ -424,271 +633,37 @@ fun CardView(
     if (showWhy) {
         AlertDialog(
             onDismissRequest = { showWhy = false },
-            title = { Text("Why am I seeing this?") },
+            title = { Text("About this card", color = IvoryText) },
             text = {
                 Column {
-                    Text("Type: ${card.type.label()} · Topic: ${card.topic}")
+                    Text("Type: ${card.type.name} · Topic: ${card.topic}", color = BodyTextColor)
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("Source: ${card.source}")
+                    Text("Source: ${card.source}", color = BodyTextColor)
                     if (card.bookLine != null) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Book: ${card.bookLine}")
+                        Text("Book: ${card.bookLine}", color = BodyTextColor)
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         if (card.grounded) "Grounded in the source text ✓"
-                        else "AI-written, unverified — treat as a lead, not a fact."
+                        else "AI-written, unverified — treat as a lead, not a fact.",
+                        color = if (card.grounded) GoldAccent else MutedText
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showWhy = false }) { Text("Close") }
-            }
-        )
-    }
-}
-
-/** A restrained action control with a clear saved/liked state and a short press response. */
-@Composable
-private fun CardAction(
-    icon: ImageVector,
-    contentDescription: String,
-    stateDescription: String? = null,
-    active: Boolean = false,
-    accentColor: Color = Ember,
-    customContent: (@Composable () -> Unit)? = null,
-    onClick: () -> Unit
-) {
-    val haptics = LocalHapticFeedback.current
-    val interaction = remember { MutableInteractionSource() }
-    val isPressed by interaction.collectIsPressedAsState()
-
-    val pressScale = animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMediumLow
-        ),
-        label = "actionPress"
-    )
-    val selectedScale = animateFloatAsState(
-        targetValue = if (active) 1.04f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "actionSelectedScale"
-    )
-    val iconTint by animateColorAsState(
-        targetValue = if (active) accentColor else Paper.copy(alpha = 0.75f),
-        animationSpec = tween(durationMillis = 140),
-        label = "actionTint"
-    )
-
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .graphicsLayer {
-                val scale = pressScale.value * selectedScale.value
-                scaleX = scale
-                scaleY = scale
-            }
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(
-                interactionSource = interaction,
-                indication = null,
-                role = Role.Button
-            ) {
-                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                onClick()
-            }
-            .semantics(mergeDescendants = true) {
-                this.contentDescription = contentDescription
-                stateDescription?.let { this.stateDescription = it }
+                TextButton(onClick = { showWhy = false }) {
+                    Text("Close", color = GoldAccent)
+                }
             },
-        contentAlignment = Alignment.Center
-    ) {
-        if (customContent != null) {
-            customContent()
-        } else {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint
-            )
-        }
-    }
-}
-
-/**
- * Animated 3-bar Audio Equalizer Pulse Indicator.
- * Renders vertical dancing rounded bars when TTS/audio is active.
- */
-@Composable
-private fun AudioPulseIndicator(active: Boolean) {
-    if (!active) {
-        Icon(
-            imageVector = Icons.Filled.PlayArrow,
-            contentDescription = null,
-            tint = Paper.copy(alpha = 0.75f)
-        )
-        return
-    }
-
-    val transition = rememberInfiniteTransition(label = "audioEqualizer")
-    val b1 by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.95f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(380, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "b1"
-    )
-    val b2 by transition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 0.25f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(280, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "b2"
-    )
-    val b3 by transition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(440, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "b3"
-    )
-
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(2.5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.size(24.dp)
-    ) {
-        Box(
-            Modifier
-                .weight(1f)
-                .height(6.dp + 12.dp * b1)
-                .clip(RoundedCornerShape(50))
-                .background(Ember)
-        )
-        Box(
-            Modifier
-                .weight(1f)
-                .height(6.dp + 12.dp * b2)
-                .clip(RoundedCornerShape(50))
-                .background(Ember)
-        )
-        Box(
-            Modifier
-                .weight(1f)
-                .height(6.dp + 12.dp * b3)
-                .clip(RoundedCornerShape(50))
-                .background(Ember)
+            containerColor = CardBackground
         )
     }
 }
 
-/**
- * Small header pill with a pulsing dot: a saved card is being opened in this
- * deck (or could not be found and the offline deck took its place).
- */
+/** Standard Body with 17sp serif typography and drop cap */
 @Composable
-private fun OpeningPill(label: String) {
-    val transition = rememberInfiniteTransition(label = "openingPulse")
-    val dotAlpha by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "openingDotPulse"
-    )
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(Ember.copy(alpha = 0.16f))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-            .semantics { contentDescription = label }
-    ) {
-        Box(
-            modifier = Modifier
-                .size(4.dp)
-                .graphicsLayer { alpha = dotAlpha }
-                .clip(CircleShape)
-                .background(Ember)
-        )
-        Spacer(Modifier.width(5.dp))
-        Text(
-            text = label,
-            fontSize = 11.sp,
-            letterSpacing = 0.4.sp,
-            fontWeight = FontWeight.Bold,
-            color = Ember,
-            lineHeight = 14.sp
-        )
-    }
-}
-
-/** Small header pill showing live listening status with a pulsing dot beacon. */
-@Composable
-private fun LiveListeningPill() {
-    val transition = rememberInfiniteTransition(label = "listeningPulse")
-    val dotAlpha by transition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "dotPulse"
-    )
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(Ember.copy(alpha = 0.16f))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(4.dp)
-                .graphicsLayer { alpha = dotAlpha }
-                .clip(CircleShape)
-                .background(Ember)
-        )
-        Spacer(Modifier.width(5.dp))
-        Text(
-            text = "LISTENING",
-            fontSize = 11.sp,
-            letterSpacing = 0.6.sp,
-            fontWeight = FontWeight.Bold,
-            color = Ember,
-            lineHeight = 14.sp
-        )
-    }
-}
-
-@Composable
-private fun StandardBody(card: Card) {
-    Text(
-        text = card.title,
-        fontFamily = Display,
-        fontSize = 26.sp,
-        lineHeight = 32.sp,
-        letterSpacing = (-0.6).sp,
-        color = PaperSoft,
-        modifier = Modifier.semantics { heading() }
-    )
-    Spacer(modifier = Modifier.height(10.dp))
+private fun StandardBodyEditorial(card: Card) {
     val cleanBody = remember(card.body) {
         card.body
             .replace(Regex("^###[^\n\r]+", RegexOption.MULTILINE), "")
@@ -696,459 +671,91 @@ private fun StandardBody(card: Card) {
             .replace(Regex("\\*([^*]+)\\*"), "$1")
             .trim()
     }
-    Text(
-        text = cleanBody,
-        fontSize = 15.sp,
-        lineHeight = 23.sp,
-        color = Paper.copy(alpha = 0.82f)
-    )
-    if (card.durationLabel != null) {
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "${card.durationLabel} · tap Listen to hear it",
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            color = Paper.copy(alpha = 0.78f)
-        )
+
+    val paragraphs = remember(cleanBody) {
+        cleanBody.split(Regex("\n+")).filter { it.isNotBlank() }
     }
-}
 
-/** Audiobook chapter card body: displays title, book pill, and live subtitles synced with narration. */
-@Composable
-private fun AudioBody(
-    card: Card,
-    player: AudioPlayerBox?,
-    onOpenAudioPlayer: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val ui = player?.state?.collectAsStateWithLifecycle()?.value
-    val url = card.audioUrl
-    val resolvedUrl = if (url != null) {
-        if (url.startsWith("http://") || url.startsWith("https://")) url
-        else "${BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
-    } else null
-    val isThis = url != null && (ui?.url == url || ui?.url == resolvedUrl)
-    val positionMs = if (isThis) (ui?.positionMs ?: 0L) else 0L
-    val isPlaying = isThis && (ui?.playing == true)
-
-    Column(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = card.title,
-            fontFamily = Display,
-            fontSize = 22.sp,
-            lineHeight = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = PaperSoft,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.semantics { heading() }
-        )
-
-        if (card.bookLine != null) {
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Ember.copy(alpha = 0.14f))
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_book_filled_24),
-                    contentDescription = null,
-                    tint = Ember,
-                    modifier = Modifier.size(13.dp)
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = card.bookLine,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = EmberSoft,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+    paragraphs.forEachIndexed { index, paragraph ->
+        if (index > 0) {
+            Spacer(Modifier.height(10.dp))
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // Live Subtitle Viewer taking the available vertical space
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            LiveSubtitleViewer(
-                card = card,
-                positionMs = positionMs,
-                isPlaying = isPlaying,
-                onSeekTo = { targetMs ->
-                    if (!isThis && url != null) {
-                        player?.playUrl(url, card.title)
-                    }
-                    player?.seekTo(targetMs)
-                }
-            )
-        }
-    }
-}
-
-/** Displays synchronized subtitles that follow the narrator's voice in real time. */
-@Composable
-private fun LiveSubtitleViewer(
-    card: Card,
-    positionMs: Long,
-    isPlaying: Boolean,
-    onSeekTo: (Long) -> Unit
-) {
-    val subtitleKey = remember(card.audioUrl) {
-        card.audioUrl?.substringAfterLast("/")?.substringBefore("?") ?: ""
-    }
-
-    var cues by remember(subtitleKey) { mutableStateOf<List<com.spark.app.data.remote.SubtitleCueDto>>(emptyList()) }
-    var loaded by remember(subtitleKey) { mutableStateOf(false) }
-
-    LaunchedEffect(subtitleKey) {
-        cues = SubtitleRepository.getSubtitles(
-            key = subtitleKey,
-            bodyFallback = card.body,
-            durationLabel = card.durationLabel
-        )
-        loaded = true
-    }
-
-    val activeIndex = remember(cues, positionMs) {
-        if (cues.isEmpty()) -1
-        else {
-            // 200ms anticipatory lead so line highlights right as the narrator speaks the sentence
-            val targetMs = positionMs + 200L
-            val idx = cues.indexOfLast { it.startMs <= targetMs }
-            if (idx != -1) idx.coerceAtMost(cues.lastIndex) else 0
-        }
-    }
-
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(activeIndex) {
-        if (activeIndex >= 0) {
-            listState.animateScrollToItem(
-                index = (activeIndex - 1).coerceAtLeast(0),
-                scrollOffset = -24
-            )
-        }
-    }
-
-    // Frameless, organic reel caption flow
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        if (!loaded) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Loading subtitles...",
-                    fontSize = 14.sp,
-                    color = Paper.copy(alpha = 0.5f)
-                )
-            }
-        } else if (cues.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Tap play below to start listening.",
-                    fontSize = 14.sp,
-                    color = Paper.copy(alpha = 0.6f)
-                )
-            }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                item {
-                    Spacer(Modifier.height(8.dp))
-                }
-                itemsIndexed(cues) { index, cue ->
-                    val isActive = index == activeIndex
-                    val isPast = activeIndex > index
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(
-                                if (isActive) Ember.copy(alpha = 0.16f)
-                                else Color.Transparent
-                            )
-                            .clickable { onSeekTo(cue.startMs) }
-                            .padding(
-                                horizontal = if (isActive) 12.dp else 4.dp,
-                                vertical = if (isActive) 10.dp else 4.dp
-                            )
-                    ) {
-                        Text(
-                            text = cue.text,
-                            fontSize = if (isActive) 20.sp else 16.sp,
-                            lineHeight = if (isActive) 28.sp else 23.sp,
-                            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-                            color = when {
-                                isActive -> PaperSoft
-                                isPast -> Paper.copy(alpha = 0.35f)
-                                else -> Paper.copy(alpha = 0.65f)
-                            }
-                        )
-                    }
-                }
-                item {
-                    Spacer(Modifier.height(32.dp))
-                }
-            }
-        }
-    }
-}
-
-/** Pinned bottom player controls for audiobook cards. */
-@Composable
-private fun AudioPlayerBottomBar(
-    card: Card,
-    player: AudioPlayerBox?,
-    onOpenAudioPlayer: () -> Unit
-) {
-    val url = card.audioUrl ?: return
-    val playerBox = player ?: return
-    val ui by playerBox.state.collectAsStateWithLifecycle()
-    val resolvedUrl = if (url.startsWith("http://") || url.startsWith("https://")) {
-        url
-    } else {
-        "${BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
-    }
-    val isThis = ui.url == url || ui.url == resolvedUrl
-    val isFailed = isThis && ui.failed
-    val playing = isThis && ui.playing && !isFailed
-    val isBuffering = isThis && ui.buffering && !isFailed
-    val duration = if (isThis && ui.durationMs > 0) ui.durationMs
-    else (card.durationLabel?.let { parseMinSecPlusMs(it) } ?: 0L)
-    val position = if (isThis) ui.positionMs else 0L
-
-    Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = Color(0xFF132B20).copy(alpha = 0.96f),
-        border = BorderStroke(1.dp, Color(0xFF2E5E4A)),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clip(CircleShape)
-                            .background(Ember)
-                            .clickable {
-                                if (isThis && !isFailed) {
-                                    playerBox.toggle()
-                                } else {
-                                    playerBox.playUrl(url, card.title)
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isBuffering) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = Color(0xFF121110),
-                                strokeWidth = 2.dp
-                            )
-                        } else if (playing) {
-                            Text(
-                                text = "Ⅱ",
-                                color = Color(0xFF121110),
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Filled.PlayArrow,
-                                contentDescription = "Play audiobook",
-                                tint = Color(0xFF121110),
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                    Spacer(Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = if (isBuffering) "LOADING AUDIO..." else if (playing) "PLAYING CHAPTER" else "AUDIOBOOK CHAPTER",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            color = if (playing) Ember else Paper.copy(alpha = 0.65f)
-                        )
-                        Text(
-                            text = if (duration > 0) formatMinSec(duration) else (card.durationLabel ?: "Audio"),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = PaperSoft
-                        )
-                    }
-                }
-
-                IconButton(
-                    onClick = {
-                        if (!isThis || isFailed) playerBox.playUrl(url, card.title)
-                        onOpenAudioPlayer()
-                    }
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_headphones_16),
-                        contentDescription = "Open full audio player",
-                        tint = Ember,
-                        modifier = Modifier.size(20.dp)
+        if (index == 0 && paragraph.isNotEmpty()) {
+            val firstChar = paragraph.take(1)
+            val restOfPara = paragraph.drop(1)
+            val annotated = buildAnnotatedString {
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Serif,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 32.sp,
+                        color = GoldAccent
                     )
+                ) {
+                    append(firstChar)
+                }
+                withStyle(
+                    SpanStyle(
+                        fontFamily = FontFamily.Serif,
+                        fontSize = 17.sp,
+                        color = BodyTextColor
+                    )
+                ) {
+                    append(restOfPara)
                 }
             }
-
-            Spacer(Modifier.height(6.dp))
-
-            if (duration > 0) {
-                Slider(
-                    value = position.toFloat().coerceIn(0f, duration.toFloat().coerceAtLeast(1f)),
-                    onValueChange = { playerBox.seekTo(it.toLong()) },
-                    valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
-                    colors = SliderDefaults.colors(
-                        thumbColor = Ember,
-                        activeTrackColor = Ember,
-                        inactiveTrackColor = Paper.copy(alpha = 0.15f)
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(26.dp)
-                        .semantics { contentDescription = "Audiobook position" }
-                )
-            } else {
-                LinearProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 10.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = Ember,
-                    trackColor = Paper.copy(alpha = 0.15f)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = formatMinSec(position),
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = Paper.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = if (duration > 0) formatMinSec(duration) else (card.durationLabel ?: "0:00"),
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = Paper.copy(alpha = 0.7f)
-                )
-            }
-        }
-    }
-
-    if (isFailed) {
-        Spacer(modifier = Modifier.height(6.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
-                .clickable { playerBox.playUrl(url, card.title) }
-                .padding(horizontal = 10.dp, vertical = 6.dp)
-        ) {
             Text(
-                text = "Connection lost · Tap to retry chapter",
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.error
+                text = annotated,
+                lineHeight = 25.sp
+            )
+        } else {
+            Text(
+                text = paragraph,
+                fontFamily = FontFamily.Serif,
+                fontSize = 17.sp,
+                lineHeight = 25.sp,
+                color = BodyTextColor
             )
         }
     }
 }
 
-/** Fallback duration parse of the server's "m:ss" label (no regex needed). */
-private fun parseMinSecPlusMs(label: String): Long {
-    val parts = label.split(":")
-    val minutes = parts.getOrNull(parts.lastIndex - 1)?.toLongOrNull() ?: return 0
-    val seconds = parts.lastOrNull()?.toLongOrNull() ?: return 0
-    return (minutes * 60 + seconds) * 1000
+/** Quote Card Body with elegant serif styling and golden quotes */
+@Composable
+private fun QuoteBodyEditorial(card: Card) {
+    Text(
+        text = buildAnnotatedString {
+            withStyle(SpanStyle(color = GoldAccent, fontSize = 28.sp, fontWeight = FontWeight.Bold)) {
+                append("“")
+            }
+            append(card.body.trim('"', '\u201C', '\u201D'))
+            withStyle(SpanStyle(color = GoldAccent, fontSize = 28.sp, fontWeight = FontWeight.Bold)) {
+                append("”")
+            }
+        },
+        fontFamily = FontFamily.Serif,
+        fontStyle = FontStyle.Italic,
+        fontSize = 22.sp,
+        lineHeight = 30.sp,
+        color = IvoryText
+    )
 }
 
+/** Quiz Card Body with capsules in dark editorial theme */
 @Composable
-private fun QuoteBody(card: Card) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.Start
-    ) {
-        Text(
-            text = card.title.uppercase(),
-            fontSize = 12.sp,
-            lineHeight = 16.sp,
-            letterSpacing = 0.8.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Paper.copy(alpha = 0.78f),
-            modifier = Modifier.semantics { heading() }
-        )
-        Spacer(modifier = Modifier.height(18.dp))
-        Text(
-            text = buildAnnotatedString {
-                withStyle(SpanStyle(color = Ember)) { append("“") }
-                append(card.body.trim('"', '\u201C', '\u201D'))
-                withStyle(SpanStyle(color = Ember)) { append("”") }
-            },
-            fontFamily = Display,
-            fontSize = 24.sp,
-            lineHeight = 30.sp,
-            letterSpacing = (-0.4).sp,
-            color = PaperSoft
-        )
-    }
-}
-
-@Composable
-private fun QuizBody(card: Card, onAnswered: (Boolean) -> Unit) {
+private fun QuizBodyEditorial(card: Card, onAnswered: (Boolean) -> Unit) {
     val quiz = card.quiz
     Text(
-        text = card.title,
-        fontFamily = Display,
-        fontSize = 24.sp,
-        lineHeight = 29.sp,
-        color = PaperSoft,
-        modifier = Modifier.semantics { heading() }
+        text = card.body,
+        fontFamily = FontFamily.Serif,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        color = BodyTextColor
     )
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(text = card.body, fontSize = 14.sp, lineHeight = 21.sp, color = Paper.copy(alpha = 0.82f))
-    Spacer(modifier = Modifier.height(12.dp))
-    if (quiz == null) {
-        Text("Quiz data missing.", color = Paper.copy(alpha = 0.7f))
-        return
-    }
+    Spacer(Modifier.height(12.dp))
+    if (quiz == null) return
+
     var selected by remember { mutableStateOf<Int?>(null) }
     quiz.options.forEachIndexed { index, option ->
         val label = ('A' + index).toString()
@@ -1161,18 +768,10 @@ private fun QuizBody(card: Card, onAnswered: (Boolean) -> Unit) {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 6.dp)
-                .semantics {
-                    if (selected != null) {
-                        when {
-                            index == quiz.correctIndex -> stateDescription = "Correct answer"
-                            index == selected -> stateDescription = "Your answer, incorrect"
-                        }
-                    }
-                },
+                .padding(bottom = 8.dp),
             shape = RoundedCornerShape(100.dp),
-            color = Paper.copy(alpha = 0.08f),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Paper.copy(alpha = 0.22f))
+            color = IvoryText.copy(alpha = 0.08f),
+            border = BorderStroke(1.dp, IvoryText.copy(alpha = 0.22f))
         ) {
             val mark = when {
                 selected == null -> ""
@@ -1182,29 +781,491 @@ private fun QuizBody(card: Card, onAnswered: (Boolean) -> Unit) {
             }
             Text(
                 text = "$label) $option$mark",
-                fontSize = 13.sp,
-                color = if (selected != null && index == quiz.correctIndex) Ember else PaperSoft,
+                fontSize = 14.sp,
+                color = if (selected != null && index == quiz.correctIndex) GoldAccent else IvoryText,
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
             )
         }
     }
     if (selected != null) {
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             text = quiz.explanation,
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             lineHeight = 18.sp,
-            color = Paper.copy(alpha = 0.82f)
+            color = BodyTextColor
         )
     }
 }
 
-private fun CardType.label(): String = when (this) {
-    CardType.BOOK_IDEA -> "Book idea"
-    CardType.SUMMARY -> "Summary"
-    CardType.QUOTE -> "Quote"
-    CardType.CONCEPT -> "Concept"
-    CardType.QUIZ -> "Quiz"
-    CardType.AUDIO -> "Audio"
-    CardType.CHALLENGE -> "Challenge"
+/**
+ * Pinned Audio Section:
+ * 1. 51-bar waveform with drag/tap scrubbing
+ * 2. Left and right timestamps
+ * 3. 5-button control row: Save, Rewind 15, Center 60dp Play/Pause with spinner, Forward 15, Like
+ */
+@Composable
+private fun AudioPlayerSection(
+    card: Card,
+    player: AudioPlayerBox?,
+    saved: Boolean,
+    liked: Boolean,
+    onToggleSave: () -> Unit,
+    onToggleLike: () -> Unit
+) {
+    val url = card.audioUrl ?: return
+    val playerBox = player ?: return
+    val ui by playerBox.state.collectAsStateWithLifecycle()
+
+    val resolvedUrl = remember(url) {
+        if (url.startsWith("http://") || url.startsWith("https://")) url
+        else "${BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
+    }
+
+    val isThis = ui.url == url || ui.url == resolvedUrl
+    val isFailed = isThis && ui.failed
+    val playing = isThis && ui.playing && !isFailed
+    val isBuffering = isThis && ui.buffering && !isFailed
+    val durationMs = if (isThis && ui.durationMs > 0) ui.durationMs
+    else (card.durationLabel?.let { parseMinSecDuration(it) } ?: 46_000L)
+    val positionMs = if (isThis) ui.positionMs else 0L
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp)
+    ) {
+        // 51-bar Waveform Scrubber
+        AudioWaveformScrubber(
+            durationMs = durationMs,
+            positionMs = positionMs,
+            onSeek = { targetMs -> playerBox.seekTo(targetMs) }
+        )
+
+        // Timestamps: left position, right duration (12sp, #A3A29B)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = formatMinSec(positionMs),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = MutedText
+            )
+            Text(
+                text = formatMinSec(durationMs),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = MutedText
+            )
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Controls Row: Save (44dp) | Rewind 15 (44dp) | Play 60dp | Forward 15 (44dp) | Like (44dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Save Bookmark Button
+            SaveBookmarkButton(saved = saved, onClick = onToggleSave)
+
+            // Rewind 15s Button
+            Rewind15Button(onClick = {
+                val newPos = (positionMs - 15_000L).coerceAtLeast(0L)
+                playerBox.seekTo(newPos)
+            })
+
+            // Center 60dp Play/Pause Button with double-ring and buffering spinner
+            CenterPlayButton(
+                isPlaying = playing,
+                isBuffering = isBuffering,
+                onPlayPause = {
+                    if (isThis && !isFailed) {
+                        playerBox.toggle()
+                    } else {
+                        playerBox.playUrl(url, card.title)
+                    }
+                }
+            )
+
+            // Forward 15s Button
+            Forward15Button(onClick = {
+                val newPos = (positionMs + 15_000L).coerceAtMost(durationMs)
+                playerBox.seekTo(newPos)
+            })
+
+            // Like Heart Button
+            LikeHeartButton(liked = liked, onClick = onToggleLike)
+        }
+    }
+}
+
+/**
+ * 51-bar waveform with exact SVG coordinates from Main.dc.html.
+ * Interactive: tap or drag across the waveform to scrub audio.
+ */
+@Composable
+private fun AudioWaveformScrubber(
+    durationMs: Long,
+    positionMs: Long,
+    onSeek: (Long) -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+    val progressFraction = remember(positionMs, durationMs) {
+        if (durationMs > 0) (positionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f) else 0f
+    }
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .pointerInput(durationMs) {
+                detectTapGestures { offset ->
+                    val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    onSeek((fraction * durationMs).toLong())
+                }
+            }
+            .pointerInput(durationMs) {
+                detectHorizontalDragGestures { change, _ ->
+                    val fraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                    onSeek((fraction * durationMs).toLong())
+                }
+            }
+    ) {
+        val scaleX = size.width / 308f
+        val scaleY = size.height / 44f
+        val currentProgressX = progressFraction * size.width
+        val strokeWidthPx = 3f * scaleX
+
+        // Draw 51 waveform bars
+        for (bar in WAVEFORM_BARS) {
+            val barX = bar.first * scaleX
+            val barY1 = bar.second * scaleY
+            val barY2 = bar.third * scaleY
+            val isPlayed = barX <= currentProgressX
+            val barColor = if (isPlayed) GoldAccent else WaveformUnplayed
+
+            drawLine(
+                color = barColor,
+                start = Offset(barX, barY1),
+                end = Offset(barX, barY2),
+                strokeWidth = strokeWidthPx,
+                cap = StrokeCap.Round
+            )
+        }
+
+        // Draw scrubber circle at current progress: radius 6.5dp, fill #F2B632, stroke 2.5dp #1A1A18
+        val scrubberRadius = 6.5.dp.toPx()
+        val scrubberBorderWidth = 2.5.dp.toPx()
+        val scrubberCenter = Offset(
+            x = currentProgressX.coerceIn(scrubberRadius, size.width - scrubberRadius),
+            y = size.height / 2f
+        )
+        drawCircle(
+            color = GoldAccent,
+            radius = scrubberRadius,
+            center = scrubberCenter
+        )
+        drawCircle(
+            color = CardBackground,
+            radius = scrubberRadius,
+            center = scrubberCenter,
+            style = Stroke(width = scrubberBorderWidth)
+        )
+    }
+}
+
+/**
+ * Center 60dp Play/Pause Button:
+ * background #F2B632, box-shadow: 0 0 0 4px #1A1A18, 0 0 0 6px #F2B632.
+ * Shows circular spinning indicator while buffering.
+ */
+@Composable
+private fun CenterPlayButton(
+    isPlaying: Boolean,
+    isBuffering: Boolean,
+    onPlayPause: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+
+    Box(
+        modifier = Modifier
+            .size(68.dp)
+            .drawBehind {
+                // Outer ring: stroke 2dp, color #F2B632
+                drawCircle(
+                    color = GoldAccent,
+                    radius = 33.dp.toPx(),
+                    style = Stroke(width = 2.dp.toPx())
+                )
+                // Gap ring: stroke 4dp, color #1A1A18
+                drawCircle(
+                    color = CardBackground,
+                    radius = 31.dp.toPx(),
+                    style = Stroke(width = 4.dp.toPx())
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .clip(CircleShape)
+                .background(GoldAccent)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                    onPlayPause()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            if (isBuffering) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = CardBackground,
+                    strokeWidth = 2.5.dp
+                )
+            } else if (isPlaying) {
+                // Pause icon: two vertical bars
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.5.dp)
+                            .height(18.dp)
+                            .clip(RoundedCornerShape(1.5.dp))
+                            .background(CardBackground)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(4.5.dp)
+                            .height(18.dp)
+                            .clip(RoundedCornerShape(1.5.dp))
+                            .background(CardBackground)
+                    )
+                }
+            } else {
+                // Play triangle icon (SVG M7 4.5v13l11-6.5z)
+                Canvas(modifier = Modifier.size(22.dp)) {
+                    val scale = size.width / 22f
+                    val path = Path().apply {
+                        moveTo(7f * scale, 4.5f * scale)
+                        lineTo(7f * scale, 17.5f * scale)
+                        lineTo(18f * scale, 11f * scale)
+                        close()
+                    }
+                    drawPath(path, color = CardBackground)
+                }
+            }
+        }
+    }
+}
+
+/** Rewind 15s Button (44×44dp): Circular counter-clockwise arrow with "15" in center */
+@Composable
+private fun Rewind15Button(onClick: () -> Unit) {
+    val haptics = LocalHapticFeedback.current
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                onClick()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(28.dp)) {
+            val scale = size.width / 24f
+            val path = Path().apply {
+                moveTo(5.5f * scale, 3.5f * scale)
+                lineTo(5.5f * scale, 8f * scale)
+                lineTo(10f * scale, 8f * scale)
+            }
+            drawPath(
+                path = path,
+                color = IvoryText,
+                style = Stroke(width = 1.7.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+            )
+            drawArc(
+                color = IvoryText,
+                startAngle = 180f,
+                sweepAngle = 310f,
+                useCenter = false,
+                topLeft = Offset(4f * scale, 4f * scale),
+                size = Size(16f * scale, 16f * scale),
+                style = Stroke(width = 1.7.dp.toPx(), cap = StrokeCap.Round)
+            )
+        }
+        Text(
+            text = "15",
+            fontSize = 8.5.sp,
+            fontWeight = FontWeight.Bold,
+            color = IvoryText,
+            modifier = Modifier.offset(y = 1.dp)
+        )
+    }
+}
+
+/** Forward 15s Button (44×44dp): Circular clockwise arrow with "15" in center */
+@Composable
+private fun Forward15Button(onClick: () -> Unit) {
+    val haptics = LocalHapticFeedback.current
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                onClick()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(
+            modifier = Modifier
+                .size(28.dp)
+                .graphicsLayer { scaleX = -1f }
+        ) {
+            val scale = size.width / 24f
+            val path = Path().apply {
+                moveTo(5.5f * scale, 3.5f * scale)
+                lineTo(5.5f * scale, 8f * scale)
+                lineTo(10f * scale, 8f * scale)
+            }
+            drawPath(
+                path = path,
+                color = IvoryText,
+                style = Stroke(width = 1.7.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+            )
+            drawArc(
+                color = IvoryText,
+                startAngle = 180f,
+                sweepAngle = 310f,
+                useCenter = false,
+                topLeft = Offset(4f * scale, 4f * scale),
+                size = Size(16f * scale, 16f * scale),
+                style = Stroke(width = 1.7.dp.toPx(), cap = StrokeCap.Round)
+            )
+        }
+        Text(
+            text = "15",
+            fontSize = 8.5.sp,
+            fontWeight = FontWeight.Bold,
+            color = IvoryText,
+            modifier = Modifier.offset(y = 1.dp)
+        )
+    }
+}
+
+/** Bookmark / Save Button (44×44dp, vector path M7 4h10v16l-5-3.5L7 20z) */
+@Composable
+private fun SaveBookmarkButton(
+    saved: Boolean,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                onClick()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(24.dp)) {
+            val scale = size.width / 24f
+            val path = Path().apply {
+                moveTo(7f * scale, 4f * scale)
+                lineTo(17f * scale, 4f * scale)
+                lineTo(17f * scale, 20f * scale)
+                lineTo(12f * scale, 16.5f * scale)
+                lineTo(7f * scale, 20f * scale)
+                close()
+            }
+            if (saved) {
+                drawPath(path, color = GoldAccent)
+            } else {
+                drawPath(
+                    path = path,
+                    color = IvoryText,
+                    style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                )
+            }
+        }
+    }
+}
+
+/** Like Heart Button (44×44dp) */
+@Composable
+private fun LikeHeartButton(
+    liked: Boolean,
+    onClick: () -> Unit
+) {
+    val haptics = LocalHapticFeedback.current
+
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                onClick()
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Canvas(modifier = Modifier.size(24.dp)) {
+            val scale = size.width / 24f
+            val path = Path().apply {
+                moveTo(12f * scale, 21.35f * scale)
+                cubicTo(11.45f * scale, 20.85f * scale, 2f * scale, 12.28f * scale, 2f * scale, 7.5f * scale)
+                cubicTo(2f * scale, 4.42f * scale, 4.42f * scale, 2f * scale, 7.5f * scale, 2f * scale)
+                cubicTo(9.24f * scale, 2f * scale, 10.91f * scale, 2.81f * scale, 12f * scale, 4.09f * scale)
+                cubicTo(13.09f * scale, 2.81f * scale, 14.76f * scale, 2f * scale, 16.5f * scale, 2f * scale)
+                cubicTo(19.58f * scale, 2f * scale, 22f * scale, 4.42f * scale, 22f * scale, 7.5f * scale)
+                cubicTo(22f * scale, 12.28f * scale, 12.55f * scale, 20.85f * scale, 12f * scale, 21.35f * scale)
+                close()
+            }
+            if (liked) {
+                drawPath(path, color = GoldAccent)
+            } else {
+                drawPath(
+                    path = path,
+                    color = IvoryText,
+                    style = Stroke(width = 1.8.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                )
+            }
+        }
+    }
+}
+
+/** Parses duration label like "0:46" or "3:15" into milliseconds */
+private fun parseMinSecDuration(label: String): Long {
+    val clean = label.replace(Regex("[^0-9:]"), "")
+    val parts = clean.split(":")
+    val minutes = parts.getOrNull(parts.lastIndex - 1)?.toLongOrNull() ?: return 46_000L
+    val seconds = parts.lastOrNull()?.toLongOrNull() ?: return 46_000L
+    return (minutes * 60 + seconds) * 1000L
 }

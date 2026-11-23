@@ -69,7 +69,12 @@ class AudioBookService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
+        val cacheDataSourceFactory = SparkAudioCache.createDataSourceFactory(this)
+        val mediaSourceFactory = androidx.media3.exoplayer.source.DefaultMediaSourceFactory(this)
+            .setDataSourceFactory(cacheDataSourceFactory)
+
         val player = ExoPlayer.Builder(this)
+            .setMediaSourceFactory(mediaSourceFactory)
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(C.USAGE_MEDIA)
@@ -106,6 +111,7 @@ class AudioBookService : MediaSessionService() {
     override fun onDestroy() {
         clearSleepTimer()
         clearAudioCache()
+        SparkAudioCache.release()
         mediaSession?.release()
         mediaSession = null
         player = null

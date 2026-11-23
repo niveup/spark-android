@@ -90,6 +90,7 @@ class AudioPlayerBox(context: Context) {
     )
     val state: StateFlow<AudioUi> = _state.asStateFlow()
 
+    private val preloadManager = AudioPreloadManager(appContext)
     private var playlist: List<PlaylistItem> = emptyList()
     private var currentPlaylistIndex: Int = -1
     private var isBookPlayback: Boolean = false
@@ -131,7 +132,7 @@ class AudioPlayerBox(context: Context) {
                                 push {
                                     it.copy(
                                         playing = isPlaying,
-                                        buffering = if (isPlaying) false else (connectedController.playbackState == Player.STATE_BUFFERING || (it.buffering && connectedController.playWhenReady))
+                                        buffering = if (isPlaying) false else (connectedController.playWhenReady && connectedController.playbackState != Player.STATE_ENDED)
                                     )
                                 }
                             }
@@ -141,9 +142,11 @@ class AudioPlayerBox(context: Context) {
                                     val hasNext = playNextChapter()
                                     if (hasNext) return
                                 }
+                                val isBuffering = playbackState == Player.STATE_BUFFERING ||
+                                    (connectedController.playWhenReady && !connectedController.isPlaying && playbackState != Player.STATE_ENDED)
                                 push {
                                     it.copy(
-                                        buffering = playbackState == Player.STATE_BUFFERING || (playbackState == Player.STATE_IDLE && connectedController.playWhenReady),
+                                        buffering = isBuffering,
                                         playing = if (
                                             playbackState == Player.STATE_IDLE ||
                                             playbackState == Player.STATE_ENDED
@@ -243,6 +246,23 @@ class AudioPlayerBox(context: Context) {
     fun getPlaylist(): List<PlaylistItem> = playlist
     fun getCurrentPlaylistIndex(): Int = currentPlaylistIndex
 
+    private fun resolveAudioUrl(url: String): String {
+        return if (url.startsWith("http://") || url.startsWith("https://")) {
+            url
+        } else {
+            "${com.spark.app.BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
+        }
+    }
+
+    private fun scheduleUpcomingChaptersPreload() {
+        if (isBookPlayback && playlist.isNotEmpty() && currentPlaylistIndex in playlist.indices) {
+            val nextTwo = playlist.drop(currentPlaylistIndex + 1).take(2).map { resolveAudioUrl(it.url) }
+            preloadManager.preloadNextChapters(nextTwo)
+        } else {
+            preloadManager.cancelAll()
+        }
+    }
+
     /** Streams one chapter; replaces anything that played before. Supports passing a playlist queue for autoplay (Books section only). */
     fun playUrl(
         url: String,
@@ -253,11 +273,7 @@ class AudioPlayerBox(context: Context) {
         author: String? = null,
         bookTitle: String? = null
     ) {
-        val resolvedUrl = if (url.startsWith("http://") || url.startsWith("https://")) {
-            url
-        } else {
-            "${com.spark.app.BuildConfig.API_BASE_URL.removeSuffix("/")}/${url.removePrefix("/")}"
-        }
+        val resolvedUrl = resolveAudioUrl(url)
 
         this.isBookPlayback = isBookPlayback
         var resolvedCover = coverUrl
@@ -303,7 +319,9 @@ class AudioPlayerBox(context: Context) {
             if (!c.isPlaying) {
                 if (c.playbackState == Player.STATE_ENDED) c.seekTo(0L)
                 c.play()
+                push { it.copy(buffering = true) }
             }
+            scheduleUpcomingChaptersPreload()
             return
         }
 
@@ -359,6 +377,8 @@ class AudioPlayerBox(context: Context) {
         )
         c.prepare()
         c.play()
+        preloadManager.onPlayingUrl(resolvedUrl)
+        scheduleUpcomingChaptersPreload()
     }
 
     /** Plays the next chapter in the queue, or sequential chapter number if matched. Only applicable for Books. */
@@ -452,9 +472,7 @@ class AudioPlayerBox(context: Context) {
         } else {
             if (c.playbackState == Player.STATE_ENDED) c.seekTo(0L)
             c.play()
-            if (c.playbackState == Player.STATE_BUFFERING || !c.isPlaying) {
-                push { it.copy(buffering = true) }
-            }
+            push { it.copy(buffering = true) }
         }
     }
 
@@ -489,6 +507,7 @@ class AudioPlayerBox(context: Context) {
 
     fun stopAndClear() {
         pending = null
+        preloadManager.cancelAll()
         playlist = emptyList()
         currentPlaylistIndex = -1
         setSleepTimer(null)
@@ -506,10 +525,12 @@ class AudioPlayerBox(context: Context) {
                 val sleepRemainingMs = readSleepTimerRemainingMs()
                 if (c != null && c.mediaItemCount > 0) {
                     val d = c.duration // C.TIME_UNSET while buffering
+                    val isBuff = c.playbackState == Player.STATE_BUFFERING ||
+                        (c.playWhenReady && !c.isPlaying && c.playbackState != Player.STATE_ENDED)
                     push {
                         it.copy(
                             playing = c.isPlaying,
-                            buffering = c.playbackState == Player.STATE_BUFFERING || (c.playWhenReady && !c.isPlaying && c.playbackState != Player.STATE_ENDED),
+                            buffering = isBuff,
                             positionMs = c.currentPosition.coerceAtLeast(0),
                             durationMs = if (d > 0) d else it.durationMs,
                             playbackSpeed = c.playbackParameters.speed,
@@ -521,7 +542,7 @@ class AudioPlayerBox(context: Context) {
                 }
                 delay(
                     when {
-                        c?.isPlaying == true -> 250
+                        c?.isPlaying == true || (c?.playWhenReady == true && c.playbackState != Player.STATE_ENDED) -> 250
                         sleepRemainingMs > 0L -> 1_000
                         else -> 5_000
                     }
@@ -557,6 +578,7 @@ class AudioPlayerBox(context: Context) {
     }
 
     fun release() {
+        preloadManager.release()
         scope.cancel()
         // Only the app-side controller is released — playback (and the media
         // notification) keeps running in the service, which is the point of

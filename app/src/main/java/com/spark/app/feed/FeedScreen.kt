@@ -11,9 +11,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -56,7 +58,7 @@ private const val MIN_DWELL_MS = 700L
 private const val MAX_DWELL_MS = 10 * 60 * 1000L
 private const val TIME_TICK_MS = 5_000L
 
-private val Paper = Color(0xFF121110)
+private val CanvasBackground = Color(0xFF0B0B0A)
 
 private data class LastShown(val cardId: String, val atMs: Long)
 
@@ -150,23 +152,34 @@ fun FeedScreen(
                 )
             )
 
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(CanvasBackground)
                     .statusBarsPadding()
             ) {
+                TopSegmentedProgressBar(
+                    currentPage = pagerState.currentPage,
+                    totalPages = sessionCards.size,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp)
+                )
+
                 VerticalPager(
                     state = pagerState,
                     beyondViewportPageCount = 1,
                     flingBehavior = flingBehavior,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
                 ) { page ->
                     val card = sessionCards[page]
 
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Paper)
+                            .background(CanvasBackground)
                             .graphicsLayer {
                                 // Ultra-subtle optical softening during swipe transitions
                                 val pageOffset =
