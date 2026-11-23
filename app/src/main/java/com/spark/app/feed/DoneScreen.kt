@@ -72,13 +72,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.spark.app.data.Card
 
-private val Paper = Color(0xFFF4EFE5)
-private val PaperSoft = Color(0xFFFAF5EA)
-private val Ember = Color(0xFFE2603A)
-private val EmberGlow = Color(0xFFFF8559)
-private val ForestTop = Color(0xFF1C4534)
-private val ForestMid = Color(0xFF163528)
-private val ForestDeep = Color(0xFF0D2118)
+private val CanvasBackground = Color(0xFF0B0B0A)
+private val CardBackground = Color(0xFF1A1A18)
+private val GoldAccent = Color(0xFFF2B632)
+private val IvoryText = Color(0xFFF3F1EA)
+private val MutedText = Color(0xFFA3A29B)
+private val Paper = Color(0xFFF3F1EA)
+private val PaperSoft = Color(0xFFD2D0C6)
+private val Ember = Color(0xFFF2B632)
+private val EmberGlow = Color(0xFFF2B632)
 private val Display = FontFamily.Serif
 
 @Composable
@@ -134,7 +136,7 @@ fun DoneScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(ForestTop, ForestMid, ForestDeep)))
+            .background(CanvasBackground)
     ) {
         Column(
             modifier = Modifier
@@ -437,8 +439,8 @@ fun DoneScreen(
                         .heightIn(min = 50.dp),
                     shape = RoundedCornerShape(100.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Ember,
-                        contentColor = ForestDeep
+                        containerColor = GoldAccent,
+                        contentColor = CardBackground
                     )
                 ) {
                     Text(

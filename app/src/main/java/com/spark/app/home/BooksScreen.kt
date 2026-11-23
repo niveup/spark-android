@@ -329,28 +329,30 @@ private fun BooksContent(
             Spacer(Modifier.height(16.dp))
         }
 
-        // Unified 2-column grid for all views — no separate sections in "All"
-        item(key = "category_header", contentType = "category_header") {
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (selectedFilter == "All") "All Books" else selectedFilter,
-                        fontFamily = Display,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Ink
-                    )
-                    Text(
-                        text = "${filteredList.size} books",
-                        fontSize = 12.sp,
-                        color = InkSoft
-                    )
+        // Category Header (hidden in "All" so absolutely no section header exists)
+        if (selectedFilter != "All") {
+            item(key = "category_header", contentType = "category_header") {
+                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = selectedFilter,
+                            fontFamily = Display,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Ink
+                        )
+                        Text(
+                            text = "${filteredList.size} books",
+                            fontSize = 12.sp,
+                            color = InkSoft
+                        )
+                    }
+                    Spacer(Modifier.height(14.dp))
                 }
-                Spacer(Modifier.height(14.dp))
             }
         }
 
